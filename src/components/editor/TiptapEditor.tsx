@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -12,78 +12,133 @@ import Underline from '@tiptap/extension-underline';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import type { Editor } from '@tiptap/react';
-import { 
+import {
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Undo, Redo, Link as LinkIcon, Image as ImageIcon,
   Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Underline as UnderlineIcon, ListTodo
+  Underline as UnderlineIcon, ListTodo, X, Check
 } from 'lucide-react';
 import '../../styles/tiptap.css';
 
-interface TiptapToolbarProps {
-  editor: Editor | null;
+// URL Input Modal Component
+interface UrlInputModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (url: string) => void;
+  title: string;
+  placeholder?: string;
+  validate?: (url: string) => string | null;
 }
 
-const TiptapToolbar = ({ editor }: TiptapToolbarProps) => {
+const UrlInputModal = ({ isOpen, onClose, onSubmit, title, placeholder, validate }: UrlInputModalProps) => {
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setUrl('');
+      setError(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedUrl = url.trim();
+
+    if (trimmedUrl) {
+      if (validate) {
+        const validationError = validate(trimmedUrl);
+        if (validationError) {
+          setError(validationError);
+          return;
+        }
+      }
+      onSubmit(trimmedUrl);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="font-bold text-slate-900 dark:text-white">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                if (error) setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder={placeholder || 'https://...'}
+              className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-primary-500'
+                } bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none transition-all`}
+              autoFocus
+            />
+            {error && (
+              <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
+                {error}
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            >
+              <Check className="w-4 h-4" />
+              확인
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface TiptapToolbarProps {
+  editor: Editor | null;
+  onAddImage: () => void;
+  onAddLink: () => void;
+}
+
+const TiptapToolbar = ({ editor, onAddImage, onAddLink }: TiptapToolbarProps) => {
   if (!editor) return null;
 
-  const addImage = () => {
-    const input = window.prompt('이미지 URL을 입력하세요');
-    
-    if (!input || typeof input !== 'string' || input.trim() === '') {
-      return;
-    }
-
-    const url = input.trim();
-
-    try {
-      const parsedUrl = new URL(url);
-      
-      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-        alert('http 또는 https URL만 사용할 수 있습니다.');
-        return;
-      }
-
-      editor.chain().focus().setImage({ src: parsedUrl.href }).run();
-    } catch (error) {
-      alert('올바른 URL 형식이 아닙니다. (예: https://example.com/image.jpg)');
-    }
-  };
-
-  const addLink = () => {
-    const input = window.prompt('링크 URL을 입력하세요');
-    
-    if (!input || typeof input !== 'string' || input.trim() === '') {
-      return;
-    }
-
-    const url = input.trim();
-
-    try {
-      const parsedUrl = new URL(url);
-      
-      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-        alert('http 또는 https URL만 사용할 수 있습니다.');
-        return;
-      }
-
-      editor.chain().focus().setLink({ href: parsedUrl.href }).run();
-    } catch (error) {
-      alert('올바른 URL 형식이 아닙니다. (예: https://example.com)');
-    }
-  };
-
-  const ToolbarButton = ({ 
-    onClick, 
-    isActive = false, 
-    disabled = false, 
-    icon: Icon, 
-    title 
-  }: { 
-    onClick: () => void; 
-    isActive?: boolean; 
-    disabled?: boolean; 
-    icon: any; 
+  const ToolbarButton = ({
+    onClick,
+    isActive = false,
+    disabled = false,
+    icon: Icon,
+    title
+  }: {
+    onClick: () => void;
+    isActive?: boolean;
+    disabled?: boolean;
+    icon: any;
     title: string;
   }) => (
     <button
@@ -91,11 +146,10 @@ const TiptapToolbar = ({ editor }: TiptapToolbarProps) => {
       disabled={disabled}
       title={title}
       type="button"
-      className={`p-2 rounded-lg transition-colors ${
-        isActive 
-          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' 
-          : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`p-2 rounded-lg transition-colors ${isActive
+        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+        : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     >
       <Icon className="w-4 h-4" />
     </button>
@@ -228,13 +282,13 @@ const TiptapToolbar = ({ editor }: TiptapToolbarProps) => {
           title="코드"
         />
         <ToolbarButton
-          onClick={addLink}
+          onClick={onAddLink}
           isActive={editor.isActive('link')}
           icon={LinkIcon}
           title="링크"
         />
         <ToolbarButton
-          onClick={addImage}
+          onClick={onAddImage}
           icon={ImageIcon}
           title="이미지"
         />
@@ -265,6 +319,8 @@ interface TiptapEditorProps {
 }
 
 const TiptapEditor = ({ content, onChange }: TiptapEditorProps) => {
+  const [modalType, setModalType] = useState<'link' | 'image' | null>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -313,10 +369,57 @@ const TiptapEditor = ({ content, onChange }: TiptapEditorProps) => {
     }
   }, [content, editor]);
 
+  const validateUrl = (url: string) => {
+    if (!url || url.trim() === '') return 'URL을 입력해주세요.';
+    try {
+      const parsedUrl = new URL(url);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return 'http 또는 https URL만 사용할 수 있습니다.';
+      }
+      return null;
+    } catch (error) {
+      return '올바른 URL 형식이 아닙니다. (예: https://example.com)';
+    }
+  };
+
+  const handleAddLink = (url: string) => {
+    if (editor) {
+      editor.chain().focus().setLink({ href: url }).run();
+    }
+  };
+
+  const handleAddImage = (url: string) => {
+    if (editor) {
+      editor.chain().focus().setImage({ src: url }).run();
+    }
+  };
+
   return (
-    <div className="border-2 border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg">
-      <TiptapToolbar editor={editor} />
+    <div className="border-2 border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg relative">
+      <TiptapToolbar
+        editor={editor}
+        onAddLink={() => setModalType('link')}
+        onAddImage={() => setModalType('image')}
+      />
       <EditorContent editor={editor} className="tiptap-editor" />
+
+      <UrlInputModal
+        isOpen={modalType === 'link'}
+        onClose={() => setModalType(null)}
+        onSubmit={handleAddLink}
+        title="링크 추가"
+        placeholder="https://example.com"
+        validate={validateUrl}
+      />
+
+      <UrlInputModal
+        isOpen={modalType === 'image'}
+        onClose={() => setModalType(null)}
+        onSubmit={handleAddImage}
+        title="이미지 추가"
+        placeholder="https://example.com/image.jpg"
+        validate={validateUrl}
+      />
     </div>
   );
 };

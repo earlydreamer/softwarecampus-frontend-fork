@@ -43,9 +43,21 @@ const BannerModal: React.FC<BannerModalProps> = ({
         }
     }, [isOpen, initialData]);
 
+    // Cleanup object URL on unmount or when imageUrl changes
+    useEffect(() => {
+        return () => {
+            if (form.imageUrl && form.imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(form.imageUrl);
+            }
+        };
+    }, [form.imageUrl]);
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (form.imageUrl && form.imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(form.imageUrl);
+            }
             const imageUrl = URL.createObjectURL(file);
             setForm(prev => ({
                 ...prev,
@@ -59,6 +71,9 @@ const BannerModal: React.FC<BannerModalProps> = ({
         e.preventDefault();
         const file = e.dataTransfer.files?.[0];
         if (file) {
+            if (form.imageUrl && form.imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(form.imageUrl);
+            }
             const imageUrl = URL.createObjectURL(file);
             setForm(prev => ({
                 ...prev,

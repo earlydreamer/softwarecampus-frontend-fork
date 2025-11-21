@@ -36,6 +36,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         description: '',
         imageUrl: ''
     });
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -64,9 +65,23 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         }
     }, [isOpen, initialData]);
 
+    // Cleanup object URL on unmount or when imageUrl changes
+    useEffect(() => {
+        return () => {
+            if (form.imageUrl && form.imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(form.imageUrl);
+            }
+        };
+    }, [form.imageUrl]);
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Revoke old URL if it exists
+            if (form.imageUrl && form.imageUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(form.imageUrl);
+            }
+
             const imageUrl = URL.createObjectURL(file);
             setForm(prev => ({
                 ...prev,
@@ -78,10 +93,11 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.courseTitle) {
-            alert('과정명을 입력해주세요.');
+        if (!form.courseTitle || form.courseTitle.trim() === '') {
+            setError('과정명을 입력해주세요.');
             return;
         }
+        setError(null);
         onSubmit(form);
     };
 
@@ -158,11 +174,20 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                             <input
                                 type="text"
                                 value={form.courseTitle || ''}
-                                onChange={e => setForm({ ...form, courseTitle: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
+                                onChange={e => {
+                                    setForm({ ...form, courseTitle: e.target.value });
+                                    if (error) setError(null);
+                                }}
+                                className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-primary-500'
+                                    } bg-white dark:bg-slate-900 focus:ring-2 outline-none transition-colors`}
                                 placeholder="과정명을 입력하세요"
-                                required
                             />
+                            {error && (
+                                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                                    <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
+                                    {error}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
