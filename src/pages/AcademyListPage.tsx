@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { fetchAcademies } from '../services/academyService';
 import { MapPin, Star, BookOpen, Award } from 'lucide-react';
+import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 
 const AcademyListPage = () => {
@@ -47,7 +48,7 @@ const AcademyListPage = () => {
                                 <div className="flex items-start gap-4">
                                     <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
                                         {academy.logoUrl ? (
-                                            <img src={academy.logoUrl} alt={academy.name} className="w-full h-full object-cover" />
+                                            <img src={sanitizeUrl(academy.logoUrl)} alt={academy.name} className="w-full h-full object-cover" />
                                         ) : (
                                             <span className="text-2xl font-bold text-slate-400">{academy.name[0]}</span>
                                         )}

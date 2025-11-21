@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import type { Banner } from '../../types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { sanitizeUrl } from '../../utils/security';
 import Skeleton from '../ui/Skeleton';
 
 interface HeroBannerProps {
@@ -41,7 +42,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
         <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden rounded-3xl shadow-2xl">
             {/* Background Image with Overlay */}
             <div
-                style={{ backgroundImage: `url(${currentBanner.imageUrl})` }}
+                style={{ backgroundImage: `url(${sanitizeUrl(currentBanner.imageUrl)})` }}
                 className="absolute inset-0 w-full h-full bg-center bg-cover transition-all duration-700 ease-in-out transform scale-105"
             >
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />

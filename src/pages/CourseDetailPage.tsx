@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCourseById, fetchCourseReviews, fetchCourseQnAs } from '../services/courseService';
 import { Calendar, MapPin, Clock, Building, CheckCircle2, Share2, Heart } from 'lucide-react';
+import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseReviews from '../components/course/CourseReviews';
 import CourseQnAs from '../components/course/CourseQnAs';
@@ -123,8 +124,8 @@ const CourseDetailPage = () => {
                                     <button
                                         onClick={() => setActiveTab('overview')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'overview'
-                                                ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                             }`}
                                     >
                                         과정 개요
@@ -132,8 +133,8 @@ const CourseDetailPage = () => {
                                     <button
                                         onClick={() => setActiveTab('reviews')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'reviews'
-                                                ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                             }`}
                                     >
                                         수강 후기 {reviews && `(${reviews.length})`}
@@ -141,8 +142,8 @@ const CourseDetailPage = () => {
                                     <button
                                         onClick={() => setActiveTab('qna')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'qna'
-                                                ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                             }`}
                                     >
                                         Q&A {qnas && `(${qnas.length})`}
@@ -230,7 +231,7 @@ const CourseDetailPage = () => {
                                 <Link to={`/academies/${course.academy.id}`} className="flex items-center gap-3 group">
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs overflow-hidden">
                                         {course.academy.logoUrl ? (
-                                            <img src={course.academy.logoUrl} alt={course.academy.name} className="w-full h-full object-cover" />
+                                            <img src={sanitizeUrl(course.academy.logoUrl)} alt={course.academy.name} className="w-full h-full object-cover" />
                                         ) : (
                                             course.academy.name[0]
                                         )}

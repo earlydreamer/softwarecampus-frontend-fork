@@ -12,15 +12,16 @@ import {
     updateComment,
     deleteComment,
 } from '../services/communityService';
+import { sanitizeInput } from '../utils/security';
 
 const CommunityDetailPage = () => {
     const { postId } = useParams<{ postId?: string }>();
     const postIdNumber = postId ? parseInt(postId, 10) : NaN;
     const isValidPostId = !isNaN(postIdNumber) && postIdNumber > 0;
-    
+
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    
+
     // Mock user (TODO: 실제 인증 시스템으로 대체)
     const user = { id: 1, userName: '현재사용자' };
 
@@ -160,10 +161,10 @@ const CommunityDetailPage = () => {
     }
 
     if (postError) {
-        const errorMessage = postError instanceof Error 
-            ? postError.message 
+        const errorMessage = postError instanceof Error
+            ? postError.message
             : '게시글을 불러오는 중 오류가 발생했습니다.';
-        
+
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
                 <div className="max-w-md w-full mx-4">
@@ -245,15 +246,14 @@ const CommunityDetailPage = () => {
                 <div className="glass-panel p-6 md:p-8 rounded-2xl mb-4 shadow-xl">
                     <div className="mb-4">
                         <span
-                            className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${
-                                post.category === 'NOTICE'
-                                    ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white'
-                                    : post.category === 'QUESTION'
+                            className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold ${post.category === 'NOTICE'
+                                ? 'bg-gradient-to-r from-rose-500 to-pink-500 text-white'
+                                : post.category === 'QUESTION'
                                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
                                     : post.category === 'COURSE_STORY'
-                                    ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
-                                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
-                            }`}
+                                        ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
+                                        : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                                }`}
                         >
                             {BOARD_CATEGORY_LABELS[post.category]}
                         </span>
@@ -298,7 +298,7 @@ const CommunityDetailPage = () => {
                     <div className="prose prose-slate dark:prose-invert max-w-none">
                         <div
                             className="text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap"
-                            dangerouslySetInnerHTML={{ __html: post.text }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeInput(post.text) }}
                         />
                     </div>
                 </div>
@@ -317,13 +317,12 @@ const CommunityDetailPage = () => {
                                 }
                             }}
                             disabled={post.isRecommended || recommendMutation.isPending || !user}
-                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 ${
-                                post.isRecommended
-                                    ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50'
-                                    : !user
+                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 ${post.isRecommended
+                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50'
+                                : !user
                                     ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400 cursor-not-allowed'
                                     : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
-                            }`}
+                                }`}
                         >
                             <ThumbsUp className={`w-10 h-10 ${!post.isRecommended && 'group-hover:animate-bounce'}`} />
                             <div className="text-center">
@@ -391,8 +390,8 @@ const CommunityDetailPage = () => {
 
                     <div className="space-y-4">
                         {comments.map((comment, index) => (
-                            <div 
-                                key={comment.id} 
+                            <div
+                                key={comment.id}
                                 className={`pb-4 ${index !== comments.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''}`}
                             >
                                 <div className="flex items-start gap-4">

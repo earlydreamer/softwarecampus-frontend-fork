@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAcademyById, fetchCoursesByAcademyId } from '../services/academyService';
 import { MapPin, Globe, Phone, Star, Award, BookOpen, Users } from 'lucide-react';
+import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseCard from '../components/common/CourseCard';
 
@@ -56,7 +57,7 @@ const AcademyDetailPage = () => {
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
                             {academy.logoUrl ? (
-                                <img src={academy.logoUrl} alt={academy.name} className="w-full h-full object-cover" />
+                                <img src={sanitizeUrl(academy.logoUrl)} alt={academy.name} className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-3xl font-bold text-slate-400">{academy.name[0]}</span>
                             )}
@@ -78,7 +79,7 @@ const AcademyDetailPage = () => {
                                     {academy.address}
                                 </div>
                                 {academy.website && (
-                                    <a href={academy.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-primary-600 transition-colors">
+                                    <a href={sanitizeUrl(academy.website)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-primary-600 transition-colors">
                                         <Globe className="w-4 h-4" />
                                         홈페이지
                                     </a>
