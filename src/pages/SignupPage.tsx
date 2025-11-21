@@ -4,10 +4,12 @@ import { AlertCircle, Eye, EyeOff, CheckCircle, Building2 } from 'lucide-react';
 import type { SignupFormData, Academy } from '../types';
 import AcademySelectModal from '../components/auth/AcademySelectModal';
 
-// 정규식 검증 패턴 (백엔드와 일치)
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
-const PHONE_REGEX = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
+import {
+    isValidEmail,
+    isValidPassword,
+    isValidPhoneNumber,
+    formatPhoneNumber
+} from '../utils/validation';
 
 const SignupPage = () => {
     const navigate = useNavigate();
@@ -67,16 +69,7 @@ const SignupPage = () => {
     const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace(/[^0-9]/g, '');
 
-        let formattedValue = value;
-        if (value.length <= 3) {
-            formattedValue = value;
-        } else if (value.length <= 7) {
-            formattedValue = `${value.slice(0, 3)}-${value.slice(3)}`;
-        } else if (value.length <= 11) {
-            formattedValue = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7)}`;
-        } else {
-            formattedValue = `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7, 11)}`;
-        }
+        const formattedValue = formatPhoneNumber(value);
 
         setFormData(prev => ({ ...prev, phoneNumber: formattedValue }));
         if (errors.phoneNumber) {
@@ -89,7 +82,7 @@ const SignupPage = () => {
 
         if (!formData.email) {
             newErrors.email = '이메일은 필수입니다';
-        } else if (!EMAIL_REGEX.test(formData.email)) {
+        } else if (!isValidEmail(formData.email)) {
             newErrors.email = '유효한 이메일 형식이 아닙니다';
         }
 
@@ -97,7 +90,7 @@ const SignupPage = () => {
             newErrors.password = '비밀번호는 필수입니다';
         } else if (formData.password.length < 8 || formData.password.length > 20) {
             newErrors.password = '비밀번호는 8~20자여야 합니다';
-        } else if (!PASSWORD_REGEX.test(formData.password)) {
+        } else if (!isValidPassword(formData.password)) {
             newErrors.password = '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다';
         }
 
@@ -113,7 +106,7 @@ const SignupPage = () => {
 
         if (!formData.phoneNumber) {
             newErrors.phoneNumber = '전화번호는 필수입니다';
-        } else if (!PHONE_REGEX.test(formData.phoneNumber)) {
+        } else if (!isValidPhoneNumber(formData.phoneNumber)) {
             newErrors.phoneNumber = '올바른 휴대폰 번호 형식이 아닙니다 (예: 010-1234-5678)';
         }
 
@@ -168,8 +161,8 @@ const SignupPage = () => {
                         <button
                             onClick={() => handleTabChange('USER')}
                             className={`flex-1 py-4 px-6 text-center font-semibold transition ${activeTab === 'USER'
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }`}
                         >
                             일반회원
@@ -177,8 +170,8 @@ const SignupPage = () => {
                         <button
                             onClick={() => handleTabChange('ACADEMY')}
                             className={`flex-1 py-4 px-6 text-center font-semibold transition ${activeTab === 'ACADEMY'
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                ? 'bg-primary-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }`}
                         >
                             기관회원
