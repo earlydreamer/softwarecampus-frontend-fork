@@ -15,7 +15,7 @@ export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@
  * 휴대폰 번호 검증 정규식
  * - 010-1234-5678 형식
  */
-export const PHONE_REGEX = /^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/;
+export const PHONE_REGEX = /^01[0-9]-[0-9]{3,4}-[0-9]{4}$/;
 
 /**
  * 이메일 유효성 검사
