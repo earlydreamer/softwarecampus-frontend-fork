@@ -87,8 +87,7 @@ const MyPage: React.FC = () => {
   // 프로필 수정 핸들러
   const handleProfileUpdate = async (data: Partial<UserProfile>) => {
     try {
-      const userId = user?.id ? Number(user.id) : undefined;
-      const updated = await updateUserProfile(userId, data);
+      const updated = await updateUserProfile(data);
       setUserProfile(updated);
       setIsEditing(false);
     } catch (error) {
@@ -129,8 +128,7 @@ const MyPage: React.FC = () => {
         // const response = await uploadProfileImage(formData);
         
         // 임시로 로컬 미리보기 URL을 프로필에 반영
-        const userId = user?.id ? Number(user.id) : undefined;
-        const updated = await updateUserProfile(userId, { profileImage: imageUrl });
+        const updated = await updateUserProfile({ profileImage: imageUrl });
         setUserProfile(updated);
       } catch (error) {
         console.error('Failed to upload profile image:', error);

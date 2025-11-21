@@ -46,15 +46,15 @@ export const fetchBoardPosts = async (
 /**
  * 게시글 상세 조회
  */
-export const fetchBoardPost = async (postId: number, userId?: string): Promise<Board> => {
-  // 실제 환경: const response = await axios.get(`/api/boards/${postId}`, { 
+export const fetchBoardPost = async (boardId: number, userId?: string): Promise<Board> => {
+  // 실제 환경: const response = await axios.get(`/api/boards/${boardId}`, { 
   //   params: { userId } // 백엔드에서 현재 사용자의 추천 여부를 확인하여 isRecommended 필드 포함
   // });
   // return response.data;
 
   await new Promise((resolve) => setTimeout(resolve, 200));
 
-  const post = mockBoardPosts.find((p) => p.id === postId);
+  const post = mockBoardPosts.find((p) => p.id === boardId);
 
   if (!post) {
     throw new Error('게시글을 찾을 수 없습니다.');
@@ -62,7 +62,7 @@ export const fetchBoardPost = async (postId: number, userId?: string): Promise<B
 
   // Mock 환경: 로컬스토리지에서 추천 여부 확인
   // 백엔드 연동 시: 서버에서 user_id와 post_id로 추천 테이블 조회하여 isRecommended 값 반환
-  const recommendKey = `recommend_${postId}_${userId || 'anonymous'}`;
+  const recommendKey = `recommend_${boardId}_${userId || 'anonymous'}`;
   const isRecommended = localStorage.getItem(recommendKey) === 'true';
 
   return {
@@ -103,15 +103,15 @@ export const createBoardPost = async (
  * 게시글 수정
  */
 export const updateBoardPost = async (
-  postId: number,
+  boardId: number,
   data: Partial<Pick<Board, 'title' | 'text' | 'category'>>
 ): Promise<Board> => {
-  // 실제 환경: const response = await axios.put(`/api/boards/${postId}`, data);
+  // 실제 환경: const response = await axios.put(`/api/boards/${boardId}`, data);
   // return response.data;
 
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const postIndex = mockBoardPosts.findIndex((p) => p.id === postId);
+  const postIndex = mockBoardPosts.findIndex((p) => p.id === boardId);
 
   if (postIndex === -1) {
     throw new Error('게시글을 찾을 수 없습니다.');
@@ -129,12 +129,12 @@ export const updateBoardPost = async (
 /**
  * 게시글 삭제
  */
-export const deleteBoardPost = async (postId: number): Promise<void> => {
-  // 실제 환경: await axios.delete(`/api/boards/${postId}`);
+export const deleteBoardPost = async (boardId: number): Promise<void> => {
+  // 실제 환경: await axios.delete(`/api/boards/${boardId}`);
 
   await new Promise((resolve) => setTimeout(resolve, 300));
 
-  const postIndex = mockBoardPosts.findIndex((p) => p.id === postId);
+  const postIndex = mockBoardPosts.findIndex((p) => p.id === boardId);
 
   if (postIndex === -1) {
     throw new Error('게시글을 찾을 수 없습니다.');
@@ -146,9 +146,9 @@ export const deleteBoardPost = async (postId: number): Promise<void> => {
 /**
  * 게시글 추천
  */
-export const recommendBoardPost = async (postId: number, userId?: string): Promise<Board> => {
+export const recommendBoardPost = async (boardId: number, userId?: string): Promise<Board> => {
   // 실제 환경: 
-  // const response = await axios.post(`/api/boards/${postId}/recommend`, { userId });
+  // const response = await axios.post(`/api/boards/${boardId}/recommend`, { userId });
   // return response.data;
   // 
   // 백엔드 구현:
@@ -161,24 +161,22 @@ export const recommendBoardPost = async (postId: number, userId?: string): Promi
 
   await new Promise((resolve) => setTimeout(resolve, 200));
 
-  const post = mockBoardPosts.find((p) => p.id === postId);
+  const post = mockBoardPosts.find((p) => p.id === boardId);
 
   if (!post) {
     throw new Error('게시글을 찾을 수 없습니다.');
   }
 
   // Mock 환경: 로컬스토리지로 중복 추천 체크
-  const recommendKey = `recommend_${postId}_${userId || 'anonymous'}`;
+  const recommendKey = `recommend_${boardId}_${userId || 'anonymous'}`;
   const alreadyRecommended = localStorage.getItem(recommendKey) === 'true';
 
   if (alreadyRecommended) {
     throw new Error('이미 추천한 게시글입니다.');
   }
 
-  // 추천 처리
-  if (post.recommendCount !== undefined) {
-    post.recommendCount += 1;
-  }
+  // 추천 처리 (undefined/null을 0으로 처리)
+  post.recommendCount = (post.recommendCount ?? 0) + 1;
   localStorage.setItem(recommendKey, 'true');
 
   return {
