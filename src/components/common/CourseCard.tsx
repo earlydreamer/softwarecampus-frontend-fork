@@ -22,7 +22,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
 
                     <div className="absolute top-3 left-3 flex gap-2">
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-500/90 text-white backdrop-blur-sm shadow-sm">
-                            {course.category.name}
+                            {course.category?.name || '카테고리'}
                         </span>
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800/80 text-white backdrop-blur-sm shadow-sm">
                             {course.format}
