@@ -188,7 +188,11 @@ const CourseDetailPage = () => {
                             <div className="flex justify-between items-center mb-6">
                                 <div className="text-slate-500 text-sm">수강료</div>
                                 <div className="text-2xl font-bold text-primary-600">
-                                    {course.cost === 0 ? "전액무료" : `${course.cost?.toLocaleString()}원`}
+                                    {course.cost === 0
+                                        ? "전액무료"
+                                        : course.cost != null
+                                            ? `${course.cost.toLocaleString()}원`
+                                            : "가격 미정"}
                                 </div>
                             </div>
 
