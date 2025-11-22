@@ -16,7 +16,8 @@ import {
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Undo, Redo, Link as LinkIcon, Image as ImageIcon,
   Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Underline as UnderlineIcon, ListTodo, X, Check
+  Underline as UnderlineIcon, ListTodo, X, Check,
+  type LucideIcon
 } from 'lucide-react';
 import '../../styles/tiptap.css';
 
@@ -138,7 +139,7 @@ const TiptapToolbar = ({ editor, onAddImage, onAddLink }: TiptapToolbarProps) =>
     onClick: () => void;
     isActive?: boolean;
     disabled?: boolean;
-    icon: any;
+    icon: LucideIcon;
     title: string;
   }) => (
     <button
