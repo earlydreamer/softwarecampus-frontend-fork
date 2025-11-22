@@ -36,22 +36,73 @@ export const sanitizeObject = <T>(obj: T): T => {
 };
 
 /**
- * URL 살균 함수
- * - javascript: 등의 위험한 프로토콜을 제거합니다.
- * - http:// 또는 https:// 로 시작하지 않으면 빈 문자열을 반환하거나 안전한 처리를 수행합니다.
+ * URL 살균 함수 (허용 목록 기반)
+ * - 안전한 프로토콜(http://, https://)과 상대 경로만 허용합니다.
+ * - javascript:, data:, vbscript:, file: 등 위험한 프로토콜을 차단합니다.
+ * - CSS background-image 등에서 악용될 수 있는 data: URI도 차단합니다.
+ * 
+ * @param url - 검증할 URL 문자열
+ * @param allowDataUri - data: URI 허용 여부 (기본값: false)
+ * @returns 안전한 URL 또는 빈 문자열
  */
-export const sanitizeUrl = (url: string): string => {
+export const sanitizeUrl = (url: string, allowDataUri: boolean = false): string => {
     if (!url) return '';
 
     // 공백 제거
     const trimmedUrl = url.trim();
 
-    // javascript: 프로토콜 체크 (대소문자 무시)
-    if (/^javascript:/i.test(trimmedUrl)) {
-        return '';
+    // 빈 문자열 체크
+    if (!trimmedUrl) return '';
+
+    // 위험한 프로토콜 블랙리스트 (추가 보안 계층)
+    const dangerousProtocols = [
+        'javascript:',
+        'vbscript:',
+        'file:',
+        'about:',
+    ];
+
+    // data: URI는 옵션에 따라 처리
+    if (!allowDataUri) {
+        dangerousProtocols.push('data:');
     }
 
-    // http:// 또는 https:// 로 시작하지 않으면 https:// 를 붙여줌 (선택 사항, 여기서는 그대로 두거나 빈 문자열 처리)
-    // 여기서는 javascript: 만 막고 나머지는 허용하되, 필요하면 프로토콜을 강제할 수 있음.
-    return trimmedUrl;
+    // 위험한 프로토콜 체크 (대소문자 무시)
+    const lowerUrl = trimmedUrl.toLowerCase();
+    for (const protocol of dangerousProtocols) {
+        if (lowerUrl.startsWith(protocol)) {
+            console.warn(`[Security] Blocked dangerous protocol: ${protocol} in URL: ${trimmedUrl.substring(0, 50)}...`);
+            return '';
+        }
+    }
+
+    // 허용 목록 기반 검증
+    // 1. http:// 또는 https://로 시작하는 절대 URL
+    if (/^https?:\/\//i.test(trimmedUrl)) {
+        return trimmedUrl;
+    }
+
+    // 2. 프로토콜 상대 URL (//example.com)
+    if (/^\/\//.test(trimmedUrl)) {
+        return trimmedUrl;
+    }
+
+    // 3. 경로 절대 URL (/path/to/resource)
+    if (/^\/[^/]/.test(trimmedUrl)) {
+        return trimmedUrl;
+    }
+
+    // 4. 상대 URL (./path 또는 ../path 또는 path)
+    if (/^\.{0,2}\//.test(trimmedUrl) || !/^[a-z][a-z0-9+.-]*:/i.test(trimmedUrl)) {
+        return trimmedUrl;
+    }
+
+    // 5. data: URI (allowDataUri가 true일 때만)
+    if (allowDataUri && /^data:image\/(png|jpg|jpeg|gif|svg\+xml|webp);base64,/i.test(trimmedUrl)) {
+        return trimmedUrl;
+    }
+
+    // 허용되지 않은 형식
+    console.warn(`[Security] Blocked URL with unrecognized format: ${trimmedUrl.substring(0, 50)}...`);
+    return '';
 };
