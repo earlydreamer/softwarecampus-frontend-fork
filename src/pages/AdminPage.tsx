@@ -682,6 +682,9 @@ const AdminPage = () => {
                 );
 
             case 'banners':
+                // 불변성을 유지하기 위해 배열을 복사한 후 정렬
+                const sortedBanners = [...banners].sort((a, b) => a.displayOrder - b.displayOrder);
+
                 return (
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
@@ -696,20 +699,20 @@ const AdminPage = () => {
                         </div>
 
                         <div className="grid gap-4">
-                            {banners.sort((a, b) => a.displayOrder - b.displayOrder).map((banner) => (
+                            {sortedBanners.map((banner, index) => (
                                 <div key={banner.id} className="glass-panel rounded-xl p-4 flex items-center gap-4">
                                     <div className="flex flex-col gap-1">
                                         <button
                                             onClick={() => handleBannerMove(banner.id, 'up')}
                                             className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500"
-                                            disabled={banner.displayOrder === 1}
+                                            disabled={index === 0}
                                         >
                                             <ArrowUp className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => handleBannerMove(banner.id, 'down')}
                                             className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500"
-                                            disabled={banner.displayOrder === banners.length}
+                                            disabled={index === sortedBanners.length - 1}
                                         >
                                             <ArrowDown className="w-4 h-4" />
                                         </button>
