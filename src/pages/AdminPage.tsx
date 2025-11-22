@@ -684,7 +684,7 @@ const AdminPage = () => {
                     </div>
                 );
 
-            case 'banners':
+            case 'banners': {
                 // 불변성을 유지하기 위해 배열을 복사한 후 정렬
                 const sortedBanners = [...banners].sort((a, b) => a.displayOrder - b.displayOrder);
 
@@ -768,6 +768,7 @@ const AdminPage = () => {
                         </div>
                     </div>
                 );
+            }
 
             default:
                 return null;
