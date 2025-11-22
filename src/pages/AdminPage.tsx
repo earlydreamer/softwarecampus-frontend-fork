@@ -88,6 +88,7 @@ const AdminPage = () => {
     useEffect(() => {
         if (!isAuthenticated) {
             navigate('/login');
+            return; // stop further checks
         }
         if (user?.accountType !== 'ADMIN' && user?.accountType !== 'ACADEMY') {
             navigate('/');
