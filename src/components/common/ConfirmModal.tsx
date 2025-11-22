@@ -78,8 +78,12 @@ const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message }: ConfirmMod
             aria-labelledby={titleId}
             aria-describedby={descriptionId}
             ref={modalRef}
+            onClick={onClose}
         >
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
