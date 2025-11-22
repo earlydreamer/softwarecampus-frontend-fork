@@ -13,13 +13,13 @@ const AcademyDetailPage = () => {
     const { data: academy, isLoading: isAcademyLoading } = useQuery({
         queryKey: ['academy', id],
         queryFn: () => fetchAcademyById(id),
-        enabled: !!id,
+        enabled: !isNaN(id) && id > 0,
     });
 
     const { data: courses, isLoading: isCoursesLoading } = useQuery({
         queryKey: ['academy-courses', id],
         queryFn: () => fetchCoursesByAcademyId(id),
-        enabled: !!id,
+        enabled: !isNaN(id) && id > 0,
     });
 
     if (isAcademyLoading) {
