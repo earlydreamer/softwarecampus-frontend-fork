@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useId } from 'react';
+import type * as React from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { X, Edit2, Upload } from 'lucide-react';
 import type { BannerData } from '../../services/mockAdminData';
 
