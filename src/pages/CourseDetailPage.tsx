@@ -19,19 +19,37 @@ const CourseDetailPage = () => {
 
     const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'qna'>('overview');
 
-    const { data: course, isLoading } = useQuery({
+    const {
+        data: course,
+        isLoading,
+        isError: isCourseError,
+        error: courseError,
+        refetch: refetchCourse
+    } = useQuery({
         queryKey: ['course', id],
         queryFn: () => fetchCourseById(id!),
         enabled: isValidId,
     });
 
-    const { data: reviews, isLoading: isReviewsLoading } = useQuery({
+    const {
+        data: reviews,
+        isLoading: isReviewsLoading,
+        isError: isReviewsError,
+        error: reviewsError,
+        refetch: refetchReviews
+    } = useQuery({
         queryKey: ['course-reviews', id],
         queryFn: () => fetchCourseReviews(id!),
         enabled: isValidId,
     });
 
-    const { data: qnas, isLoading: isQnAsLoading } = useQuery({
+    const {
+        data: qnas,
+        isLoading: isQnAsLoading,
+        isError: isQnAsError,
+        error: qnasError,
+        refetch: refetchQnAs
+    } = useQuery({
         queryKey: ['course-qnas', id],
         queryFn: () => fetchCourseQnAs(id!),
         enabled: isValidId,
@@ -62,6 +80,49 @@ const CourseDetailPage = () => {
                         >
                             과정 목록으로 돌아가기
                         </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 과정 데이터 로딩 에러 처리
+    if (isCourseError) {
+        const errorMessage = courseError instanceof Error
+            ? courseError.message
+            : '과정 정보를 불러오는 중 오류가 발생했습니다.';
+
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+                <div className="max-w-md w-full mx-4">
+                    <div className="glass-panel p-8 rounded-2xl border-2 border-orange-200 dark:border-orange-800">
+                        <div className="text-center mb-6">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+                                <svg className="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-orange-800 dark:text-orange-200 mb-2">
+                                과정 로드 실패
+                            </h3>
+                            <p className="text-orange-700 dark:text-orange-300 mb-6">
+                                {errorMessage}
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => refetchCourse()}
+                                className="flex-1 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors font-medium"
+                            >
+                                다시 시도
+                            </button>
+                            <Link
+                                to="/lectures"
+                                className="flex-1 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl transition-colors text-center font-medium"
+                            >
+                                목록으로
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -208,11 +269,59 @@ const CourseDetailPage = () => {
                                 )}
 
                                 {activeTab === 'reviews' && (
-                                    <CourseReviews reviews={reviews || []} isLoading={isReviewsLoading} />
+                                    <>
+                                        {isReviewsError ? (
+                                            <div className="text-center py-12">
+                                                <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+                                                    <svg className="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                                                    리뷰를 불러올 수 없습니다
+                                                </h3>
+                                                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                                                    {reviewsError instanceof Error ? reviewsError.message : '네트워크 오류가 발생했습니다.'}
+                                                </p>
+                                                <button
+                                                    onClick={() => refetchReviews()}
+                                                    className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium"
+                                                >
+                                                    다시 시도
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <CourseReviews reviews={reviews || []} isLoading={isReviewsLoading} />
+                                        )}
+                                    </>
                                 )}
 
                                 {activeTab === 'qna' && (
-                                    <CourseQnAs qnas={qnas || []} isLoading={isQnAsLoading} />
+                                    <>
+                                        {isQnAsError ? (
+                                            <div className="text-center py-12">
+                                                <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+                                                    <svg className="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                                                    Q&A를 불러올 수 없습니다
+                                                </h3>
+                                                <p className="text-slate-600 dark:text-slate-400 mb-4">
+                                                    {qnasError instanceof Error ? qnasError.message : '네트워크 오류가 발생했습니다.'}
+                                                </p>
+                                                <button
+                                                    onClick={() => refetchQnAs()}
+                                                    className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium"
+                                                >
+                                                    다시 시도
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <CourseQnAs qnas={qnas || []} isLoading={isQnAsLoading} />
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
