@@ -23,6 +23,17 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
         setCurrentIndex(newIndex);
     }, [currentIndex, banners.length]);
 
+    // banners 배열 길이가 변경될 때 currentIndex를 유효한 범위로 조정
+    useEffect(() => {
+        if (banners.length > 0 && currentIndex >= banners.length) {
+            // currentIndex가 범위를 벗어나면 마지막 유효한 인덱스로 설정
+            setCurrentIndex(banners.length - 1);
+        } else if (banners.length === 0) {
+            // 배너가 모두 제거되면 0으로 리셋
+            setCurrentIndex(0);
+        }
+    }, [banners.length, currentIndex]);
+
     useEffect(() => {
         if (!loading && banners.length > 0) {
             const timer = setTimeout(goToNext, 5000);
@@ -37,6 +48,11 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
     if (banners.length === 0) return null;
 
     const currentBanner = banners[currentIndex];
+
+    // 추가 안전장치: currentIndex가 여전히 범위를 벗어난 경우
+    if (!currentBanner) {
+        return null;
+    }
 
     return (
         <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden rounded-3xl shadow-2xl">
