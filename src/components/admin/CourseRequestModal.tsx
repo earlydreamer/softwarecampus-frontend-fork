@@ -287,7 +287,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                             <input
                                 type="number"
                                 value={form.cost || 0}
-                                onChange={e => setForm({ ...form, cost: parseInt(e.target.value) || 0 })}
+                                onChange={e => setForm({ ...form, cost: parseInt(e.target.value, 10) || 0 })}
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
                             />
                         </div>
