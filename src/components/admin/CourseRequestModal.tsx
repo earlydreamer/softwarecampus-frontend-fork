@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Edit2, Upload } from 'lucide-react';
 import type { CourseApprovalRequest } from '../../services/mockAdminData';
 
@@ -38,6 +38,9 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     });
     const [error, setError] = useState<string | null>(null);
 
+    // blob URL을 추적하기 위한 ref
+    const blobUrlRef = useRef<string | null>(null);
+
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
@@ -65,24 +68,28 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         }
     }, [isOpen, initialData]);
 
-    // Cleanup object URL on unmount or when imageUrl changes
+    // Cleanup blob URL on unmount only
     useEffect(() => {
         return () => {
-            if (form.imageUrl && form.imageUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(form.imageUrl);
+            // unmount 시에만 ref에 저장된 blob URL revoke
+            if (blobUrlRef.current) {
+                URL.revokeObjectURL(blobUrlRef.current);
+                blobUrlRef.current = null;
             }
         };
-    }, [form.imageUrl]);
+    }, []); // 빈 배열: unmount 시에만 실행
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // Revoke old URL if it exists
-            if (form.imageUrl && form.imageUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(form.imageUrl);
+            // 이전 blob URL이 있으면 revoke (ref에 저장된 것만)
+            if (blobUrlRef.current) {
+                URL.revokeObjectURL(blobUrlRef.current);
             }
 
             const imageUrl = URL.createObjectURL(file);
+            blobUrlRef.current = imageUrl; // ref에 새 blob URL 저장
+
             setForm(prev => ({
                 ...prev,
                 imageFile: file,
