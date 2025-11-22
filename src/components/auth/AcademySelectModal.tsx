@@ -17,8 +17,13 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showRegisterForm, setShowRegisterForm] = useState(false);
-    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-    const [filePreviewUrls, setFilePreviewUrls] = useState<{ [key: number]: string }>({});
+    interface UploadedFile {
+        id: string;
+        file: File;
+    }
+
+    const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+    const [filePreviewUrls, setFilePreviewUrls] = useState<{ [key: string]: string }>({});
     const [isDragging, setIsDragging] = useState(false);
 
     // 모달 열릴 때 body 스크롤 방지 및 포커스 관리
@@ -102,16 +107,18 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFiles = Array.from(e.target.files);
-            const startIndex = uploadedFiles.length;
+            const newFiles = Array.from(e.target.files).map(file => ({
+                id: Math.random().toString(36).substr(2, 9),
+                file
+            }));
 
-            newFiles.forEach((file, index) => {
+            newFiles.forEach(({ id, file }) => {
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         setFilePreviewUrls(prev => ({
                             ...prev,
-                            [startIndex + index]: reader.result as string
+                            [id]: reader.result as string
                         }));
                     };
                     reader.readAsDataURL(file);
@@ -137,16 +144,18 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
         setIsDragging(false);
 
         if (e.dataTransfer.files) {
-            const newFiles = Array.from(e.dataTransfer.files);
-            const startIndex = uploadedFiles.length;
+            const newFiles = Array.from(e.dataTransfer.files).map(file => ({
+                id: Math.random().toString(36).substr(2, 9),
+                file
+            }));
 
-            newFiles.forEach((file, index) => {
+            newFiles.forEach(({ id, file }) => {
                 if (file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         setFilePreviewUrls(prev => ({
                             ...prev,
-                            [startIndex + index]: reader.result as string
+                            [id]: reader.result as string
                         }));
                     };
                     reader.readAsDataURL(file);
@@ -157,11 +166,11 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
         }
     };
 
-    const handleRemoveFile = (index: number) => {
-        setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    const handleRemoveFile = (id: string) => {
+        setUploadedFiles(prev => prev.filter(item => item.id !== id));
         setFilePreviewUrls(prev => {
             const newUrls = { ...prev };
-            delete newUrls[index];
+            delete newUrls[id];
             return newUrls;
         });
     };
@@ -313,17 +322,17 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 {/* 업로드된 파일 목록 */}
                                 {uploadedFiles.length > 0 && (
                                     <div className="mt-4 space-y-2">
-                                        {uploadedFiles.map((file, index) => (
+                                        {uploadedFiles.map((item) => (
                                             <div
-                                                key={index}
+                                                key={item.id}
                                                 className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
                                             >
                                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                                     {/* 이미지 미리보기 또는 파일 아이콘 */}
-                                                    {isImageFile(file) && filePreviewUrls[index] ? (
+                                                    {isImageFile(item.file) && filePreviewUrls[item.id] ? (
                                                         <img
-                                                            src={filePreviewUrls[index]}
-                                                            alt={file.name}
+                                                            src={filePreviewUrls[item.id]}
+                                                            alt={item.file.name}
                                                             className="w-16 h-16 object-cover rounded-md flex-shrink-0 border border-slate-200 dark:border-slate-600"
                                                         />
                                                     ) : (
@@ -343,16 +352,16 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                                     )}
                                                     <div className="flex-1 min-w-0">
                                                         <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                                                            {file.name}
+                                                            {item.file.name}
                                                         </p>
                                                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                            {formatFileSize(file.size)}
+                                                            {formatFileSize(item.file.size)}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleRemoveFile(index)}
+                                                    onClick={() => handleRemoveFile(item.id)}
                                                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition"
                                                 >
                                                     <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
