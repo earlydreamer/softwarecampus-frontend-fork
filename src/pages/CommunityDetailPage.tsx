@@ -75,11 +75,14 @@ const CommunityDetailPage = () => {
     // 댓글 수정 mutation
     const updateCommentMutation = useMutation({
         mutationFn: ({ commentId, text }: { commentId: number; text: string }) =>
-            updateComment(commentId, text),
+            updateComment(commentId, postIdNumber, text),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['comments', postIdNumber] });
             setEditingCommentId(null);
             setEditingContent('');
+        },
+        onError: (error: Error) => {
+            alert(error.message || '댓글 수정에 실패했습니다.');
         },
     });
 
