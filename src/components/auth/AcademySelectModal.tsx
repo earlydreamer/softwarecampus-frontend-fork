@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import { useState, useEffect, useRef, useId } from 'react';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
