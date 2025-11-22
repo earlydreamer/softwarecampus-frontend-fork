@@ -51,34 +51,39 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                             </div>
                         ))
                     ) : (
-                        posts.map((post) => (
-                            <Link
-                                to={`/community/${post.id}`}
-                                key={post.id}
-                                className="glass-panel p-6 rounded-xl hover:scale-[1.02] transition-all duration-300 group"
-                            >
-                                <div className="flex items-center justify-between mb-4">
-                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${boardColors[post.board || '공지사항']}`}>
-                                        {post.board || '공지사항'}
-                                    </span>
-                                    <span className="text-xs text-slate-400">{post.createdAt}</span>
-                                </div>
+                        posts.map((post) => {
+                            const boardName = post.board || '공지사항';
+                            const boardClass = boardColors[boardName] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3 line-clamp-1 group-hover:text-primary-600 transition-colors">
-                                    {post.title}
-                                </h3>
+                            return (
+                                <Link
+                                    to={`/community/${post.id}`}
+                                    key={post.id}
+                                    className="glass-panel p-6 rounded-xl hover:scale-[1.02] transition-all duration-300 group"
+                                >
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${boardClass}`}>
+                                            {boardName}
+                                        </span>
+                                        <span className="text-xs text-slate-400">{post.createdAt}</span>
+                                    </div>
 
-                                <div className="flex justify-between items-center text-sm text-slate-500">
-                                    <span className="font-medium">{post.author}</span>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1">
-                                            <ThumbsUp className="w-4 h-4" />
-                                            <span>{post.recommendations}</span>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3 line-clamp-1 group-hover:text-primary-600 transition-colors">
+                                        {post.title}
+                                    </h3>
+
+                                    <div className="flex justify-between items-center text-sm text-slate-500">
+                                        <span className="font-medium">{post.author}</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1">
+                                                <ThumbsUp className="w-4 h-4" />
+                                                <span>{post.recommendations}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        ))
+                                </Link>
+                            );
+                        })
                     )}
                 </div>
             )}
