@@ -11,26 +11,62 @@ import CourseQnAs from '../components/course/CourseQnAs';
 
 const CourseDetailPage = () => {
     const { courseId } = useParams<{ courseId: string }>();
-    const id = Number(courseId);
+
+    // courseId 명시적 검증
+    const parsedId = courseId ? parseInt(courseId, 10) : NaN;
+    const isValidId = !isNaN(parsedId) && parsedId > 0;
+    const id = isValidId ? parsedId : null;
+
     const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'qna'>('overview');
 
     const { data: course, isLoading } = useQuery({
         queryKey: ['course', id],
-        queryFn: () => fetchCourseById(id),
-        enabled: !!id,
+        queryFn: () => fetchCourseById(id!),
+        enabled: isValidId,
     });
 
     const { data: reviews, isLoading: isReviewsLoading } = useQuery({
         queryKey: ['course-reviews', id],
-        queryFn: () => fetchCourseReviews(id),
-        enabled: !!id,
+        queryFn: () => fetchCourseReviews(id!),
+        enabled: isValidId,
     });
 
     const { data: qnas, isLoading: isQnAsLoading } = useQuery({
         queryKey: ['course-qnas', id],
-        queryFn: () => fetchCourseQnAs(id),
-        enabled: !!id,
+        queryFn: () => fetchCourseQnAs(id!),
+        enabled: isValidId,
     });
+
+    // 유효하지 않은 ID 처리
+    if (!isValidId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+                <div className="max-w-md w-full mx-4">
+                    <div className="glass-panel p-8 rounded-2xl border-2 border-red-200 dark:border-red-800">
+                        <div className="text-center mb-6">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+                                <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-red-800 dark:text-red-200 mb-2">
+                                유효하지 않은 과정 ID
+                            </h3>
+                            <p className="text-red-700 dark:text-red-300 mb-6">
+                                {courseId ? `"${courseId}"는 올바른 과정 ID가 아닙니다.` : '과정 ID가 제공되지 않았습니다.'}
+                            </p>
+                        </div>
+                        <Link
+                            to="/lectures"
+                            className="block w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors text-center font-medium"
+                        >
+                            과정 목록으로 돌아가기
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (
