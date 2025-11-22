@@ -2,14 +2,20 @@
  * 관리자 페이지 목업 데이터
  */
 
+// 과정 대상 타입
+export type CourseTarget = '취업예정자' | '재직자';
+
+// 과정 형식 타입
+export type CourseFormat = '온라인' | '오프라인';
+
 export interface CourseApprovalRequest {
     id: number;
     courseTitle: string;
     academyId: number;
     academyName: string;
     category: string;
-    target: '취업예정자' | '재직자';
-    format: '온라인' | '오프라인';
+    target: CourseTarget;
+    format: CourseFormat;
     requestType: '등록' | '삭제' | '수정';
     requestDate: string;
     status: '대기' | '승인' | '거부';

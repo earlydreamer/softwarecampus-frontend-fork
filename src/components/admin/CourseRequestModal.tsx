@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Edit2, Upload } from 'lucide-react';
-import type { CourseApprovalRequest } from '../../services/mockAdminData';
+import type { CourseApprovalRequest, CourseTarget } from '../../services/mockAdminData';
 
 export interface CourseFormState extends Partial<CourseApprovalRequest> {
     imageFile?: File;
@@ -219,7 +219,9 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                             </label>
                             <select
                                 value={form.target || '취업예정자'}
-                                onChange={e => setForm({ ...form, target: e.target.value as any })}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                                    setForm({ ...form, target: e.target.value as CourseTarget })
+                                }
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
                             >
                                 <option value="취업예정자">취업예정자</option>
