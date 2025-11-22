@@ -71,14 +71,18 @@ const Header = () => {
                                     <ChevronDown className="w-4 h-4" />
                                 </Link>
                             ) : (
-                                <button className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-primary-600 py-2">
+                                <button
+                                    className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-primary-600 py-2 focus:outline-none focus:text-primary-600"
+                                    aria-haspopup="true"
+                                    aria-expanded="false"
+                                >
                                     {node.label}
                                     <ChevronDown className="w-4 h-4" />
                                 </button>
                             )}
 
                             {/* Dropdown */}
-                            <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                            <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus-within:translate-y-0">
                                 <div className="w-64 bg-white rounded-xl shadow-xl border border-slate-100 p-2">
                                     {node.children?.map((child) => (
                                         <div key={child.label} className="relative group/sub">
@@ -99,7 +103,7 @@ const Header = () => {
 
                                             {/* Sub Dropdown */}
                                             {child.children && (
-                                                <div className="absolute left-full top-0 pl-2 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible transition-all duration-200 transform translate-x-2 group-hover/sub:translate-x-0">
+                                                <div className="absolute left-full top-0 pl-2 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible group-focus-within/sub:opacity-100 group-focus-within/sub:visible transition-all duration-200 transform translate-x-2 group-hover/sub:translate-x-0 group-focus-within/sub:translate-x-0">
                                                     <div className="w-56 bg-white rounded-xl shadow-xl border border-slate-100 p-2 max-h-[80vh] overflow-y-auto">
                                                         {child.children.map((subChild) => (
                                                             <Link
@@ -132,7 +136,7 @@ const Header = () => {
                                 <ChevronDown className="w-4 h-4" />
                             </span>
                         </NavLink>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus-within:translate-y-0">
                             <div className="w-40 bg-white rounded-xl shadow-xl border border-slate-100 p-2">
                                 {rawCommunityNav.children?.map((child) => (
                                     <Link
@@ -188,6 +192,8 @@ const Header = () => {
                 <button
                     className="lg:hidden p-2 text-slate-600 z-50 relative"
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    aria-label={isMobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
+                    aria-expanded={isMobileMenuOpen}
                 >
                     {isMobileMenuOpen ? <X /> : <Menu />}
                 </button>

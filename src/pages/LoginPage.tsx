@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { AlertCircle } from 'lucide-react';
@@ -10,6 +10,9 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const emailId = useId();
+    const passwordId = useId();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,9 +57,10 @@ const LoginPage = () => {
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">이메일</label>
+                        <label htmlFor={emailId} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">이메일</label>
                         <input
                             type="email"
+                            id={emailId}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
@@ -65,9 +69,10 @@ const LoginPage = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">비밀번호</label>
+                        <label htmlFor={passwordId} className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">비밀번호</label>
                         <input
                             type="password"
+                            id={passwordId}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"

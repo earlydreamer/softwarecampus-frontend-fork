@@ -391,10 +391,10 @@ const AdminPage = () => {
                                 <table className="w-full">
                                     <thead className="bg-slate-50 dark:bg-slate-900/50">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">과정명</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">훈련기관</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">카테고리</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">요청일</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">과정명</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">훈련기관</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">카테고리</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">요청일</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">상태</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">작업</th>
                                         </tr>
@@ -439,6 +439,7 @@ const AdminPage = () => {
                                                                 onClick={() => openCourseModal(req)}
                                                                 className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
                                                                 title="수정 요청"
+                                                                aria-label="수정 요청"
                                                             >
                                                                 <Edit2 className="w-4 h-4" />
                                                             </button>
@@ -446,6 +447,7 @@ const AdminPage = () => {
                                                                 <button
                                                                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                                     title="삭제 요청"
+                                                                    aria-label="삭제 요청"
                                                                 >
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
@@ -581,6 +583,7 @@ const AdminPage = () => {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
                                     type="text"
+                                    aria-label="회원 검색"
                                     placeholder="이름 또는 이메일 검색"
                                     value={userSearchTerm}
                                     onChange={(e) => setUserSearchTerm(e.target.value)}
@@ -594,12 +597,12 @@ const AdminPage = () => {
                                 <table className="w-full">
                                     <thead className="bg-slate-50 dark:bg-slate-900/50">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">회원명</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">이메일</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">구분</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">가입일</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">상태</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">작업</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">회원명</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">이메일</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">구분</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">가입일</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">상태</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">작업</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -625,7 +628,7 @@ const AdminPage = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <button className="text-slate-400 hover:text-slate-600">
+                                                    <button className="text-slate-400 hover:text-slate-600" aria-label="더 보기">
                                                         <MoreVertical className="w-4 h-4" />
                                                     </button>
                                                 </td>
@@ -647,12 +650,12 @@ const AdminPage = () => {
                                 <table className="w-full">
                                     <thead className="bg-slate-50 dark:bg-slate-900/50">
                                         <tr>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">기관명</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">사업자번호</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">연락처</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">등록 과정</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">상태</th>
-                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">작업</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">기관명</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">사업자번호</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">연락처</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">등록 과정</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">상태</th>
+                                            <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">작업</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -668,7 +671,7 @@ const AdminPage = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <button className="text-slate-400 hover:text-slate-600">
+                                                    <button className="text-slate-400 hover:text-slate-600" aria-label="더 보기">
                                                         <MoreVertical className="w-4 h-4" />
                                                     </button>
                                                 </td>
@@ -706,6 +709,7 @@ const AdminPage = () => {
                                             onClick={() => handleBannerMove(banner.id, 'up')}
                                             className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500"
                                             disabled={index === 0}
+                                            aria-label="위로 이동"
                                         >
                                             <ArrowUp className="w-4 h-4" />
                                         </button>
@@ -713,6 +717,7 @@ const AdminPage = () => {
                                             onClick={() => handleBannerMove(banner.id, 'down')}
                                             className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-slate-500"
                                             disabled={index === sortedBanners.length - 1}
+                                            aria-label="아래로 이동"
                                         >
                                             <ArrowDown className="w-4 h-4" />
                                         </button>
@@ -746,12 +751,14 @@ const AdminPage = () => {
                                         <button
                                             onClick={() => openBannerModal(banner)}
                                             className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                                            aria-label="배너 수정"
                                         >
                                             <Edit2 className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => handleBannerDelete(banner.id)}
                                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            aria-label="배너 삭제"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -788,10 +795,12 @@ const AdminPage = () => {
                                 </div>
                             </div>
 
-                            <nav className="space-y-1">
+                            <nav className="space-y-1" role="tablist" aria-orientation="vertical">
                                 {menuItems.map((item) => (
                                     <button
                                         key={item.id}
+                                        role="tab"
+                                        aria-selected={activeTab === item.id}
                                         onClick={() => setActiveTab(item.id)}
                                         className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === item.id
                                             ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'

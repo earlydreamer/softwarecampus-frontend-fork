@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
 import { mockAcademies } from '../../services/mockAcademyData';
@@ -10,16 +10,67 @@ interface AcademySelectModalProps {
 }
 
 const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalProps) => {
+    const titleId = useId();
+    const modalRef = useRef<HTMLDivElement>(null);
+    const previousFocusRef = useRef<HTMLElement | null>(null);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [showRegisterForm, setShowRegisterForm] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [filePreviewUrls, setFilePreviewUrls] = useState<{ [key: number]: string }>({});
     const [isDragging, setIsDragging] = useState(false);
 
-    // 모달 열릴 때 body 스크롤 방지
+    // 모달 열릴 때 body 스크롤 방지 및 포커스 관리
     useEffect(() => {
         if (isOpen) {
+            // 이전 포커스 저장
+            previousFocusRef.current = document.activeElement as HTMLElement;
             document.body.style.overflow = 'hidden';
+
+            // 모달 내부로 포커스 이동
+            const timer = setTimeout(() => {
+                modalRef.current?.focus();
+            }, 0);
+
+            const handleKeyDown = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onClose();
+                }
+
+                if (e.key === 'Tab' && modalRef.current) {
+                    const focusableElements = modalRef.current.querySelectorAll(
+                        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                    );
+
+                    if (focusableElements.length === 0) return;
+
+                    const firstElement = focusableElements[0] as HTMLElement;
+                    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstElement) {
+                            e.preventDefault();
+                            lastElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastElement) {
+                            e.preventDefault();
+                            firstElement.focus();
+                        }
+                    }
+                }
+            };
+
+            document.addEventListener('keydown', handleKeyDown);
+
+            return () => {
+                clearTimeout(timer);
+                document.removeEventListener('keydown', handleKeyDown);
+                document.body.style.overflow = 'unset';
+                // 포커스 복원
+                previousFocusRef.current?.focus();
+            };
         } else {
             document.body.style.overflow = 'unset';
             setShowRegisterForm(false);
@@ -27,26 +78,6 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
             setUploadedFiles([]);
             setFilePreviewUrls({});
         }
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [isOpen]);
-
-    // Escape 키로 모달 닫기
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                onClose();
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener('keydown', handleEscape);
-        }
-
-        return () => {
-            document.removeEventListener('keydown', handleEscape);
-        };
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
@@ -150,12 +181,20 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
         <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={handleBackdropClick}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            ref={modalRef}
+            tabIndex={-1}
         >
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
                 {/* 헤더 */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        <h2
+                            id={titleId}
+                            className="text-2xl font-bold text-slate-900 dark:text-white"
+                        >
                             {showRegisterForm ? '기관 등록 요청' : '소속 기관 선택'}
                         </h2>
                         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
@@ -229,8 +268,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     className={`border-2 border-dashed rounded-lg p-6 text-center transition ${isDragging
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                            : 'border-slate-300 dark:border-slate-600 hover:border-primary-400'
+                                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                        : 'border-slate-300 dark:border-slate-600 hover:border-primary-400'
                                         }`}
                                 >
                                     <input

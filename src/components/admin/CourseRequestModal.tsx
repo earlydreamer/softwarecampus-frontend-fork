@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, Edit2, Upload } from 'lucide-react';
 import type { CourseApprovalRequest, CourseTarget } from '../../services/mockAdminData';
 
@@ -19,6 +19,10 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     onSubmit,
     initialData
 }) => {
+    const titleId = useId();
+    const modalRef = useRef<HTMLDivElement>(null);
+    const previousFocusRef = useRef<HTMLElement | null>(null);
+
     const [form, setForm] = useState<CourseFormState>({
         courseTitle: '',
         category: '프론트엔드',
@@ -43,6 +47,14 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
 
     useEffect(() => {
         if (isOpen) {
+            // 모달이 열릴 때 현재 포커스된 요소 저장
+            previousFocusRef.current = document.activeElement as HTMLElement;
+
+            // 모달 내부로 포커스 이동 (접근성)
+            const timer = setTimeout(() => {
+                modalRef.current?.focus();
+            }, 0);
+
             if (initialData) {
                 setForm({ ...initialData });
             } else {
@@ -65,8 +77,47 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     imageUrl: ''
                 });
             }
+
+            const handleKeyDown = (e: KeyboardEvent) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    onClose();
+                }
+
+                if (e.key === 'Tab' && modalRef.current) {
+                    const focusableElements = modalRef.current.querySelectorAll(
+                        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                    );
+
+                    if (focusableElements.length === 0) return;
+
+                    const firstElement = focusableElements[0] as HTMLElement;
+                    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstElement) {
+                            e.preventDefault();
+                            lastElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastElement) {
+                            e.preventDefault();
+                            firstElement.focus();
+                        }
+                    }
+                }
+            };
+
+            document.addEventListener('keydown', handleKeyDown);
+
+            return () => {
+                clearTimeout(timer);
+                document.removeEventListener('keydown', handleKeyDown);
+                // 모달이 닫힐 때 이전 포커스 복원
+                previousFocusRef.current?.focus();
+            };
         }
-    }, [isOpen, initialData]);
+    }, [isOpen, initialData, onClose]);
 
     // Cleanup blob URL on unmount only
     useEffect(() => {
@@ -113,10 +164,20 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     const isEditing = !!initialData;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            ref={modalRef}
+            tabIndex={-1}
+        >
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                    <h3
+                        id={titleId}
+                        className="text-lg font-bold text-slate-900 dark:text-white"
+                    >
                         {isEditing ? '과정 수정 요청' : '과정 등록 요청'}
                     </h3>
                     <button
