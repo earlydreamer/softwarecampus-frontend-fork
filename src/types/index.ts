@@ -89,6 +89,15 @@ export interface CourseCategory {
     description?: string;
 }
 
+// 커리큘럼 정보 (백엔드 CourseCurriculum 엔티티와 일치)
+export interface CourseCurriculum {
+    id?: number;
+    chapterNumber: number;      // 백엔드: int chapterNumber
+    chapterName: string;         // 백엔드: String chapterName
+    chapterDetail?: string;      // 백엔드: String chapterDetail (TEXT)
+    chapterTime: number;         // 백엔드: int chapterTime (시간)
+}
+
 export interface Course {
     id: number;
     name: string; // 백엔드 필드
@@ -107,6 +116,8 @@ export interface Course {
     requirement?: string;
     isApproved: ApprovalStatus;
     approvedAt?: string;
+    // 커리큘럼 정보 (백엔드: List<CourseCurriculum> curriculums)
+    curriculums?: CourseCurriculum[];
     // UI 표시용 추가 필드 (백엔드에 없음)
     rating?: number;
     reviewCount?: number;
