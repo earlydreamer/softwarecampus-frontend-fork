@@ -1,4 +1,6 @@
 
+import { Link } from 'react-router-dom';
+
 const Footer = () => {
     return (
         <footer className="bg-slate-900 text-slate-300 py-12">
@@ -14,19 +16,19 @@ const Footer = () => {
                     <div>
                         <h4 className="text-white font-semibold mb-4">교육 과정</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><a href="#" className="hover:text-white transition-colors">프론트엔드</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">백엔드</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">클라우드</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">AI/빅데이터</a></li>
+                            <li><Link to="/lectures?category=frontend" className="hover:text-white transition-colors">프론트엔드</Link></li>
+                            <li><Link to="/lectures?category=backend" className="hover:text-white transition-colors">백엔드</Link></li>
+                            <li><Link to="/lectures?category=cloud" className="hover:text-white transition-colors">클라우드</Link></li>
+                            <li><Link to="/lectures?category=ai" className="hover:text-white transition-colors">AI/빅데이터</Link></li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="text-white font-semibold mb-4">고객지원</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><a href="#" className="hover:text-white transition-colors">공지사항</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">자주 묻는 질문</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">1:1 문의</a></li>
-                            <li><a href="#" className="hover:text-white transition-colors">오시는 길</a></li>
+                            <li><Link to="/community?category=notice" className="hover:text-white transition-colors">공지사항</Link></li>
+                            <li><Link to="/faq" className="hover:text-white transition-colors">자주 묻는 질문</Link></li>
+                            <li><Link to="/inquiry" className="hover:text-white transition-colors">1:1 문의</Link></li>
+                            <li><Link to="/location" className="hover:text-white transition-colors">오시는 길</Link></li>
                         </ul>
                     </div>
                     <div>
