@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
     return (
-        <footer className="bg-slate-900 text-slate-300 py-12">
+        <footer className="bg-slate-900 text-slate-300 py-12" aria-label="Site footer">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                     <div>
@@ -13,24 +13,24 @@ const Footer = () => {
                             소프트웨어캠퍼스와 함께하세요.
                         </p>
                     </div>
-                    <div>
+                    <nav aria-label="Courses">
                         <h4 className="text-white font-semibold mb-4">교육 과정</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to="/lectures?category=frontend" className="hover:text-white transition-colors">프론트엔드</Link></li>
-                            <li><Link to="/lectures?category=backend" className="hover:text-white transition-colors">백엔드</Link></li>
-                            <li><Link to="/lectures?category=cloud" className="hover:text-white transition-colors">클라우드</Link></li>
-                            <li><Link to="/lectures?category=ai" className="hover:text-white transition-colors">AI/빅데이터</Link></li>
+                            <li><Link to="/lectures?category=frontend" className="hover:text-white transition-colors" aria-label="프론트엔드 교육 과정">프론트엔드</Link></li>
+                            <li><Link to="/lectures?category=backend" className="hover:text-white transition-colors" aria-label="백엔드 교육 과정">백엔드</Link></li>
+                            <li><Link to="/lectures?category=cloud" className="hover:text-white transition-colors" aria-label="클라우드 교육 과정">클라우드</Link></li>
+                            <li><Link to="/lectures?category=ai" className="hover:text-white transition-colors" aria-label="AI 및 빅데이터 교육 과정">AI/빅데이터</Link></li>
                         </ul>
-                    </div>
-                    <div>
+                    </nav>
+                    <nav aria-label="Support">
                         <h4 className="text-white font-semibold mb-4">고객지원</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to="/community?category=notice" className="hover:text-white transition-colors">공지사항</Link></li>
-                            <li><Link to="/faq" className="hover:text-white transition-colors">자주 묻는 질문</Link></li>
-                            <li><Link to="/inquiry" className="hover:text-white transition-colors">1:1 문의</Link></li>
-                            <li><Link to="/location" className="hover:text-white transition-colors">오시는 길</Link></li>
+                            <li><Link to="/community?category=notice" className="hover:text-white transition-colors" aria-label="공지사항 확인하기">공지사항</Link></li>
+                            <li><Link to="/faq" className="hover:text-white transition-colors" aria-label="자주 묻는 질문 확인하기">자주 묻는 질문</Link></li>
+                            <li><Link to="/inquiry" className="hover:text-white transition-colors" aria-label="1대1 문의하기">1:1 문의</Link></li>
+                            <li><Link to="/location" className="hover:text-white transition-colors" aria-label="오시는 길 확인하기">오시는 길</Link></li>
                         </ul>
-                    </div>
+                    </nav>
                     <div>
                         <h4 className="text-white font-semibold mb-4">Contact</h4>
                         <ul className="space-y-2 text-sm">
