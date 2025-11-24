@@ -40,5 +40,10 @@ COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 # 80 포트 노출
 EXPOSE 80
 
+# Health Check 설정
+# 컨테이너가 정상적으로 동작하는지 주기적으로 확인합니다.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
 # Nginx 시작
 CMD ["nginx", "-g", "daemon off;"]
