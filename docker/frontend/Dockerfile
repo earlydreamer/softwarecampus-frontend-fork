@@ -19,6 +19,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # 의존성 설치
+# npm ci: lock 파일 기준 정확한 설치 (프로덕션 권장)
 RUN npm ci
 
 # 소스 코드 복사
