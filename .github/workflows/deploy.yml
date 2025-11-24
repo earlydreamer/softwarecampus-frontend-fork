@@ -19,8 +19,14 @@ jobs:
         cache: 'npm'
 
     - name: Create .env file
+      env:
+        FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
       run: |
-        echo "${{ secrets.FRONTEND_ENV }}" > .env
+        if [ -z "$FRONTEND_ENV" ]; then
+          echo "Error: secrets.FRONTEND_ENV is missing or empty." >&2
+          exit 1
+        fi
+        echo "$FRONTEND_ENV" > .env
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -49,6 +55,8 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          set -euo pipefail
+          
           # 변수 정의
           IMAGE_NAME="app:latest"
           CONTAINER_NAME="softcampus-frontend"
@@ -57,7 +65,10 @@ jobs:
           NETWORK_NAME="softcampus-network"
 
           echo "Loading new image..."
-          gunzip -c app.tar.gz | docker load
+          if ! gunzip -c app.tar.gz | docker load; then
+            echo "Error: Failed to load Docker image from app.tar.gz" >&2
+            exit 1
+          fi
 
           echo "Managing containers..."
           
