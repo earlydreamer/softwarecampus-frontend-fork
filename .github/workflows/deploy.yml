@@ -1,3 +1,13 @@
+# ==============================================================================
+# [GitHub Actions - EC2 배포 워크플로우]
+#
+# 목적: React 프론트엔드 애플리케이션을 Docker 컨테이너로 빌드하고 EC2에 배포
+# 트리거: main 브랜치에 푸시될 때 자동 실행
+# 주요 기능:
+#   - 환경변수 주입 및 Docker 이미지 빌드
+#   - EC2로 이미지 전송 및 무중단 배포
+#   - Health Check 및 자동 롤백
+# ==============================================================================
 name: Deploy to EC2
 
 on:
@@ -9,30 +19,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # --------------------------------------------------------------------------
+    # 1. 소스 코드 체크아웃
+    # GitHub 저장소의 코드를 러너로 가져옵니다.
+    # --------------------------------------------------------------------------
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-
+    # --------------------------------------------------------------------------
+    # 2. 환경변수 파일 생성
+    # [환경변수 주입 전략]
+    # Vite는 빌드 시점에 .env 파일을 읽어 환경변수를 정적 파일에 포함시킵니다.
+    # 따라서 런타임 환경변수(-e 옵션)는 불필요하며, 빌드 전에 적절한 .env를 생성해야 합니다.
+    # 
+    # TODO: 브랜치별 환경변수 분기 (예시)
+    # FRONTEND_ENV: ${{ github.ref == 'refs/heads/main' && secrets.FRONTEND_ENV_PROD || secrets.FRONTEND_ENV_DEV }}
+    # --------------------------------------------------------------------------
     - name: Create .env file
+      env:
+        FRONTEND_ENV: ${{ secrets.FRONTEND_ENV }}
       run: |
-        echo "${{ secrets.FRONTEND_ENV }}" > .env
+        if [ -z "$FRONTEND_ENV" ]; then
+          echo "Error: secrets.FRONTEND_ENV is missing or empty." >&2
+          exit 1
+        fi
+        echo "$FRONTEND_ENV" > .env
 
+    # --------------------------------------------------------------------------
+    # 3. Docker Buildx 설정
+    # 멀티 플랫폼 빌드 및 캐싱을 지원하는 Docker Buildx를 설정합니다.
+    # --------------------------------------------------------------------------
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    # --------------------------------------------------------------------------
+    # 4. Docker 이미지 빌드
+    # Multi-stage Dockerfile을 사용하여 경량화된 프로덕션 이미지를 생성합니다.
+    # - Build Stage: Node.js로 React 앱 빌드 (Docker 내부에서 실행)
+    # - Serve Stage: Nginx로 정적 파일 서빙
+    # --------------------------------------------------------------------------
     - name: Build Docker Image
       run: |
         docker build -f docker/frontend/Dockerfile -t app:latest .
 
+    # --------------------------------------------------------------------------
+    # 5. Docker 이미지 저장
+    # 빌드된 이미지를 .tar.gz 파일로 압축하여 EC2로 전송할 준비를 합니다.
+    # (외부 레지스트리 없이 직접 전송하는 방식)
+    # --------------------------------------------------------------------------
     - name: Save Docker Image
       run: |
         docker save app:latest | gzip > app.tar.gz
 
+    # --------------------------------------------------------------------------
+    # 6. EC2로 이미지 파일 전송
+    # SCP를 사용하여 압축된 이미지 파일을 EC2 인스턴스로 복사합니다.
+    # --------------------------------------------------------------------------
     - name: Copy Image to EC2
       uses: appleboy/scp-action@v0.1.7
       with:
@@ -42,6 +84,15 @@ jobs:
         source: "app.tar.gz"
         target: "/home/${{ secrets.EC2_USERNAME }}"
 
+    # --------------------------------------------------------------------------
+    # 7. EC2에서 배포 실행
+    # SSH로 EC2에 접속하여 다음 작업을 수행합니다:
+    #   1) 이미지 로드
+    #   2) 기존 컨테이너 백업
+    #   3) 새 컨테이너 실행
+    #   4) Health Check
+    #   5) 성공 시 정리 / 실패 시 롤백
+    # --------------------------------------------------------------------------
     - name: Deploy on EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -49,6 +100,9 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # Bash strict mode: 에러 발생 시 즉시 중단
+          set -euo pipefail
+          
           # 변수 정의
           IMAGE_NAME="app:latest"
           CONTAINER_NAME="softcampus-frontend"
@@ -56,26 +110,52 @@ jobs:
           PORT=10080
           NETWORK_NAME="softcampus-network"
 
+          # ------------------------------------------------------------------
+          # Step 1: Docker 이미지 로드
+          # 전송받은 .tar.gz 파일을 압축 해제하여 Docker 이미지로 로드합니다.
+          # ------------------------------------------------------------------
           echo "Loading new image..."
-          gunzip -c app.tar.gz | docker load
+          if ! gunzip -c app.tar.gz | docker load; then
+            echo "Error: Failed to load Docker image from app.tar.gz" >&2
+            exit 1
+          fi
 
           echo "Managing containers..."
           
-          # 0. 네트워크 생성 (없으면 생성)
+          # ------------------------------------------------------------------
+          # Step 2: Docker 네트워크 생성
+          # 백엔드, DB와 통신하기 위한 네트워크를 생성합니다. (이미 존재하면 무시)
+          # ------------------------------------------------------------------
           docker network create $NETWORK_NAME || true
           
-          # 1. 기존 백업 컨테이너가 있다면 제거
+          # ------------------------------------------------------------------
+          # Step 3: 기존 백업 컨테이너 제거
+          # 이전 배포의 백업 컨테이너가 남아있다면 삭제합니다.
+          # ------------------------------------------------------------------
           docker rm -f $BACKUP_CONTAINER_NAME || true
           
-          # 2. 현재 실행 중인 컨테이너를 백업으로 이름 변경 (존재하는 경우)
+          # ------------------------------------------------------------------
+          # Step 4: 현재 컨테이너를 백업으로 이름 변경
+          # 롤백을 위해 현재 실행 중인 컨테이너를 백업 이름으로 변경합니다.
+          # ------------------------------------------------------------------
           if [ "$(docker ps -aq -f name=^/${CONTAINER_NAME}$)" ]; then
             docker stop $CONTAINER_NAME || true
             docker rename $CONTAINER_NAME $BACKUP_CONTAINER_NAME
           fi
 
+          # ------------------------------------------------------------------
+          # Step 5: 새 컨테이너 실행
+          # 새로 빌드된 이미지로 컨테이너를 시작합니다.
+          # - 네트워크: softcampus-network (백엔드/DB와 통신)
+          # - 포트: 10080 (외부) -> 80 (내부)
+          # ------------------------------------------------------------------
           echo "Starting new container..."
           docker run -d --name $CONTAINER_NAME --network $NETWORK_NAME -p $PORT:80 $IMAGE_NAME
 
+          # ------------------------------------------------------------------
+          # Step 6: Health Check
+          # 새 컨테이너가 정상적으로 응답하는지 확인합니다.
+          # ------------------------------------------------------------------
           echo "Verifying deployment..."
           sleep 10
           if curl -f http://localhost:$PORT > /dev/null 2>&1; then
@@ -85,6 +165,10 @@ jobs:
             # 백업 컨테이너 정리 (선택 사항: 수동 검사를 위해 유지하거나 제거)
             # docker rm -f $BACKUP_CONTAINER_NAME || true
           else
+            # --------------------------------------------------------------
+            # Step 7: 롤백
+            # Health Check 실패 시 새 컨테이너를 제거하고 백업 컨테이너를 복구합니다.
+            # --------------------------------------------------------------
             echo "Deployment failed! Rolling back..."
             docker stop $CONTAINER_NAME || true
             docker rm $CONTAINER_NAME || true
