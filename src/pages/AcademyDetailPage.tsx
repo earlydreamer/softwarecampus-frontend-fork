@@ -10,13 +10,23 @@ const AcademyDetailPage = () => {
     const { academyId } = useParams<{ academyId: string }>();
     const id = Number(academyId);
 
-    const { data: academy, isLoading: isAcademyLoading } = useQuery({
+    const {
+        data: academy,
+        isLoading: isAcademyLoading,
+        error: academyError,
+        isError: isAcademyError
+    } = useQuery({
         queryKey: ['academy', id],
         queryFn: () => fetchAcademyById(id),
         enabled: !isNaN(id) && id > 0,
     });
 
-    const { data: courses, isLoading: isCoursesLoading } = useQuery({
+    const {
+        data: courses,
+        isLoading: isCoursesLoading,
+        error: coursesError,
+        isError: isCoursesError
+    } = useQuery({
         queryKey: ['academy-courses', id],
         queryFn: () => fetchCoursesByAcademyId(id),
         enabled: !isNaN(id) && id > 0,
@@ -36,6 +46,25 @@ const AcademyDetailPage = () => {
                     </div>
                     <Skeleton className="h-80 w-full" />
                 </div>
+            </div>
+        );
+    }
+
+    if (isAcademyError || isCoursesError) {
+        return (
+            <div className="container mx-auto px-4 py-20 text-center">
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Award className="w-8 h-8" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">
+                    {isAcademyError ? '기관 정보를 불러올 수 없습니다.' : '과정 정보를 불러올 수 없습니다.'}
+                </h2>
+                <p className="text-slate-500 mb-6">
+                    {(academyError as Error)?.message || (coursesError as Error)?.message || '잠시 후 다시 시도해주세요.'}
+                </p>
+                <Link to="/academies" className="btn-primary inline-flex items-center gap-2 px-6 py-3">
+                    기관 목록으로 돌아가기
+                </Link>
             </div>
         );
     }
