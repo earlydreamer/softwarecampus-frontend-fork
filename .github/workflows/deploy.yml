@@ -107,7 +107,7 @@ jobs:
           IMAGE_NAME="app:latest"
           CONTAINER_NAME="softcampus-frontend"
           BACKUP_CONTAINER_NAME="softcampus-frontend-backup"
-          PORT=10080
+          PORT=18080
           NETWORK_NAME="softcampus-network"
 
           # ------------------------------------------------------------------
