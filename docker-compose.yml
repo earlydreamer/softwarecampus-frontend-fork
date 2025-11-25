@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     image: app:latest
@@ -18,5 +16,4 @@ services:
 
 networks:
   softcampus-network:
-    name: softcampus-network
-    driver: bridge
+    external: true
