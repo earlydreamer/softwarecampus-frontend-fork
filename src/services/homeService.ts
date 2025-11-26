@@ -96,12 +96,7 @@ export const fetchHomeCourseSections = async () => {
         };
     } catch (error) {
         console.error('과정 섹션 데이터 조회 실패:', error);
-        // 에러 발생 시 빈 배열 반환
-        return {
-            employeeBest: [] as Course[],
-            jobSeekerBest: [] as Course[],
-            closingSoon: [] as Course[],
-        };
+        throw error;
     }
 };
 
