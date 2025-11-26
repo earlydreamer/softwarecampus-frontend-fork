@@ -403,8 +403,18 @@ const CourseDetailPage = () => {
                             </div>
 
                             <div className="flex flex-col gap-3">
-                                <button className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30">
-                                    수강 신청하기
+                                <button
+                                    onClick={() => {
+                                        const targetUrl = course.externalLink || course.academy.website;
+                                        if (targetUrl) {
+                                            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                                        } else {
+                                            alert('자세히 보기 링크가 제공되지 않았습니다.');
+                                        }
+                                    }}
+                                    className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30"
+                                >
+                                    자세히 보기
                                 </button>
                                 <div className="grid grid-cols-2 gap-3">
                                     <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 font-medium text-slate-700 hover:bg-slate-50 transition-colors">
