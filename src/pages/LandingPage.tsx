@@ -16,7 +16,8 @@ const LandingPage: React.FC = () => {
 
     const {
         data: courseSections,
-        isLoading: coursesLoading
+        isLoading: coursesLoading,
+        isError: coursesError
     } = useQuery({
         queryKey: ['home', 'courseSections'],
         queryFn: fetchHomeCourseSections
@@ -27,7 +28,7 @@ const LandingPage: React.FC = () => {
         isLoading: communityLoading
     } = useQuery({
         queryKey: ['home', 'community'],
-        queryFn: fetchCommunityHighlights
+        queryFn: () => fetchCommunityHighlights()
     });
 
     return (
@@ -40,6 +41,7 @@ const LandingPage: React.FC = () => {
                         title="재직자 베스트 과정"
                         courses={courseSections?.employeeBest ?? []}
                         loading={coursesLoading}
+                        error={coursesError}
                         link="/lectures?target=employee"
                         targetCount={4}
                     />
@@ -47,6 +49,7 @@ const LandingPage: React.FC = () => {
                         title="취업예정자 베스트 과정"
                         courses={courseSections?.jobSeekerBest ?? []}
                         loading={coursesLoading}
+                        error={coursesError}
                         link="/lectures?target=student"
                         targetCount={4}
                     />
@@ -54,6 +57,7 @@ const LandingPage: React.FC = () => {
                         title="마감 임박 과정"
                         courses={courseSections?.closingSoon ?? []}
                         loading={coursesLoading}
+                        error={coursesError}
                         link="/lectures"
                         targetCount={4}
                     />

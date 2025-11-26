@@ -120,7 +120,7 @@ const CourseListPage: React.FC = () => {
         [currentFilters]
     );
 
-    const { data: courses = [], isLoading } = useQuery({
+    const { data: courses = [], isLoading, isError } = useQuery({
         queryKey: ['courses', queryFilters],
         queryFn: () => fetchCourses(queryFilters)
     });
@@ -186,7 +186,11 @@ const CourseListPage: React.FC = () => {
                     </form>
                 </section>
 
-                {noResult ? (
+                {isError ? (
+                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
+                        <p className="text-slate-500">데이터를 불러오는 데 실패했습니다.</p>
+                    </div>
+                ) : noResult ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">조건에 맞는 과정이 없습니다</h2>
                         <p className="text-slate-500">다른 키워드나 필터를 선택해 다시 검색해 보세요.</p>

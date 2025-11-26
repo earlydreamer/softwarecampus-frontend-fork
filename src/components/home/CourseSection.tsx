@@ -11,9 +11,10 @@ interface CourseSectionProps {
     loading: boolean;
     link?: string;
     targetCount?: number;
+    error?: boolean;
 }
 
-const CourseSection: React.FC<CourseSectionProps> = ({ title, courses, loading, link, targetCount }) => {
+const CourseSection: React.FC<CourseSectionProps> = ({ title, courses, loading, link, targetCount, error }) => {
     const finalTarget = targetCount ?? Math.max(courses.length, 4);
     const isEmpty = !loading && courses.length === 0;
     const placeholdersCount = Math.max(finalTarget - courses.length, 0);
@@ -35,7 +36,11 @@ const CourseSection: React.FC<CourseSectionProps> = ({ title, courses, loading, 
                 )}
             </div>
 
-            {isEmpty ? (
+            {error ? (
+                <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
+                    <p className="text-slate-500">데이터를 불러오는 데 실패했습니다.</p>
+                </div>
+            ) : isEmpty ? (
                 <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
                     <p className="text-slate-500">등록된 과정이 없습니다.</p>
                 </div>
