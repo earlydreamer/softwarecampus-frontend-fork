@@ -714,12 +714,64 @@ export const fetchCourseReviews = async (courseId: number): Promise<CourseReview
     return mockCourseReviews.filter(r => r.courseId === courseId);
 };
 
-export const fetchCourseQnAs = async (courseId: number): Promise<CourseQnA[]> => {
+export const fetchCourseQnAs = async (
+    courseId: number,
+    page: number = 1,
+    limit: number = 5,
+    searchKeyword?: string
+): Promise<{ qnas: CourseQnA[], totalCount: number }> => {
     await new Promise(resolve => setTimeout(resolve, 600));
-    return mockCourseQnAs.filter(q => q.courseId === courseId);
+    let filtered = mockCourseQnAs.filter(q => q.courseId === courseId);
+
+    // 검색 필터
+    if (searchKeyword && searchKeyword.trim()) {
+        const keyword = searchKeyword.toLowerCase();
+        filtered = filtered.filter(q =>
+            q.title.toLowerCase().includes(keyword) ||
+            q.content.toLowerCase().includes(keyword) ||
+            (q.answer && q.answer.content.toLowerCase().includes(keyword))
+        );
+    }
+
+    // 최신순 정렬
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return {
+        qnas: filtered.slice(start, end),
+        totalCount: filtered.length
+    };
 };
 
-export const fetchAcademyQnAs = async (academyId: number): Promise<AcademyQnA[]> => {
+export const fetchAcademyQnAs = async (
+    academyId: number,
+    page: number = 1,
+    limit: number = 5,
+    searchKeyword?: string
+): Promise<{ qnas: AcademyQnA[], totalCount: number }> => {
     await new Promise(resolve => setTimeout(resolve, 600));
-    return mockAcademyQnAs.filter(q => q.academyId === academyId);
+    let filtered = mockAcademyQnAs.filter(q => q.academyId === academyId);
+
+    // 검색 필터
+    if (searchKeyword && searchKeyword.trim()) {
+        const keyword = searchKeyword.toLowerCase();
+        filtered = filtered.filter(q =>
+            q.title.toLowerCase().includes(keyword) ||
+            q.content.toLowerCase().includes(keyword) ||
+            (q.answer && q.answer.content.toLowerCase().includes(keyword))
+        );
+    }
+
+    // 최신순 정렬
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return {
+        qnas: filtered.slice(start, end),
+        totalCount: filtered.length
+    };
 };

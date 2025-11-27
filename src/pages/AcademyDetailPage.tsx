@@ -13,6 +13,8 @@ const AcademyDetailPage = () => {
     const { academyId } = useParams<{ academyId: string }>();
     const id = Number(academyId);
     const [activeTab, setActiveTab] = useState<'info' | 'courses' | 'qna'>('info');
+    const [qnaPage, setQnaPage] = useState(1);
+    const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
 
     const {
         data: academy,
@@ -37,13 +39,13 @@ const AcademyDetailPage = () => {
     });
 
     const {
-        data: qnas,
+        data: qnaData,
         isLoading: isQnasLoading,
         error: qnasError,
         isError: isQnasError
     } = useQuery({
-        queryKey: ['academy-qnas', id],
-        queryFn: () => fetchAcademyQnAs(id),
+        queryKey: ['academy-qnas', id, qnaPage, qnaSearchKeyword],
+        queryFn: () => fetchAcademyQnAs(id, qnaPage, 5, qnaSearchKeyword),
         enabled: !isNaN(id) && id > 0,
     });
 
@@ -217,7 +219,7 @@ const AcademyDetailPage = () => {
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                             }`}
                                     >
-                                        Q&A {qnas && `(${qnas.length})`}
+                                        Q&A {qnaData && `(${qnaData.totalCount})`}
                                     </button>
                                 </div>
                             </div>
@@ -297,11 +299,18 @@ const AcademyDetailPage = () => {
                                             </div>
                                         ) : (
                                             <AcademyQnAs
-                                                qnas={qnas || []}
+                                                qnas={qnaData?.qnas || []}
+                                                totalCount={qnaData?.totalCount || 0}
+                                                page={qnaPage}
+                                                onPageChange={setQnaPage}
                                                 isLoading={isQnasLoading}
                                                 onQuestionSubmit={(title, content) => {
                                                     console.log('Question submitted:', { title, content });
                                                     alert('질문이 등록되었습니다.');
+                                                }}
+                                                onSearch={(keyword) => {
+                                                    setQnaSearchKeyword(keyword);
+                                                    setQnaPage(1);
                                                 }}
                                             />
                                         )}
