@@ -125,6 +125,7 @@ export interface Course {
     imageUrl?: string;
     description?: string;
     highlights?: string[];
+    externalLink?: string;
     // 호환성을 위한 필드
     title?: string;
     institution?: string;

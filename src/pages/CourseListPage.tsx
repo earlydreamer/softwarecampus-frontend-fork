@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import CourseSection from '../components/home/CourseSection';
 import { fetchCourses } from '../services/courseService';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown } from 'lucide-react';
 
 interface CourseFilterForm {
     keyword: string;
@@ -49,6 +49,72 @@ const reverseFormatMap: Record<string, string> = {
     'false': 'online'
 };
 
+interface FilterDropdownProps {
+    label: string;
+    value: string;
+    options: { value: string; label: string }[];
+    onChange: (value: any) => void;
+}
+
+const FilterDropdown: React.FC<FilterDropdownProps> = ({ label, value, options, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectedOption = options.find((o) => o.value === value);
+    const displayLabel = selectedOption ? selectedOption.label : options[0].label;
+    const isActive = value !== 'ALL';
+
+    return (
+        <div className="flex flex-col gap-1.5" ref={dropdownRef}>
+            <span className="text-xs font-semibold text-slate-500 ml-1">{label}</span>
+            <div className="relative">
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`flex items-center justify-between gap-2 w-36 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${isActive
+                        ? 'border-primary-200 bg-primary-50 text-primary-700'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        }`}
+                >
+                    <span className="truncate">{displayLabel}</span>
+                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-full min-w-[144px] bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {options.map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                    onChange(option.value);
+                                    setIsOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-2 text-sm transition-colors ${value === option.value
+                                    ? 'bg-primary-50 text-primary-700 font-medium'
+                                    : 'text-slate-600 hover:bg-slate-50'
+                                    }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const CourseListPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const isInternalUpdateRef = useRef(false);
@@ -67,7 +133,7 @@ const CourseListPage: React.FC = () => {
         };
     }, [searchParams]);
 
-    const { register, handleSubmit, reset, watch } = useForm<CourseFilterForm>({
+    const { register, handleSubmit, reset, watch, setValue } = useForm<CourseFilterForm>({
         defaultValues: currentFilters
     });
 
@@ -129,59 +195,49 @@ const CourseListPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-                <section className="glass-panel p-8 rounded-2xl">
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">전체 강의 목록</h1>
-                    <form
-                        className="grid grid-cols-1 md:grid-cols-4 gap-6"
-                        onSubmit={handleSubmit(() => { })}
-                    >
-                        <div className="md:col-span-2">
-                            <label htmlFor="keyword" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                키워드
-                            </label>
-                            <div className="relative">
-                                <input
-                                    id="keyword"
-                                    type="text"
-                                    placeholder="과정명 혹은 태그를 입력하세요"
-                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pl-11 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-                                    {...register('keyword')}
-                                />
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                {/* Header & Search Section */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">전체 강의 목록</h1>
+                        <p className="text-slate-500 dark:text-slate-400">원하는 강의를 검색하고 필터링하여 찾아보세요.</p>
+                    </div>
+                </div>
+
+                {/* Filter Panel */}
+                <section className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <form onSubmit={handleSubmit(() => { })}>
+                        <div className="flex flex-col md:flex-row gap-4">
+                            {/* Search Bar */}
+                            <div className="flex flex-col gap-1.5 flex-grow max-w-xl">
+                                <label htmlFor="keyword" className="text-xs font-semibold text-slate-500 ml-1">과정 검색</label>
+                                <div className="relative">
+                                    <input
+                                        id="keyword"
+                                        type="text"
+                                        placeholder="과정명, 기술 스택, 혹은 키워드로 검색..."
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-5 py-2.5 pl-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-sm"
+                                        {...register('keyword')}
+                                    />
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label htmlFor="categoryType" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                교육 대상
-                            </label>
-                            <select
-                                id="categoryType"
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all appearance-none"
-                                {...register('categoryType')}
-                            >
-                                {categoryTypes.map((cat) => (
-                                    <option key={cat.value} value={cat.value}>
-                                        {cat.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="isOffline" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                교육 방식
-                            </label>
-                            <select
-                                id="isOffline"
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all appearance-none"
-                                {...register('isOffline')}
-                            >
-                                {classFormats.map((format) => (
-                                    <option key={format.value} value={format.value}>
-                                        {format.label}
-                                    </option>
-                                ))}
-                            </select>
+
+                            {/* Dropdown Filters */}
+                            <div className="flex flex-wrap gap-3">
+                                <FilterDropdown
+                                    label="교육 대상"
+                                    value={watch('categoryType')}
+                                    options={categoryTypes}
+                                    onChange={(val) => setValue('categoryType', val)}
+                                />
+                                <FilterDropdown
+                                    label="교육 방식"
+                                    value={watch('isOffline')}
+                                    options={classFormats}
+                                    onChange={(val) => setValue('isOffline', val)}
+                                />
+                            </div>
                         </div>
                     </form>
                 </section>
@@ -196,7 +252,7 @@ const CourseListPage: React.FC = () => {
                         <p className="text-slate-500">다른 키워드나 필터를 선택해 다시 검색해 보세요.</p>
                     </div>
                 ) : (
-                    <CourseSection title="검색 결과" courses={courses} loading={isLoading} />
+                    <CourseSection title="검색 결과" courses={courses} loading={isLoading} viewMode="grid" />
                 )}
             </div>
         </div>
