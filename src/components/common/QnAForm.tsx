@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import TiptapEditor from '../editor/TiptapEditor';
 
-interface AcademyQnAFormProps {
+interface QnAFormProps {
     onSubmit: (title: string, content: string) => void;
     onCancel: () => void;
 }
 
-const AcademyQnAForm = ({ onSubmit, onCancel }: AcademyQnAFormProps) => {
+const QnAForm = ({ onSubmit, onCancel }: QnAFormProps) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
 
@@ -59,4 +59,4 @@ const AcademyQnAForm = ({ onSubmit, onCancel }: AcademyQnAFormProps) => {
     );
 };
 
-export default AcademyQnAForm;
+export default QnAForm;

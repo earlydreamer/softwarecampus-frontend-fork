@@ -1,4 +1,4 @@
-import { ExternalLink, Map as MapIcon } from 'lucide-react';
+import { Map as MapIcon } from 'lucide-react';
 
 interface MapEmbedProps {
     address: string;

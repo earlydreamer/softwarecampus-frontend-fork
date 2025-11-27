@@ -8,6 +8,7 @@ import Skeleton from '../components/ui/Skeleton';
 import CourseCard from '../components/common/CourseCard';
 import AcademyQnAs from '../components/academy/AcademyQnAs';
 import MapEmbed from '../components/common/MapEmbed';
+import { QNA_PER_PAGE } from '../constants';
 
 const AcademyDetailPage = () => {
     const { academyId } = useParams<{ academyId: string }>();
@@ -42,10 +43,11 @@ const AcademyDetailPage = () => {
         data: qnaData,
         isLoading: isQnasLoading,
         error: qnasError,
-        isError: isQnasError
+        isError: isQnasError,
+        refetch: refetchQnAs
     } = useQuery({
         queryKey: ['academy-qnas', id, qnaPage, qnaSearchKeyword],
-        queryFn: () => fetchAcademyQnAs(id, qnaPage, 5, qnaSearchKeyword),
+        queryFn: () => fetchAcademyQnAs(id, qnaPage, QNA_PER_PAGE, qnaSearchKeyword),
         enabled: !isNaN(id) && id > 0,
     });
 
@@ -296,6 +298,13 @@ const AcademyDetailPage = () => {
                                                 <p className="text-slate-600 mb-4">
                                                     {(qnasError as Error)?.message || '네트워크 오류가 발생했습니다.'}
                                                 </p>
+                                                <button
+                                                    onClick={() => refetchQnAs()}
+                                                    className="btn-primary"
+                                                    aria-label="Q&A 다시 불러오기"
+                                                >
+                                                    다시 시도
+                                                </button>
                                             </div>
                                         ) : (
                                             <AcademyQnAs

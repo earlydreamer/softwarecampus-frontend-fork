@@ -7,7 +7,63 @@ interface NaverMapProps {
 
 declare global {
     interface Window {
-        naver: any;
+        naver: {
+            maps: typeof naver.maps;
+        };
+    }
+}
+
+declare namespace naver.maps {
+    class Map {
+        constructor(element: HTMLElement | string, options: MapOptions);
+    }
+
+    class LatLng {
+        constructor(lat: number, lng: number);
+    }
+
+    class Marker {
+        constructor(options: MarkerOptions);
+    }
+
+    interface MapOptions {
+        center: LatLng;
+        zoom?: number;
+        minZoom?: number;
+        zoomControl?: boolean;
+        zoomControlOptions?: {
+            position: Position;
+        };
+        mapTypeControl?: boolean;
+    }
+
+    interface MarkerOptions {
+        position: LatLng;
+        map: Map;
+    }
+
+    enum Position {
+        TOP_RIGHT = 3
+    }
+
+    namespace Service {
+        function geocode(options: { query: string }, callback: (status: Status, response: GeocodeResponse) => void): void;
+
+        enum Status {
+            OK = 200
+        }
+    }
+
+    interface GeocodeResponse {
+        v2: {
+            addresses: Array<{
+                x: string;
+                y: string;
+                roadAddress: string;
+                jibunAddress: string;
+                englishAddress: string;
+            }>;
+        };
     }
 }
 
@@ -15,6 +71,16 @@ const NaverMap = ({ address, height = '400px' }: NaverMapProps) => {
     const mapElement = useRef<HTMLDivElement>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const trimmedAddress = address?.trim() || '';
+    // Basic validation: non-empty, min length 2, contains alphanumeric or Hangul
+    const isValidAddress = trimmedAddress.length >= 2 && /[가-힣a-zA-Z0-9]/.test(trimmedAddress);
+
+    useEffect(() => {
+        if (!isValidAddress && address) {
+            console.warn(`[NaverMap] Invalid address provided: "${address}"`);
+        }
+    }, [isValidAddress, address]);
 
     useEffect(() => {
         // Check if script is already loaded
@@ -42,13 +108,13 @@ const NaverMap = ({ address, height = '400px' }: NaverMapProps) => {
     }, []);
 
     useEffect(() => {
-        if (!isLoaded || !mapElement.current || !address || !window.naver) return;
+        if (!isLoaded || !mapElement.current || !isValidAddress || !window.naver) return;
 
         const { naver } = window;
 
         naver.maps.Service.geocode({
-            query: address
-        }, (status: any, response: any) => {
+            query: trimmedAddress
+        }, (status: naver.maps.Service.Status, response: naver.maps.GeocodeResponse) => {
             if (status !== naver.maps.Service.Status.OK) {
                 console.error('Geocoding failed');
                 // Fallback to a default location or handle error
@@ -56,9 +122,9 @@ const NaverMap = ({ address, height = '400px' }: NaverMapProps) => {
             }
 
             const result = response.v2.addresses[0];
-            const center = new naver.maps.LatLng(result.y, result.x);
+            const center = new naver.maps.LatLng(Number(result.y), Number(result.x));
 
-            const mapOptions = {
+            const mapOptions: naver.maps.MapOptions = {
                 center: center,
                 zoom: 15,
                 minZoom: 8,
@@ -69,14 +135,25 @@ const NaverMap = ({ address, height = '400px' }: NaverMapProps) => {
                 mapTypeControl: true,
             };
 
-            const map = new naver.maps.Map(mapElement.current, mapOptions);
+            const map = new naver.maps.Map(mapElement.current!, mapOptions);
 
             new naver.maps.Marker({
                 position: center,
                 map: map
             });
         });
-    }, [isLoaded, address]);
+    }, [isLoaded, isValidAddress, trimmedAddress]);
+
+    if (!isValidAddress) {
+        return (
+            <div
+                className="bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 text-sm"
+                style={{ height }}
+            >
+                주소 정보가 올바르지 않습니다.
+            </div>
+        );
+    }
 
     if (error) {
         return (

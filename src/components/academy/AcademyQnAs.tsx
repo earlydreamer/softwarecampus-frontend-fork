@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { AcademyQnA } from '../../types';
 import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import AcademyQnAForm from './AcademyQnAForm';
+import QnAForm from '../common/QnAForm';
+import { sanitizeUrl } from '../../utils/security';
+import { QNA_PER_PAGE } from '../../constants';
 
 interface AcademyQnAsProps {
     qnas: AcademyQnA[];
@@ -34,7 +36,7 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
         }
     };
 
-    const totalPages = Math.ceil(totalCount / 5); // Limit is 5
+    const totalPages = Math.ceil(totalCount / QNA_PER_PAGE);
 
     if (isLoading) {
         return (
@@ -85,7 +87,7 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
             </div>
 
             {isFormOpen && (
-                <AcademyQnAForm
+                <QnAForm
                     onSubmit={(title, content) => {
                         onQuestionSubmit(title, content);
                         setIsFormOpen(false);
@@ -125,13 +127,22 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
                         <div key={qna.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-primary-200 transition-colors shadow-sm hover:shadow-md">
                             {/* 질문 헤더 (클릭 시 확장) */}
                             <div
+                                role="button"
+                                tabIndex={0}
+                                aria-expanded={expandedQnaId === qna.id}
                                 onClick={() => toggleQna(qna.id)}
-                                className="p-6 cursor-pointer hover:bg-slate-50 transition-colors"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        toggleQna(qna.id);
+                                    }
+                                }}
+                                className="p-6 cursor-pointer hover:bg-slate-50 transition-colors outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
                                         {qna.author.avatar ? (
-                                            <img src={qna.author.avatar} alt={qna.author.userName} className="w-full h-full object-cover" />
+                                            <img src={sanitizeUrl(qna.author.avatar)} alt={qna.author.userName} className="w-full h-full object-cover" />
                                         ) : (
                                             <span className="text-slate-400 font-bold text-sm">{qna.author.userName[0]}</span>
                                         )}
@@ -184,7 +195,7 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
                                             <div className="flex items-start gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden shrink-0 border-2 border-white shadow-sm">
                                                     {qna.answer.answeredBy.avatar ? (
-                                                        <img src={qna.answer.answeredBy.avatar} alt={qna.answer.answeredBy.userName} className="w-full h-full object-cover" />
+                                                        <img src={sanitizeUrl(qna.answer.answeredBy.avatar)} alt={qna.answer.answeredBy.userName} className="w-full h-full object-cover" />
                                                     ) : (
                                                         <span className="text-primary-600 font-bold text-sm">{qna.answer.answeredBy.userName[0]}</span>
                                                     )}

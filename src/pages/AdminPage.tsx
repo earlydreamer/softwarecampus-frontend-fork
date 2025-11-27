@@ -727,7 +727,7 @@ const AdminPage = () => {
 
                                     <div className="w-32 h-20 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
                                         <img
-                                            src={banner.imageUrl.startsWith('blob:') ? banner.imageUrl : sanitizeUrl(banner.imageUrl)}
+                                            src={sanitizeUrl(banner.imageUrl)}
                                             alt={banner.title}
                                             className="w-full h-full object-cover"
                                         />

@@ -7,6 +7,7 @@ import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseReviews from '../components/course/CourseReviews';
 import CourseQnAs from '../components/course/CourseQnAs';
+import { QNA_PER_PAGE } from '../constants';
 
 
 const CourseDetailPage = () => {
@@ -53,7 +54,7 @@ const CourseDetailPage = () => {
         refetch: refetchQnAs
     } = useQuery({
         queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword],
-        queryFn: () => fetchCourseQnAs(id!, qnaPage, 5, qnaSearchKeyword),
+        queryFn: () => fetchCourseQnAs(id!, qnaPage, QNA_PER_PAGE, qnaSearchKeyword),
         enabled: isValidId,
     });
 
@@ -423,7 +424,12 @@ const CourseDetailPage = () => {
                                     onClick={() => {
                                         const targetUrl = course.externalLink || course.academy.website;
                                         if (targetUrl) {
-                                            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                                            const safeUrl = sanitizeUrl(targetUrl);
+                                            if (safeUrl) {
+                                                window.open(safeUrl, '_blank', 'noopener,noreferrer');
+                                            } else {
+                                                alert('유효하지 않은 링크입니다.');
+                                            }
                                         } else {
                                             alert('자세히 보기 링크가 제공되지 않았습니다.');
                                         }
