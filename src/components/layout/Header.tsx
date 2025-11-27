@@ -67,7 +67,7 @@ const Header = () => {
             >
                 <div className="container mx-auto px-4 flex items-center justify-between">
                     <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent z-50 relative">
-                        SoftCampus
+                        SoftwareCampus
                     </Link>
 
                     {/* Desktop Navigation */}

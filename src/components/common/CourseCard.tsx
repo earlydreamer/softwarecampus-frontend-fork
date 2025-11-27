@@ -32,7 +32,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
 
                 <div className="p-5 flex flex-col h-[calc(100%-12rem)]">
                     <p className="text-xs font-medium text-primary-600 mb-1">
-                        {course.institution || '소프트캠퍼스'}
+                        {course.institution || '소프트웨어캠퍼스'}
                     </p>
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
                         {course.title || course.name}

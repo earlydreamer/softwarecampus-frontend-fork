@@ -30,17 +30,17 @@ export const mockAcademies: Academy[] = [
     {
         // 백엔드 필드
         id: 1,
-        name: "소프트캠퍼스",
+        name: "소프트웨어캠퍼스",
         address: "서울시 강남구 테헤란로 123",
         businessNumber: "123-45-67890",
-        email: "info@softcampus.com",
+        email: "info@softwarecampus.com",
         isApproved: "APPROVED",
         approvedAt: "2015-03-15T10:00:00",
         // 프론트엔드 전용 필드 (백엔드에 없음)
-        description: "소프트캠퍼스는 실무 중심의 IT 인재를 양성하는 전문 교육기관입니다.",
-        logoUrl: "https://ui-avatars.com/api/?name=Soft+Campus&background=0D8ABC&color=fff",
+        description: "소프트웨어캠퍼스는 실무 중심의 IT 인재를 양성하는 전문 교육기관입니다.",
+        logoUrl: "https://ui-avatars.com/api/?name=Software+Campus&background=0D8ABC&color=fff",
         phone: "02-1234-5678",
-        website: "https://softcampus.com",
+        website: "https://softwarecampus.com",
         establishedDate: "2015-03-01",
         courseCount: 4,
         contentCount: 20,
