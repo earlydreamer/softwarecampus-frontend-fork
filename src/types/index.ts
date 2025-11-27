@@ -259,3 +259,28 @@ export interface CourseQnA {
     createdAt: string;
     viewCount: number;
 }
+
+// ===== 기관 Q&A 관련 타입 정의 =====
+export interface AcademyQnA {
+    id: number;
+    academyId: number;
+    author: {
+        id: number;
+        userName: string;
+        avatar?: string;
+    };
+    title: string;
+    content: string;
+    isAnswered: boolean;
+    answer?: {
+        content: string;
+        answeredBy: {
+            id: number;
+            userName: string;
+            avatar?: string;
+        };
+        answeredAt: string;
+    };
+    createdAt: string;
+    viewCount: number;
+}
