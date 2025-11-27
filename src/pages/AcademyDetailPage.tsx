@@ -130,12 +130,6 @@ const AcademyDetailPage = () => {
                                     <MapPin className="w-5 h-5 text-primary-400" />
                                     <span>{academy.address}</span>
                                 </div>
-                                {academy.website && (
-                                    <a href={sanitizeUrl(academy.website)} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
-                                        <Globe className="w-5 h-5 text-primary-400" />
-                                        <span>홈페이지</span>
-                                    </a>
-                                )}
                                 {academy.phone && (
                                     <div className="flex items-center gap-2">
                                         <Phone className="w-5 h-5 text-primary-400" />
@@ -252,6 +246,13 @@ const AcademyDetailPage = () => {
                                         </div>
 
                                         <div className="pt-6 border-t border-slate-100">
+                                            <h3 className="text-lg font-bold text-slate-900 mb-4">기관 설명</h3>
+                                            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                                                {academy.description}
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-slate-100">
                                             <h3 className="text-lg font-bold text-slate-900 mb-4">위치 안내</h3>
                                             <div className="h-[300px] w-full">
                                                 <MapEmbed address={academy.address} height="100%" />
@@ -359,9 +360,20 @@ const AcademyDetailPage = () => {
                             </div>
 
                             <div className="mt-8 pt-6 border-t border-slate-100">
-                                <button className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30 mb-3">
-                                    기관 문의하기
-                                </button>
+                                {academy.website ? (
+                                    <a
+                                        href={sanitizeUrl(academy.website)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30 mb-3 flex items-center justify-center"
+                                    >
+                                        기관 홈페이지 바로가기
+                                    </a>
+                                ) : (
+                                    <button className="w-full py-3.5 rounded-xl bg-slate-300 text-white font-bold text-lg cursor-not-allowed mb-3" disabled>
+                                        기관 홈페이지 바로가기
+                                    </button>
+                                )}
                                 <button className="w-full py-3.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-lg hover:bg-slate-50 transition-all">
                                     공유하기
                                 </button>
