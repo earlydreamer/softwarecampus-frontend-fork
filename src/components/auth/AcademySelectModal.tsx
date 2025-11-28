@@ -2,7 +2,7 @@ import type * as React from 'react';
 import { useState, useEffect, useRef, useId } from 'react';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
-import { mockAcademies } from '../../services/mockAcademyData';
+import { getApprovedAcademies, createAcademy } from '../../services/academyService';
 
 interface AcademySelectModalProps {
     isOpen: boolean;
@@ -17,6 +17,15 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showRegisterForm, setShowRegisterForm] = useState(false);
+    const [academies, setAcademies] = useState<Academy[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Registration Form State
+    const [regName, setRegName] = useState('');
+    const [regBusinessNumber, setRegBusinessNumber] = useState('');
+    const [regAddress, setRegAddress] = useState('');
+    const [regEmail, setRegEmail] = useState('');
+
     interface UploadedFile {
         id: string;
         file: File;
@@ -25,6 +34,64 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [filePreviewUrls, setFilePreviewUrls] = useState<{ [key: string]: string }>({});
     const [isDragging, setIsDragging] = useState(false);
+
+    // Fetch academies when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            const fetchAcademies = async () => {
+                setIsLoading(true);
+                try {
+                    // Mock data for testing
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+                    setAcademies([
+                        {
+                            id: 1,
+                            name: "서울 소프트웨어 아카데미",
+                            description: "실무 중심의 소프트웨어 개발자 양성 기관입니다.",
+                            address: "서울시 강남구 테헤란로 123",
+                            phone: "02-1234-5678",
+                            email: "contact@seoulsw.com",
+                            rating: 4.8,
+                            reviewCount: 120,
+                            fields: ["Java", "Spring", "React"]
+                        },
+                        {
+                            id: 2,
+                            name: "부산 코딩 캠퍼스",
+                            description: "부산 최고의 코딩 교육 기관",
+                            address: "부산시 해운대구 센텀중앙로 45",
+                            phone: "051-987-6543",
+                            email: "info@busancoding.com",
+                            rating: 4.5,
+                            reviewCount: 85,
+                            fields: ["Python", "AI", "BigData"]
+                        },
+                        {
+                            id: 3,
+                            name: "판교 IT 인재 개발원",
+                            description: "판교 테크노밸리 연계 취업 지원",
+                            address: "경기도 성남시 분당구 판교역로 789",
+                            phone: "031-777-8888",
+                            email: "hr@pangyoit.com",
+                            rating: 4.9,
+                            reviewCount: 200,
+                            fields: ["Cloud", "DevOps", "Security"]
+                        }
+                    ]);
+
+                    /* Real API call
+                    const data = await getApprovedAcademies();
+                    setAcademies(data);
+                    */
+                } catch (error) {
+                    console.error("Failed to fetch academies:", error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchAcademies();
+        }
+    }, [isOpen]);
 
     // 모달 열릴 때 body 스크롤 방지 및 포커스 관리
     useEffect(() => {
@@ -83,12 +150,17 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
             setSearchTerm('');
             setUploadedFiles([]);
             setFilePreviewUrls({});
+            // Reset form
+            setRegName('');
+            setRegBusinessNumber('');
+            setRegAddress('');
+            setRegEmail('');
         }
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
-    const filteredAcademies = mockAcademies.filter((academy) =>
+    const filteredAcademies = academies.filter((academy) =>
         academy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (academy.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
         academy.address.toLowerCase().includes(searchTerm.toLowerCase())
@@ -97,6 +169,57 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
     const handleSelect = (academy: Academy) => {
         onSelect(academy);
         onClose();
+    };
+
+    const handleRegister = async () => {
+        if (!regName || !regBusinessNumber || !regAddress || !regEmail) {
+            alert('모든 필수 정보를 입력해주세요.');
+            return;
+        }
+
+        if (uploadedFiles.length === 0) {
+            alert('사업자등록증 파일을 첨부해주세요.');
+            return;
+        }
+
+        /* 
+        // Real API implementation
+        const formData = new FormData();
+        formData.append('name', regName);
+        formData.append('businessNumber', regBusinessNumber);
+        formData.append('address', regAddress);
+        formData.append('email', regEmail);
+        formData.append('businessRegistration', uploadedFiles[0].file);
+
+        try {
+            await createAcademy(formData);
+            alert('기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.');
+            onClose();
+        } catch (error) {
+            console.error('Registration failed:', error);
+            alert('기관 등록 요청 중 오류가 발생했습니다.');
+        }
+        */
+
+        // Mock implementation for UI testing
+        try {
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            console.log('Mock Registration Data:', {
+                name: regName,
+                businessNumber: regBusinessNumber,
+                address: regAddress,
+                email: regEmail,
+                files: uploadedFiles
+            });
+
+            alert('기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.');
+            onClose();
+        } catch (error) {
+            console.error('Registration failed:', error);
+            alert('기관 등록 요청 중 오류가 발생했습니다.');
+        }
     };
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -231,6 +354,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="text"
+                                    value={regName}
+                                    onChange={(e) => setRegName(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="교육기관 이름"
                                 />
@@ -241,6 +366,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="text"
+                                    value={regBusinessNumber}
+                                    onChange={(e) => setRegBusinessNumber(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="000-00-00000"
                                 />
@@ -251,6 +378,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="text"
+                                    value={regAddress}
+                                    onChange={(e) => setRegAddress(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="서울시 강남구..."
                                 />
@@ -261,6 +390,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="email"
+                                    value={regEmail}
+                                    onChange={(e) => setRegEmail(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="info@academy.com"
                                 />
@@ -396,7 +527,11 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
                         {/* 기관 목록 */}
                         <div className="flex-1 overflow-y-auto p-6">
-                            {filteredAcademies.length === 0 ? (
+                            {isLoading ? (
+                                <div className="text-center py-12">
+                                    <p className="text-slate-600 dark:text-slate-400">로딩 중...</p>
+                                </div>
+                            ) : filteredAcademies.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Building2 className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                                     <p className="text-slate-600 dark:text-slate-400 mb-2">검색 결과가 없습니다</p>
@@ -485,10 +620,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                     ← 목록으로 돌아가기
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        alert('목업: 기관 등록 요청이 제출되었습니다.');
-                                        onClose();
-                                    }}
+                                    onClick={handleRegister}
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition font-medium text-sm"
                                 >
                                     등록 요청

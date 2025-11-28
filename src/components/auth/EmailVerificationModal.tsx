@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Mail, Timer, AlertCircle, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { sendEmailVerification, verifyEmail } from '../../services/authService';
 
 interface EmailVerificationModalProps {
     isOpen: boolean;
@@ -73,16 +74,21 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified }: EmailVer
         setError('');
 
         try {
-            // TODO: API 연동 (POST /api/auth/email/send-verification)
-            console.log(`[DEV] Sending verification code to ${email}`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Mock delay
-
+            // Mock implementation
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`[Mock] Verification code sent to ${email}`);
+            
+            /* Real API call
+            await sendEmailVerification(email);
+            */
+            
             setStep('VERIFY');
             setTimeLeft(180);
-            setResendCooldown(30);
+            setResendCooldown(60); // API spec says 60s cooldown
             setAttempts(prev => prev + 1);
-        } catch (err) {
-            setError('인증 코드 발송에 실패했습니다.');
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.detail || '인증 코드 발송에 실패했습니다.');
         } finally {
             setIsLoading(false);
         }
@@ -98,15 +104,25 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified }: EmailVer
         setError('');
 
         try {
-            // TODO: API 연동 (POST /api/auth/email/verify)
-            console.log(`[DEV] Verifying code ${code} for ${email}`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Mock delay
-
-            // Mock 성공 처리
+            // Mock implementation
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // For testing: code '000000' fails, others succeed
+            if (code === '000000') {
+                throw { response: { data: { detail: '잘못된 인증 코드입니다.' } } };
+            }
+            
+            console.log(`[Mock] Email verified: ${email}, code: ${code}`);
+            
+            /* Real API call
+            await verifyEmail(email, code);
+            */
+            
             onVerified();
             onClose();
-        } catch (err) {
-            setError('인증 코드가 일치하지 않습니다.');
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.detail || '인증 코드가 일치하지 않습니다.');
         } finally {
             setIsLoading(false);
         }

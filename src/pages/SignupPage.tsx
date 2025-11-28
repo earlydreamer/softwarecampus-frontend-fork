@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff, CheckCircle, Building2, Mail } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, CheckCircle, Building2, Mail, X } from 'lucide-react';
 import type { SignupFormData, Academy } from '../types';
 import AcademySelectModal from '../components/auth/AcademySelectModal';
 import EmailVerificationModal from '../components/auth/EmailVerificationModal';
 import TermsModal from '../components/auth/TermsModal';
 import { TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_CONSENT } from '../data/terms';
+import { signup } from '../services/authService';
 
 import {
     isValidEmail,
@@ -26,6 +27,7 @@ const SignupPage = () => {
     const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [selectedAcademy, setSelectedAcademy] = useState<Academy | null>(null);
     const [errors, setErrors] = useState<Partial<Record<keyof SignupFormData | 'passwordConfirm' | 'submit', string>>>({});
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
     // 약관 모달 상태
     const [termsModalState, setTermsModalState] = useState<{
@@ -214,21 +216,29 @@ const SignupPage = () => {
         setErrors(prev => ({ ...prev, submit: undefined }));
 
         try {
-            console.log('회원가입 데이터:', formData);
-            await new Promise(resolve => setTimeout(resolve, 800));
-
-            navigate('/login', {
-                state: { message: '회원가입이 완료되었습니다! 로그인해주세요.' }
-            });
-        } catch (error) {
+            // Mock implementation
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            console.log('[Mock] Signup Data:', formData);
+            
+            /* Real API call
+            await signup(formData);
+            */
+            
+            setIsSuccessModalOpen(true);
+        } catch (error: any) {
             console.error('회원가입 실패:', error);
             setErrors(prev => ({
                 ...prev,
-                submit: '회원가입에 실패했습니다. 다시 시도해주세요.'
+                submit: error.response?.data?.detail || '회원가입에 실패했습니다. 다시 시도해주세요.'
             }));
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleSuccessModalClose = () => {
+        setIsSuccessModalOpen(false);
+        navigate('/login');
     };
 
     return (
@@ -681,6 +691,33 @@ const SignupPage = () => {
                 title={getTermsContent().title}
                 content={getTermsContent().content}
             />
+
+            {/* 회원가입 성공 모달 */}
+            {isSuccessModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                                회원가입 완료!
+                            </h2>
+                            <p className="text-slate-600 dark:text-slate-400 mb-8">
+                                {activeTab === 'ACADEMY'
+                                    ? '회원가입 요청이 완료되었습니다.\n관리자 승인 후 서비스를 이용하실 수 있습니다.'
+                                    : '소프트웨어 캠퍼스의 회원이 되신 것을 환영합니다.\n로그인 후 서비스를 이용해주세요.'}
+                            </p>
+                            <button
+                                onClick={handleSuccessModalClose}
+                                className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition"
+                            >
+                                로그인 페이지로 이동
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
