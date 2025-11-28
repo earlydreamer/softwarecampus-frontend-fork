@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAcademyById, fetchCoursesByAcademyId, fetchAcademyQnAs } from '../services/academyService';
-import { MapPin, Globe, Phone, Star, Award, BookOpen, Users, CheckCircle2 } from 'lucide-react';
+import { MapPin, Phone, Star, Award, BookOpen, Users, CheckCircle2 } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseCard from '../components/common/CourseCard';
