@@ -54,8 +54,10 @@ export interface CommunityPost {
     account: {
         userName: string;
     };
-    recommendations: number;
+    likeCount: number;
+    viewCount: number;
+    commentCount: number;
     category: 'NOTICE' | 'QUESTION' | 'COURSE_STORY' | 'CODING_STORY';
-    board: string;
+    categoryName: string;
     createdAt: string;
 }

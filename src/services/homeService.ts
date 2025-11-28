@@ -22,6 +22,7 @@ interface ApiCourseListResponse {
     isKdt: boolean;
     isNailbaeum: boolean;
     isOffline: boolean;
+    imageUrl?: string;
 }
 
 interface HomeCoursesResponse {
@@ -77,14 +78,12 @@ export const fetchHomeCourseSections = async () => {
             isApproved: 'APPROVED',
 
             // 프론트엔드 전용 필드
-            title: apiCourse.name,
-            institution: apiCourse.academyName,
             duration: calculateDuration(apiCourse.courseStart, apiCourse.courseEnd),
             format: apiCourse.isOffline ? '오프라인' : '온라인',
             rating: 0,
             reviewCount: 0,
             tags: [],
-            imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            imageUrl: apiCourse.imageUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
             description: `${apiCourse.name} 과정입니다.`,
             highlights: [],
         });

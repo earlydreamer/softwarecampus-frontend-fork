@@ -52,7 +52,7 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                         ))
                     ) : (
                         posts.map((post) => {
-                            const boardName = post.board || '공지사항';
+                            const boardName = post.categoryName || '공지사항';
                             const boardClass = boardColors[boardName] ?? 'bg-slate-100 text-slate-700 border-slate-200';
 
                             return (
@@ -77,7 +77,7 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                                         <div className="flex items-center gap-3">
                                             <div className="flex items-center gap-1">
                                                 <ThumbsUp className="w-4 h-4" />
-                                                <span>{post.recommendations}</span>
+                                                <span>{post.likeCount}</span>
                                             </div>
                                         </div>
                                     </div>
