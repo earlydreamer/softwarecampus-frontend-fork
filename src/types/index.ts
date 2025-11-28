@@ -206,10 +206,12 @@ export interface CommunityPost {
     account: {
         userName: string;
     };
-    recommendations: number;
+    likeCount: number; // 변경: recommendations -> likeCount
+    viewCount: number; // 추가
+    commentCount: number; // 추가
     category: BoardCategory;
+    categoryName: string; // 변경: board -> categoryName
     createdAt: string;
-    board?: string; // 호환성
 }
 
 export interface Banner {

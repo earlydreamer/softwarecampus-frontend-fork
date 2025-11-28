@@ -446,14 +446,16 @@ export const mockCourses: Course[] = [
 // ===== Mock Community Posts =====
 export const mockCommunityPosts: CommunityPost[] = Array.from({ length: 6 }).map((_, i) => ({
     id: i + 1,
-    title: `커뮤니티 게시글 제목입니다 ${i + 1}`,
+    title: `커뮤니티 게시글 제목 ${i + 1}`,
     account: {
-        userName: `User${i + 1}`
+        userName: `사용자${i + 1}`,
     },
-    recommendations: 5 + i,
+    likeCount: Math.floor(Math.random() * 50),
+    viewCount: Math.floor(Math.random() * 500),
+    commentCount: Math.floor(Math.random() * 20),
     category: i % 4 === 0 ? 'NOTICE' : i % 4 === 1 ? 'QUESTION' : i % 4 === 2 ? 'COURSE_STORY' : 'CODING_STORY',
-    board: i % 4 === 0 ? '공지사항' : i % 4 === 1 ? '문의사항' : i % 4 === 2 ? '진로이야기' : '코딩이야기',
-    createdAt: "2025-11-20"
+    categoryName: i % 4 === 0 ? '공지사항' : i % 4 === 1 ? '문의사항' : i % 4 === 2 ? '진로이야기' : '코딩이야기',
+    createdAt: '2024-03-15',
 }));
 
 // ===== Mock Board Posts =====

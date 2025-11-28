@@ -16,7 +16,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
                     <img
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         src={sanitizeUrl(course.imageUrl || '')}
-                        alt={course.title || '과정 이미지'}
+                        alt={course.name || '과정 이미지'}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
@@ -32,10 +32,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
 
                 <div className="p-5 flex flex-col h-[calc(100%-12rem)]">
                     <p className="text-xs font-medium text-primary-600 mb-1">
-                        {course.institution || '소프트웨어캠퍼스'}
+                        {course.academy?.name || '소프트웨어캠퍼스'}
                     </p>
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-                        {course.title || course.name}
+                        {course.name}
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-1">
                         {course.duration || '기간 미정'}
