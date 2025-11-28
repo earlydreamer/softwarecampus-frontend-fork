@@ -1,4 +1,4 @@
-import type { Banner, Course, CommunityPost, Board, BoardCategory, Academy, CourseReview, CourseQnA } from '../types';
+import type { Banner, Course, CommunityPost, Board, BoardCategory, Academy, CourseReview, CourseQnA, AcademyQnA } from '../types';
 
 // ===== Mock Banners =====
 export const mockBanners: Banner[] = [
@@ -30,17 +30,17 @@ export const mockAcademies: Academy[] = [
     {
         // 백엔드 필드
         id: 1,
-        name: "소프트캠퍼스",
+        name: "소프트웨어캠퍼스",
         address: "서울시 강남구 테헤란로 123",
         businessNumber: "123-45-67890",
-        email: "info@softcampus.com",
+        email: "info@softwarecampus.com",
         isApproved: "APPROVED",
         approvedAt: "2015-03-15T10:00:00",
         // 프론트엔드 전용 필드 (백엔드에 없음)
-        description: "소프트캠퍼스는 실무 중심의 IT 인재를 양성하는 전문 교육기관입니다.",
-        logoUrl: "https://ui-avatars.com/api/?name=Soft+Campus&background=0D8ABC&color=fff",
+        description: "소프트웨어캠퍼스는 실무 중심의 IT 인재를 양성하는 전문 교육기관입니다.",
+        logoUrl: "https://ui-avatars.com/api/?name=Software+Campus&background=0D8ABC&color=fff",
         phone: "02-1234-5678",
-        website: "https://softcampus.com",
+        website: "https://softwarecampus.com",
         establishedDate: "2015-03-01",
         courseCount: 4,
         contentCount: 20,
@@ -538,6 +538,43 @@ export const mockCourseQnAs: CourseQnA[] = Array.from({ length: 15 }).map((_, i)
     viewCount: 50 + i * 10
 }));
 
+// ===== Mock Academy Q&A =====
+export const mockAcademyQnAs: AcademyQnA[] = Array.from({ length: 15 }).map((_, i) => ({
+    id: i + 1,
+    academyId: (i % 3) + 1,
+    author: {
+        id: i + 300,
+        userName: `문의자${i + 1}`,
+        avatar: `https://i.pravatar.cc/150?u=${i + 300}`
+    },
+    title: i % 3 === 0
+        ? "국비지원 과정 신청 자격이 어떻게 되나요?"
+        : i % 3 === 1
+            ? "주말 반도 운영하시나요?"
+            : "수료 후 취업 연계는 어떤 식으로 진행되나요?",
+    content: i % 3 === 0
+        ? "현재 대학생인데 국비지원 과정 신청이 가능한지 궁금합니다. 졸업 예정자만 가능한가요?"
+        : i % 3 === 1
+            ? "직장인이라 평일에는 시간이 안 되는데 주말 반 개설 계획이 있으신가요?"
+            : "수료 후에 어떤 기업으로 취업이 가능한지, 그리고 취업 지원 기간은 얼마나 되는지 알고 싶습니다.",
+    isAnswered: i % 2 === 0,
+    answer: i % 2 === 0 ? {
+        content: i % 3 === 0
+            ? "네, 졸업 예정자(4학년)부터 신청 가능합니다. 자세한 자격 요건은 고용노동부 HRD-Net을 참고해주세요."
+            : i % 3 === 1
+                ? "현재 주말 반은 운영하고 있지 않습니다. 추후 개설 시 공지해 드리겠습니다."
+                : "수료 후 6개월간 취업 지원을 해드리며, 협약 기업 매칭 및 면접 컨설팅을 제공합니다.",
+        answeredBy: {
+            id: 1,
+            userName: "교육담당자",
+            avatar: "https://i.pravatar.cc/150?u=manager"
+        },
+        answeredAt: new Date(Date.now() - i * 86400000 + 3600000).toISOString()
+    } : undefined,
+    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+    viewCount: 30 + i * 5
+}));
+
 // ===== Service Functions =====
 export const fetchHomeBanners = async (): Promise<Banner[]> => {
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -603,8 +640,8 @@ export const fetchCoursesByAcademyId = async (academyId: number): Promise<Course
 };
 
 export const fetchBoardPosts = async (
-    category?: BoardCategory, 
-    page: number = 1, 
+    category?: BoardCategory,
+    page: number = 1,
     limit: number = 20,
     searchKeyword?: string,
     sortType?: 'latest' | 'popular' | 'views' | 'comments',
@@ -612,7 +649,7 @@ export const fetchBoardPosts = async (
 ) => {
     await new Promise(resolve => setTimeout(resolve, 800));
     let filtered = [...mockBoardPosts];
-    
+
     // 카테고리 필터
     if (category) {
         filtered = filtered.filter(p => p.category === category);
@@ -628,8 +665,8 @@ export const fetchBoardPosts = async (
                 case 'content':
                     return post.text.toLowerCase().includes(keyword);
                 case 'title_content':
-                    return post.title.toLowerCase().includes(keyword) || 
-                           post.text.toLowerCase().includes(keyword);
+                    return post.title.toLowerCase().includes(keyword) ||
+                        post.text.toLowerCase().includes(keyword);
                 case 'author':
                     return post.author.userName.toLowerCase().includes(keyword);
                 case 'comment':
@@ -639,8 +676,8 @@ export const fetchBoardPosts = async (
                 case 'all':
                 default:
                     return post.title.toLowerCase().includes(keyword) ||
-                           post.text.toLowerCase().includes(keyword) ||
-                           post.author.userName.toLowerCase().includes(keyword);
+                        post.text.toLowerCase().includes(keyword) ||
+                        post.author.userName.toLowerCase().includes(keyword);
             }
         });
     }
@@ -677,7 +714,64 @@ export const fetchCourseReviews = async (courseId: number): Promise<CourseReview
     return mockCourseReviews.filter(r => r.courseId === courseId);
 };
 
-export const fetchCourseQnAs = async (courseId: number): Promise<CourseQnA[]> => {
+export const fetchCourseQnAs = async (
+    courseId: number,
+    page: number = 1,
+    limit: number = 5,
+    searchKeyword?: string
+): Promise<{ qnas: CourseQnA[], totalCount: number }> => {
     await new Promise(resolve => setTimeout(resolve, 600));
-    return mockCourseQnAs.filter(q => q.courseId === courseId);
+    let filtered = mockCourseQnAs.filter(q => q.courseId === courseId);
+
+    // 검색 필터
+    if (searchKeyword && searchKeyword.trim()) {
+        const keyword = searchKeyword.toLowerCase();
+        filtered = filtered.filter(q =>
+            q.title.toLowerCase().includes(keyword) ||
+            q.content.toLowerCase().includes(keyword) ||
+            (q.answer && q.answer.content.toLowerCase().includes(keyword))
+        );
+    }
+
+    // 최신순 정렬
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return {
+        qnas: filtered.slice(start, end),
+        totalCount: filtered.length
+    };
+};
+
+export const fetchAcademyQnAs = async (
+    academyId: number,
+    page: number = 1,
+    limit: number = 5,
+    searchKeyword?: string
+): Promise<{ qnas: AcademyQnA[], totalCount: number }> => {
+    await new Promise(resolve => setTimeout(resolve, 600));
+    let filtered = mockAcademyQnAs.filter(q => q.academyId === academyId);
+
+    // 검색 필터
+    if (searchKeyword && searchKeyword.trim()) {
+        const keyword = searchKeyword.toLowerCase();
+        filtered = filtered.filter(q =>
+            q.title.toLowerCase().includes(keyword) ||
+            q.content.toLowerCase().includes(keyword) ||
+            (q.answer && q.answer.content.toLowerCase().includes(keyword))
+        );
+    }
+
+    // 최신순 정렬
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const start = (page - 1) * limit;
+    const end = start + limit;
+
+    return {
+        qnas: filtered.slice(start, end),
+        totalCount: filtered.length
+    };
 };

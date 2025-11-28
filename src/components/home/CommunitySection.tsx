@@ -39,10 +39,10 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                     <p className="text-slate-500">등록된 게시글이 없습니다.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:gap-6 md:pb-0 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                     {loading ? (
                         Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="glass-panel p-6 rounded-xl space-y-4">
+                            <div key={i} className="min-w-[280px] w-[85vw] md:w-auto snap-center glass-panel p-6 rounded-xl space-y-4">
                                 <Skeleton className="h-6 w-3/4" />
                                 <div className="flex justify-between">
                                     <Skeleton className="h-4 w-1/4" />
@@ -59,7 +59,7 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                                 <Link
                                     to={`/community/${post.id}`}
                                     key={post.id}
-                                    className="glass-panel p-6 rounded-xl hover:scale-[1.02] transition-all duration-300 group"
+                                    className="min-w-[280px] w-[85vw] md:w-auto snap-center glass-panel p-6 rounded-xl hover:scale-[1.02] transition-all duration-300 group"
                                 >
                                     <div className="flex items-center justify-between mb-4">
                                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${boardClass}`}>

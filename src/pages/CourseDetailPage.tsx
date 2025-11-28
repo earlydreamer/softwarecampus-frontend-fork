@@ -7,6 +7,7 @@ import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseReviews from '../components/course/CourseReviews';
 import CourseQnAs from '../components/course/CourseQnAs';
+import { QNA_PER_PAGE } from '../constants';
 
 
 const CourseDetailPage = () => {
@@ -18,6 +19,8 @@ const CourseDetailPage = () => {
     const id = isValidId ? parsedId : null;
 
     const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'qna'>('overview');
+    const [qnaPage, setQnaPage] = useState(1);
+    const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
 
     const {
         data: course,
@@ -44,14 +47,14 @@ const CourseDetailPage = () => {
     });
 
     const {
-        data: qnas,
+        data: qnaData,
         isLoading: isQnAsLoading,
         isError: isQnAsError,
         error: qnasError,
         refetch: refetchQnAs
     } = useQuery({
-        queryKey: ['course-qnas', id],
-        queryFn: () => fetchCourseQnAs(id!),
+        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword],
+        queryFn: () => fetchCourseQnAs(id!, qnaPage, QNA_PER_PAGE, qnaSearchKeyword),
         enabled: isValidId,
     });
 
@@ -243,7 +246,7 @@ const CourseDetailPage = () => {
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                                             }`}
                                     >
-                                        Q&A {qnas && `(${qnas.length})`}
+                                        Q&A {qnaData && `(${qnaData.totalCount})`}
                                     </button>
                                 </div>
                             </div>
@@ -361,7 +364,21 @@ const CourseDetailPage = () => {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <CourseQnAs qnas={qnas || []} isLoading={isQnAsLoading} />
+                                            <CourseQnAs
+                                                qnas={qnaData?.qnas || []}
+                                                totalCount={qnaData?.totalCount || 0}
+                                                page={qnaPage}
+                                                onPageChange={setQnaPage}
+                                                isLoading={isQnAsLoading}
+                                                onQuestionSubmit={(title, content) => {
+                                                    console.log('Question submitted:', { title, content });
+                                                    alert('질문이 등록되었습니다.');
+                                                }}
+                                                onSearch={(keyword) => {
+                                                    setQnaSearchKeyword(keyword);
+                                                    setQnaPage(1);
+                                                }}
+                                            />
                                         )}
                                     </>
                                 )}
@@ -407,7 +424,12 @@ const CourseDetailPage = () => {
                                     onClick={() => {
                                         const targetUrl = course.externalLink || course.academy.website;
                                         if (targetUrl) {
-                                            window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                                            const safeUrl = sanitizeUrl(targetUrl);
+                                            if (safeUrl) {
+                                                window.open(safeUrl, '_blank', 'noopener,noreferrer');
+                                            } else {
+                                                alert('유효하지 않은 링크입니다.');
+                                            }
                                         } else {
                                             alert('자세히 보기 링크가 제공되지 않았습니다.');
                                         }

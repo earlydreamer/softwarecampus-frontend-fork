@@ -102,6 +102,11 @@ export const sanitizeUrl = (url: string, allowDataUri: boolean = false): string 
         return trimmedUrl;
     }
 
+    // 6. blob: URI (이미지 미리보기 등)
+    if (/^blob:/i.test(trimmedUrl)) {
+        return trimmedUrl;
+    }
+
     // 허용되지 않은 형식
     console.warn(`[Security] Blocked URL with unrecognized format: ${trimmedUrl.substring(0, 50)}...`);
     return '';

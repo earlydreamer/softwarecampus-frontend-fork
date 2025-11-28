@@ -65,9 +65,9 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
             </div>
 
             {/* Content */}
-            <div className="relative h-full container mx-auto px-6 md:px-12 flex items-center">
-                <div className="max-w-2xl text-white space-y-6 animate-fade-in-up">
-                    <h2 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight">
+            <div className="relative h-full container mx-auto px-16 md:px-24 flex items-center">
+                <div className="max-w-2xl md:max-w-4xl lg:max-w-5xl text-white space-y-6 animate-fade-in-up">
+                    <h2 className="text-4xl md:text-6xl font-extrabold leading-tight tracking-tight break-keep">
                         {currentBanner.title}
                     </h2>
                     <p className="text-lg md:text-xl text-slate-200 font-light leading-relaxed">

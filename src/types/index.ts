@@ -125,6 +125,7 @@ export interface Course {
     imageUrl?: string;
     description?: string;
     highlights?: string[];
+    externalLink?: string;
     // 호환성을 위한 필드
     title?: string;
     institution?: string;
@@ -238,6 +239,31 @@ export interface CourseReview {
 export interface CourseQnA {
     id: number;
     courseId: number;
+    author: {
+        id: number;
+        userName: string;
+        avatar?: string;
+    };
+    title: string;
+    content: string;
+    isAnswered: boolean;
+    answer?: {
+        content: string;
+        answeredBy: {
+            id: number;
+            userName: string;
+            avatar?: string;
+        };
+        answeredAt: string;
+    };
+    createdAt: string;
+    viewCount: number;
+}
+
+// ===== 기관 Q&A 관련 타입 정의 =====
+export interface AcademyQnA {
+    id: number;
+    academyId: number;
     author: {
         id: number;
         userName: string;

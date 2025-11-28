@@ -20,7 +20,7 @@ const TEMP_ACCOUNTS: Record<string, { user: User; password: string }> = {
       accountType: 'ADMIN',
       approvalStatus: 'APPROVED',
       address: '서울시 강남구',
-      affiliation: '소프트캠퍼스',
+      affiliation: '소프트웨어캠퍼스',
       position: '시스템 관리자',
       academyId: null
     },
@@ -45,12 +45,12 @@ const TEMP_ACCOUNTS: Record<string, { user: User; password: string }> = {
     user: {
       id: 3,
       email: 'academy@test.com',
-      userName: '소프트캠퍼스 담당자',
+      userName: '소프트웨어캠퍼스 담당자',
       phoneNumber: '02-1234-5678',
       accountType: 'ACADEMY',
       approvalStatus: 'APPROVED',
       address: '서울시 종로구',
-      affiliation: '소프트캠퍼스',
+      affiliation: '소프트웨어캠퍼스',
       position: '교육팀장',
       academyId: 1 // 기관 ID 할당
     },

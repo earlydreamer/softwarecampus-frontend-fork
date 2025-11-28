@@ -1,14 +1,21 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAcademyById, fetchCoursesByAcademyId } from '../services/academyService';
-import { MapPin, Globe, Phone, Star, Award, BookOpen, Users } from 'lucide-react';
+import { fetchAcademyById, fetchCoursesByAcademyId, fetchAcademyQnAs } from '../services/academyService';
+import { MapPin, Globe, Phone, Star, Award, BookOpen, Users, CheckCircle2 } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseCard from '../components/common/CourseCard';
+import AcademyQnAs from '../components/academy/AcademyQnAs';
+import MapEmbed from '../components/common/MapEmbed';
+import { QNA_PER_PAGE } from '../constants';
 
 const AcademyDetailPage = () => {
     const { academyId } = useParams<{ academyId: string }>();
     const id = Number(academyId);
+    const [activeTab, setActiveTab] = useState<'info' | 'courses' | 'qna'>('info');
+    const [qnaPage, setQnaPage] = useState(1);
+    const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
 
     const {
         data: academy,
@@ -29,6 +36,18 @@ const AcademyDetailPage = () => {
     } = useQuery({
         queryKey: ['academy-courses', id],
         queryFn: () => fetchCoursesByAcademyId(id),
+        enabled: !isNaN(id) && id > 0,
+    });
+
+    const {
+        data: qnaData,
+        isLoading: isQnasLoading,
+        error: qnasError,
+        isError: isQnasError,
+        refetch: refetchQnAs
+    } = useQuery({
+        queryKey: ['academy-qnas', id, qnaPage, qnaSearchKeyword],
+        queryFn: () => fetchAcademyQnAs(id, qnaPage, QNA_PER_PAGE, qnaSearchKeyword),
         enabled: !isNaN(id) && id > 0,
     });
 
@@ -80,142 +99,284 @@ const AcademyDetailPage = () => {
 
     return (
         <div className="pb-20">
-            {/* Header Banner */}
-            <div className="bg-white border-b border-slate-200">
-                <div className="container mx-auto px-4 py-12">
+            {/* Header Section */}
+            <div className="bg-slate-900 text-white py-12 lg:py-20 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
+
+                <div className="container mx-auto px-4 relative z-10">
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-white p-1 flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
                             {academy.logoUrl ? (
-                                <img src={sanitizeUrl(academy.logoUrl)} alt={academy.name} className="w-full h-full object-cover" />
+                                <img src={sanitizeUrl(academy.logoUrl)} alt={academy.name} className="w-full h-full object-contain rounded-xl" />
                             ) : (
-                                <span className="text-3xl font-bold text-slate-400">{academy.name[0]}</span>
+                                <div className="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center">
+                                    <span className="text-3xl font-bold text-slate-400">{academy.name[0]}</span>
+                                </div>
                             )}
                         </div>
                         <div className="flex-grow">
                             <div className="flex flex-wrap items-center gap-3 mb-2">
-                                <h1 className="text-3xl font-bold text-slate-900">{academy.name}</h1>
+                                <h1 className="text-3xl lg:text-4xl font-bold leading-tight">{academy.name}</h1>
                                 {academy.isApproved === 'APPROVED' && (
-                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-xs font-bold border border-blue-100 flex items-center gap-1">
+                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-500/30 flex items-center gap-1">
                                         <Award className="w-3 h-3" />
                                         인증기관
                                     </span>
                                 )}
                             </div>
-                            <p className="text-slate-600 max-w-2xl mb-4">{academy.description}</p>
-                            <div className="flex flex-wrap gap-4 text-sm text-slate-500">
-                                <div className="flex items-center gap-1.5">
-                                    <MapPin className="w-4 h-4" />
-                                    {academy.address}
+                            <div className="flex flex-wrap items-center gap-6 text-slate-300 text-sm lg:text-base mt-4">
+                                <div className="flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-primary-400" />
+                                    <span>{academy.address}</span>
                                 </div>
-                                {academy.website && (
-                                    <a href={sanitizeUrl(academy.website)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 hover:text-primary-600 transition-colors">
-                                        <Globe className="w-4 h-4" />
-                                        홈페이지
-                                    </a>
-                                )}
                                 {academy.phone && (
-                                    <div className="flex items-center gap-1.5">
-                                        <Phone className="w-4 h-4" />
-                                        {academy.phone}
+                                    <div className="flex items-center gap-2">
+                                        <Phone className="w-5 h-5 text-primary-400" />
+                                        <span>{academy.phone}</span>
                                     </div>
                                 )}
                             </div>
                         </div>
                         <div className="flex flex-col items-end gap-2 min-w-[120px]">
-                            <div className="flex items-center gap-1 text-amber-500 font-bold text-2xl">
-                                <Star className="w-6 h-6 fill-current" />
+                            <div className="flex items-center gap-1 text-amber-400 font-bold text-3xl">
+                                <Star className="w-8 h-8 fill-current" />
                                 {academy.rating}
                             </div>
-                            <div className="text-sm text-slate-500">리뷰 {academy.reviewCount}개</div>
+                            <div className="text-sm text-slate-400">리뷰 {academy.reviewCount}개</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-12">
+            <div className="container mx-auto px-4 -mt-10 relative z-20">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-10">
-                        {/* Stats */}
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <div className="w-10 h-10 mx-auto bg-primary-50 text-primary-600 rounded-full flex items-center justify-center mb-3">
-                                    <BookOpen className="w-5 h-5" />
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* Overview Card */}
+                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">기관 소개</h2>
+                            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                                {academy.description}
+                            </p>
+
+                            {/* Stats */}
+                            <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-100">
+                                <div className="text-center">
+                                    <div className="w-10 h-10 mx-auto bg-primary-50 text-primary-600 rounded-full flex items-center justify-center mb-3">
+                                        <BookOpen className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-2xl font-bold text-slate-900">{academy.courseCount}</div>
+                                    <div className="text-xs text-slate-500 mt-1">운영 과정</div>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-900">{academy.courseCount}</div>
-                                <div className="text-xs text-slate-500 mt-1">운영 과정</div>
-                            </div>
-                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <div className="w-10 h-10 mx-auto bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-3">
-                                    <Users className="w-5 h-5" />
+                                <div className="text-center">
+                                    <div className="w-10 h-10 mx-auto bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-3">
+                                        <Users className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-2xl font-bold text-slate-900">1,200+</div>
+                                    <div className="text-xs text-slate-500 mt-1">누적 수강생</div>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-900">1,200+</div>
-                                <div className="text-xs text-slate-500 mt-1">누적 수강생</div>
-                            </div>
-                            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-center">
-                                <div className="w-10 h-10 mx-auto bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-3">
-                                    <Award className="w-5 h-5" />
+                                <div className="text-center">
+                                    <div className="w-10 h-10 mx-auto bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-3">
+                                        <Award className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-2xl font-bold text-slate-900">95%</div>
+                                    <div className="text-xs text-slate-500 mt-1">취업률</div>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-900">95%</div>
-                                <div className="text-xs text-slate-500 mt-1">취업률</div>
                             </div>
                         </div>
 
-                        {/* Courses List */}
-                        <div>
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-bold text-slate-900">운영 중인 과정</h2>
-                                <Link to={`/lectures?academy=${academy.id}`} className="text-sm font-medium text-primary-600 hover:underline">
-                                    전체보기
-                                </Link>
+                        {/* Tabs Navigation */}
+                        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+                            <div className="border-b border-slate-200">
+                                <div className="flex">
+                                    <button
+                                        onClick={() => setActiveTab('info')}
+                                        className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'info'
+                                            ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            }`}
+                                    >
+                                        상세 정보
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('courses')}
+                                        className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'courses'
+                                            ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            }`}
+                                    >
+                                        개설 과정 {courses && `(${courses.length})`}
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('qna')}
+                                        className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'qna'
+                                            ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            }`}
+                                    >
+                                        Q&A {qnaData && `(${qnaData.totalCount})`}
+                                    </button>
+                                </div>
                             </div>
 
-                            {isCoursesLoading ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <Skeleton className="h-80 w-full" />
-                                    <Skeleton className="h-80 w-full" />
-                                </div>
-                            ) : courses && courses.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {courses.map(course => (
-                                        <CourseCard key={course.id} course={course} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-100">
-                                    <p className="text-slate-500">현재 운영 중인 과정이 없습니다.</p>
-                                </div>
-                            )}
+                            <div className="p-8">
+                                {activeTab === 'info' && (
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-900 mb-4">기관 특징</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="flex items-start gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
+                                                    <span className="text-slate-700">고용노동부 인증 우수 훈련 기관</span>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
+                                                    <span className="text-slate-700">실무 중심의 프로젝트 기반 학습</span>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
+                                                    <span className="text-slate-700">전문 취업 컨설턴트의 1:1 케어</span>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
+                                                    <span className="text-slate-700">최신 사양의 교육 장비 지원</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-slate-100">
+                                            <h3 className="text-lg font-bold text-slate-900 mb-4">기관 설명</h3>
+                                            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                                                {academy.description}
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-6 border-t border-slate-100">
+                                            <h3 className="text-lg font-bold text-slate-900 mb-4">위치 안내</h3>
+                                            <div className="h-[300px] w-full">
+                                                <MapEmbed address={academy.address} height="100%" />
+                                            </div>
+                                            <p className="mt-2 text-slate-600 flex items-center gap-2">
+                                                <MapPin className="w-4 h-4" />
+                                                {academy.address}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'courses' && (
+                                    <div>
+                                        {isCoursesLoading ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <Skeleton className="h-80 w-full" />
+                                                <Skeleton className="h-80 w-full" />
+                                            </div>
+                                        ) : courses && courses.length > 0 ? (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {courses.map(course => (
+                                                    <CourseCard key={course.id} course={course} />
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-100">
+                                                <p className="text-slate-500">현재 운영 중인 과정이 없습니다.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'qna' && (
+                                    <>
+                                        {isQnasError ? (
+                                            <div className="text-center py-12">
+                                                <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
+                                                    <Award className="w-8 h-8 text-orange-600" />
+                                                </div>
+                                                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                                                    Q&A를 불러올 수 없습니다
+                                                </h3>
+                                                <p className="text-slate-600 mb-4">
+                                                    {(qnasError as Error)?.message || '네트워크 오류가 발생했습니다.'}
+                                                </p>
+                                                <button
+                                                    onClick={() => refetchQnAs()}
+                                                    className="btn-primary"
+                                                    aria-label="Q&A 다시 불러오기"
+                                                >
+                                                    다시 시도
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <AcademyQnAs
+                                                qnas={qnaData?.qnas || []}
+                                                totalCount={qnaData?.totalCount || 0}
+                                                page={qnaPage}
+                                                onPageChange={setQnaPage}
+                                                isLoading={isQnasLoading}
+                                                onQuestionSubmit={(title, content) => {
+                                                    console.log('Question submitted:', { title, content });
+                                                    alert('질문이 등록되었습니다.');
+                                                }}
+                                                onSearch={(keyword) => {
+                                                    setQnaSearchKeyword(keyword);
+                                                    setQnaPage(1);
+                                                }}
+                                            />
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* Sidebar Info */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
-                            <h3 className="font-bold text-slate-900 mb-4">기관 정보</h3>
+                    <div className="lg:col-span-1">
+                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 sticky top-24">
+                            <h3 className="font-bold text-slate-900 mb-6 pb-4 border-b border-slate-100">기관 상세 정보</h3>
                             <div className="space-y-4 text-sm">
-                                <div>
-                                    <div className="text-slate-500 mb-1">설립일</div>
-                                    <div className="font-medium">{academy.establishedDate}</div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">설립일</span>
+                                    <span className="font-medium text-slate-900">{academy.establishedDate}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">사업자 등록번호</span>
+                                    <span className="font-medium text-slate-900">{academy.businessNumber}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500">이메일</span>
+                                    <span className="font-medium text-slate-900">{academy.email}</span>
                                 </div>
                                 <div>
-                                    <div className="text-slate-500 mb-1">사업자 등록번호</div>
-                                    <div className="font-medium">{academy.businessNumber}</div>
-                                </div>
-                                <div>
-                                    <div className="text-slate-500 mb-1">이메일</div>
-                                    <div className="font-medium">{academy.email}</div>
-                                </div>
-                                <div>
-                                    <div className="text-slate-500 mb-1">주요 분야</div>
-                                    <div className="flex flex-wrap gap-2 mt-1">
+                                    <div className="text-slate-500 mb-2">주요 분야</div>
+                                    <div className="flex flex-wrap gap-2">
                                         {academy.fields?.map(field => (
-                                            <span key={field} className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">
+                                            <span key={field} className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium">
                                                 {field}
                                             </span>
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="mt-8 pt-6 border-t border-slate-100">
+                                {academy.website ? (
+                                    <a
+                                        href={sanitizeUrl(academy.website)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30 mb-3 flex items-center justify-center"
+                                    >
+                                        기관 홈페이지 바로가기
+                                    </a>
+                                ) : (
+                                    <button className="w-full py-3.5 rounded-xl bg-slate-300 text-white font-bold text-lg cursor-not-allowed mb-3" disabled>
+                                        기관 홈페이지 바로가기
+                                    </button>
+                                )}
+                                <button className="w-full py-3.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-lg hover:bg-slate-50 transition-all">
+                                    공유하기
+                                </button>
                             </div>
                         </div>
                     </div>

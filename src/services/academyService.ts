@@ -1,3 +1,3 @@
-import { fetchAcademies, fetchAcademyById, fetchCoursesByAcademyId } from './mockData';
+import { fetchAcademies, fetchAcademyById, fetchCoursesByAcademyId, fetchAcademyQnAs } from './mockData';
 
-export { fetchAcademies, fetchAcademyById, fetchCoursesByAcademyId };
+export { fetchAcademies, fetchAcademyById, fetchCoursesByAcademyId, fetchAcademyQnAs };

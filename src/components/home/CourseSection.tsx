@@ -12,12 +12,28 @@ interface CourseSectionProps {
     link?: string;
     targetCount?: number;
     error?: boolean;
+    viewMode?: 'carousel' | 'grid';
 }
 
-const CourseSection: React.FC<CourseSectionProps> = ({ title, courses, loading, link, targetCount, error }) => {
-    const finalTarget = targetCount ?? Math.max(courses.length, 4);
+const CourseSection: React.FC<CourseSectionProps> = ({
+    title,
+    courses,
+    loading,
+    link,
+    targetCount,
+    error,
+    viewMode = 'carousel'
+}) => {
+    const finalTarget = targetCount ?? (loading ? 4 : courses.length);
     const isEmpty = !loading && courses.length === 0;
-    const placeholdersCount = Math.max(finalTarget - courses.length, 0);
+
+    const containerClasses = viewMode === 'carousel'
+        ? "flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 sm:pb-0 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+        : "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4";
+
+    const itemClasses = viewMode === 'carousel'
+        ? "min-w-[280px] w-[85vw] sm:w-auto snap-center"
+        : "w-full";
 
     return (
         <section className="py-8">
@@ -45,10 +61,10 @@ const CourseSection: React.FC<CourseSectionProps> = ({ title, courses, loading, 
                     <p className="text-slate-500">등록된 과정이 없습니다.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className={containerClasses}>
                     {loading ? (
                         Array.from({ length: finalTarget }).map((_, i) => (
-                            <div key={i} className="glass-panel rounded-xl p-4 space-y-4">
+                            <div key={i} className={`${itemClasses} glass-panel rounded-xl p-4 space-y-4`}>
                                 <Skeleton className="h-40 w-full rounded-lg" />
                                 <Skeleton className="h-4 w-3/4" />
                                 <Skeleton className="h-4 w-1/2" />
@@ -57,10 +73,9 @@ const CourseSection: React.FC<CourseSectionProps> = ({ title, courses, loading, 
                     ) : (
                         <>
                             {courses.map((course) => (
-                                <CourseCard key={course.id} course={course} />
-                            ))}
-                            {Array.from({ length: placeholdersCount }).map((_, i) => (
-                                <div key={`placeholder-${i}`} className="glass-panel rounded-xl border-dashed border-2 border-slate-200 bg-slate-50/50" />
+                                <div key={course.id} className={itemClasses}>
+                                    <CourseCard course={course} />
+                                </div>
                             ))}
                         </>
                     )}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CourseReview } from '../../types';
 import { Star, ThumbsUp, CheckCircle } from 'lucide-react';
+import { sanitizeUrl } from '../../utils/security';
 
 interface CourseReviewsProps {
     reviews: CourseReview[];
@@ -96,7 +97,7 @@ const CourseReviews = ({ reviews, isLoading }: CourseReviewsProps) => {
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
                                 {review.author.avatar ? (
-                                    <img src={review.author.avatar} alt={review.author.userName} className="w-full h-full object-cover" />
+                                    <img src={sanitizeUrl(review.author.avatar)} alt={review.author.userName} className="w-full h-full object-cover" />
                                 ) : (
                                     <span className="text-slate-400 font-bold">{review.author.userName[0]}</span>
                                 )}

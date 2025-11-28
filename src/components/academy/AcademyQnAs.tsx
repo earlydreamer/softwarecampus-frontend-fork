@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { CourseQnA } from '../../types';
+import type { AcademyQnA } from '../../types';
 import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import QnAForm from '../common/QnAForm';
 import { sanitizeUrl } from '../../utils/security';
 import { QNA_PER_PAGE } from '../../constants';
 
-interface CourseQnAsProps {
-    qnas: CourseQnA[];
+interface AcademyQnAsProps {
+    qnas: AcademyQnA[];
     totalCount: number;
     page: number;
     onPageChange: (page: number) => void;
@@ -15,7 +15,7 @@ interface CourseQnAsProps {
     onSearch?: (keyword: string) => void;
 }
 
-const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestionSubmit, onSearch }: CourseQnAsProps) => {
+const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestionSubmit, onSearch }: AcademyQnAsProps) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [expandedQnaId, setExpandedQnaId] = useState<number | null>(null);
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -55,7 +55,7 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-lg font-bold text-slate-900">
-                    과정 Q&A <span className="text-primary-600">({totalCount})</span>
+                    기관 Q&A <span className="text-primary-600">({totalCount})</span>
                 </h3>
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="relative flex-1 md:w-64">
@@ -133,7 +133,7 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
                                 onClick={() => toggleQna(qna.id)}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
-                                        if (e.key === ' ') e.preventDefault();
+                                        e.preventDefault();
                                         toggleQna(qna.id);
                                     }
                                 }}
@@ -263,4 +263,4 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
     );
 };
 
-export default CourseQnAs;
+export default AcademyQnAs;
