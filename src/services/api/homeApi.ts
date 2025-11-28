@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { ApiCourseResponse, CommunityPost } from './types';
+import type { ApiCourseResponse, ApiHomeCommunityResponse, CommunityPost } from './types';
 import type { Course } from '../../types';
 
 /**
@@ -110,17 +110,7 @@ export const fetchClosingSoonCourses = async (limit: number = 4): Promise<Course
  * 커뮤니티 하이라이트 조회
  * 최근 게시글 n개
  */
-interface ApiHomeCommunityResponse {
-    id: number;
-    title: string;
-    category: string;
-    categoryName: string;
-    writerName: string;
-    viewCount: number;
-    likeCount: number;
-    commentCount: number;
-    createdAt: string;
-}
+
 
 /**
  * 커뮤니티 하이라이트 조회

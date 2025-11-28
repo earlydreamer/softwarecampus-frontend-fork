@@ -61,3 +61,18 @@ export interface CommunityPost {
     categoryName: string;
     createdAt: string;
 }
+
+/**
+ * 커뮤니티 하이라이트 응답 DTO
+ */
+export interface ApiHomeCommunityResponse {
+    id: number;
+    title: string;
+    category: string;
+    categoryName: string;
+    writerName: string;
+    viewCount: number;
+    likeCount: number;
+    commentCount: number;
+    createdAt: string;
+}
