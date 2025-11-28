@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff, CheckCircle, Building2 } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, CheckCircle, Building2, Mail } from 'lucide-react';
 import type { SignupFormData, Academy } from '../types';
 import AcademySelectModal from '../components/auth/AcademySelectModal';
+import EmailVerificationModal from '../components/auth/EmailVerificationModal';
 
 import {
     isValidEmail,
@@ -19,6 +20,8 @@ const SignupPage = () => {
     const [passwordConfirm, setPasswordConfirm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAcademyModalOpen, setIsAcademyModalOpen] = useState(false);
+    const [isEmailVerificationModalOpen, setIsEmailVerificationModalOpen] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [selectedAcademy, setSelectedAcademy] = useState<Academy | null>(null);
     const [errors, setErrors] = useState<Partial<Record<keyof SignupFormData | 'passwordConfirm' | 'submit', string>>>({});
 
@@ -50,6 +53,7 @@ const SignupPage = () => {
         setPasswordConfirm('');
         setSelectedAcademy(null);
         setErrors({});
+        setIsEmailVerified(false);
     };
 
     const handleAcademySelect = (academy: Academy) => {
@@ -61,6 +65,11 @@ const SignupPage = () => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value || null }));
+
+        if (name === 'email') {
+            setIsEmailVerified(false);
+        }
+
         if (errors[name as keyof typeof errors]) {
             setErrors(prev => ({ ...prev, [name]: undefined }));
         }
@@ -84,6 +93,8 @@ const SignupPage = () => {
             newErrors.email = '이메일은 필수입니다';
         } else if (!isValidEmail(formData.email)) {
             newErrors.email = '유효한 이메일 형식이 아닙니다';
+        } else if (!isEmailVerified) {
+            newErrors.email = '이메일 인증이 필요합니다';
         }
 
         if (!formData.password) {
@@ -184,16 +195,37 @@ const SignupPage = () => {
                             <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                 이메일 *
                             </label>
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'
-                                    } rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none`}
-                                placeholder="example@email.com"
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    disabled={isEmailVerified}
+                                    className={`flex-1 px-4 py-3 border ${errors.email ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'
+                                        } rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:text-slate-500`}
+                                    placeholder="example@email.com"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEmailVerificationModalOpen(true)}
+                                    disabled={!formData.email || !isValidEmail(formData.email) || isEmailVerified}
+                                    className={`px-4 py-3 rounded-lg font-medium transition whitespace-nowrap ${isEmailVerified
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 cursor-default'
+                                            : 'bg-primary-600 text-white hover:bg-primary-700 disabled:bg-slate-200 disabled:text-slate-500 dark:disabled:bg-slate-700 dark:disabled:text-slate-400'
+                                        }`}
+                                >
+                                    {isEmailVerified ? (
+                                        <span className="flex items-center gap-1">
+                                            <CheckCircle className="w-4 h-4" />
+                                            인증 완료
+                                        </span>
+                                    ) : (
+                                        '인증하기'
+                                    )}
+                                </button>
+                            </div>
                             {errors.email && (
                                 <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                                     <AlertCircle className="w-4 h-4" />
@@ -461,6 +493,17 @@ const SignupPage = () => {
                 isOpen={isAcademyModalOpen}
                 onClose={() => setIsAcademyModalOpen(false)}
                 onSelect={handleAcademySelect}
+            />
+
+            {/* 이메일 인증 모달 */}
+            <EmailVerificationModal
+                isOpen={isEmailVerificationModalOpen}
+                onClose={() => setIsEmailVerificationModalOpen(false)}
+                email={formData.email || ''}
+                onVerified={() => {
+                    setIsEmailVerified(true);
+                    setErrors(prev => ({ ...prev, email: undefined }));
+                }}
             />
         </div>
     );
