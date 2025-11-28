@@ -1,16 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User } from '../types';
+import type { Account } from '../types';
 
 interface AuthState {
-  user: User | null;
+  user: Account | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
 // 임시 계정 데이터 (백엔드 AccountResponse 구조와 완전 일치)
-const TEMP_ACCOUNTS: Record<string, { user: User; password: string }> = {
+const TEMP_ACCOUNTS: Record<string, { user: Account; password: string }> = {
   'admin@test.com': {
     user: {
       id: 1,
@@ -18,7 +18,7 @@ const TEMP_ACCOUNTS: Record<string, { user: User; password: string }> = {
       userName: '관리자',
       phoneNumber: '010-1234-5678',
       accountType: 'ADMIN',
-      approvalStatus: 'APPROVED',
+      accountApproved: 'APPROVED',
       address: '서울시 강남구',
       affiliation: '소프트웨어캠퍼스',
       position: '시스템 관리자',
@@ -33,7 +33,7 @@ const TEMP_ACCOUNTS: Record<string, { user: User; password: string }> = {
       userName: '일반사용자',
       phoneNumber: '010-2345-6789',
       accountType: 'USER',
-      approvalStatus: 'APPROVED',
+      accountApproved: 'APPROVED',
       address: '서울시 서초구',
       affiliation: null,
       position: null,
@@ -48,7 +48,7 @@ const TEMP_ACCOUNTS: Record<string, { user: User; password: string }> = {
       userName: '소프트웨어캠퍼스 담당자',
       phoneNumber: '02-1234-5678',
       accountType: 'ACADEMY',
-      approvalStatus: 'APPROVED',
+      accountApproved: 'APPROVED',
       address: '서울시 종로구',
       affiliation: '소프트웨어캠퍼스',
       position: '교육팀장',

@@ -10,7 +10,7 @@ export type CourseFormat = '온라인' | '오프라인';
 
 export interface CourseApprovalRequest {
     id: number;
-    courseTitle: string;
+    courseName: string; // courseTitle -> courseName
     academyId: number;
     academyName: string;
     category: string;
@@ -38,11 +38,11 @@ export interface CourseApprovalRequest {
 export interface ReviewApprovalRequest {
     id: number;
     reviewId: number;
-    courseTitle: string;
+    courseName: string; // courseTitle -> courseName
     academyId: number;
-    authorName: string;
+    writerName: string; // authorName -> writerName
     rating: number;
-    content: string;
+    comment: string; // content -> comment
     requestType: '등록' | '삭제';
     requestDate: string;
     status: '대기' | '승인' | '거부';
@@ -50,7 +50,7 @@ export interface ReviewApprovalRequest {
 
 export interface AdminUser {
     id: number;
-    username: string;
+    userName: string; // username -> userName
     email: string;
     accountType: 'ADMIN' | 'USER' | 'ACADEMY';
     registeredDate: string;
@@ -89,7 +89,7 @@ export interface BannerData {
 export const mockCourseApprovalRequests: CourseApprovalRequest[] = [
     {
         id: 1,
-        courseTitle: 'React 실전 프로젝트 마스터',
+        courseName: 'React 실전 프로젝트 마스터',
         academyId: 1,
         academyName: '소프트웨어캠퍼스',
         category: '프론트엔드',
@@ -112,7 +112,7 @@ export const mockCourseApprovalRequests: CourseApprovalRequest[] = [
     },
     {
         id: 2,
-        courseTitle: 'Spring Boot 실무 완성',
+        courseName: 'Spring Boot 실무 완성',
         academyId: 2,
         academyName: '패스트캠퍼스',
         category: '백엔드',
@@ -126,7 +126,7 @@ export const mockCourseApprovalRequests: CourseApprovalRequest[] = [
     },
     {
         id: 3,
-        courseTitle: 'DevOps 입문 과정',
+        courseName: 'DevOps 입문 과정',
         academyId: 3,
         academyName: '인프런',
         category: '데브옵스/인프라',
@@ -140,7 +140,7 @@ export const mockCourseApprovalRequests: CourseApprovalRequest[] = [
     },
     {
         id: 4,
-        courseTitle: 'Java 풀스택 개발자 양성 과정',
+        courseName: 'Java 풀스택 개발자 양성 과정',
         academyId: 1,
         academyName: '소프트웨어캠퍼스',
         category: '풀스택',
@@ -169,11 +169,11 @@ export const mockReviewApprovalRequests: ReviewApprovalRequest[] = [
     {
         id: 1,
         reviewId: 101,
-        courseTitle: 'Next.js 완벽 가이드',
+        courseName: 'Next.js 완벽 가이드',
         academyId: 1,
-        authorName: '최개발',
+        writerName: '최개발',
         rating: 5,
-        content: '정말 유익한 강의였습니다. 실무에 바로 적용할 수 있는 내용들로 가득했어요.',
+        comment: '정말 유익한 강의였습니다. 실무에 바로 적용할 수 있는 내용들로 가득했어요.',
         requestType: '등록',
         requestDate: '2025-01-15',
         status: '대기'
@@ -181,11 +181,11 @@ export const mockReviewApprovalRequests: ReviewApprovalRequest[] = [
     {
         id: 2,
         reviewId: 102,
-        courseTitle: 'AWS 클라우드 실습',
+        courseName: 'AWS 클라우드 실습',
         academyId: 2,
-        authorName: '정수강',
+        writerName: '정수강',
         rating: 4,
-        content: '클라우드 기초부터 심화까지 체계적으로 배울 수 있었습니다.',
+        comment: '클라우드 기초부터 심화까지 체계적으로 배울 수 있었습니다.',
         requestType: '등록',
         requestDate: '2025-01-14',
         status: '대기'
@@ -196,7 +196,7 @@ export const mockReviewApprovalRequests: ReviewApprovalRequest[] = [
 export const mockAdminUsers: AdminUser[] = [
     {
         id: 1,
-        username: '김철수',
+        userName: '김철수',
         email: 'kim@example.com',
         accountType: 'USER',
         registeredDate: '2024-03-15',
@@ -207,7 +207,7 @@ export const mockAdminUsers: AdminUser[] = [
     },
     {
         id: 2,
-        username: '이영희',
+        userName: '이영희',
         email: 'lee@example.com',
         accountType: 'USER',
         registeredDate: '2024-05-20',
@@ -218,7 +218,7 @@ export const mockAdminUsers: AdminUser[] = [
     },
     {
         id: 3,
-        username: '박지성',
+        userName: '박지성',
         email: 'park@example.com',
         accountType: 'ACADEMY',
         registeredDate: '2024-01-10',
@@ -229,7 +229,7 @@ export const mockAdminUsers: AdminUser[] = [
     },
     {
         id: 4,
-        username: '정관리',
+        userName: '정관리',
         email: 'admin@example.com',
         accountType: 'ADMIN',
         registeredDate: '2023-12-01',
@@ -240,7 +240,7 @@ export const mockAdminUsers: AdminUser[] = [
     },
     {
         id: 5,
-        username: '최정지',
+        userName: '최정지',
         email: 'choi@example.com',
         accountType: 'USER',
         registeredDate: '2024-07-08',

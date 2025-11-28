@@ -97,7 +97,7 @@ const CommunityDetailPage = () => {
     // 현재 사용자가 게시글 작성자인지 확인
     const isAuthor = useMemo(() => {
         if (!user || !post) return false;
-        return user.id === post.author.id;
+        return user.id === post.account.id;
     }, [user, post]);
 
     // 날짜 포맷팅
@@ -272,9 +272,9 @@ const CommunityDetailPage = () => {
                     <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 dark:text-slate-400 pb-6 border-b border-slate-200 dark:border-slate-700">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                {post.author.userName.charAt(0)}
+                                {post.account.userName.charAt(0)}
                             </div>
-                            <span className="font-semibold text-slate-900 dark:text-white">{post.author.userName}</span>
+                            <span className="font-semibold text-slate-900 dark:text-white">{post.account.userName}</span>
                         </div>
                         <span className="hidden sm:inline">•</span>
                         <span>{formatDate(post.createdAt)}</span>
@@ -399,7 +399,7 @@ const CommunityDetailPage = () => {
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="w-10 h-10 bg-gradient-to-br from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-700 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 shadow-md">
-                                        {comment.isDeleted ? '?' : comment.author.userName.charAt(0)}
+                                        {comment.isDeleted ? '?' : comment.account.userName.charAt(0)}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         {comment.isDeleted ? (
@@ -412,7 +412,7 @@ const CommunityDetailPage = () => {
                                             <>
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className="font-semibold text-slate-900 dark:text-white">
-                                                        {comment.author.userName}
+                                                        {comment.account.userName}
                                                     </span>
                                                     <span className="text-sm text-slate-500 dark:text-slate-400">
                                                         {formatDate(comment.createdAt)}
@@ -450,7 +450,7 @@ const CommunityDetailPage = () => {
                                                         <p className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap">
                                                             {comment.text}
                                                         </p>
-                                                        {user && user.id === comment.author.id && (
+                                                        {user && user.id === comment.account.id && (
                                                             <div className="flex gap-3">
                                                                 <button
                                                                     onClick={() => handleEditStart(comment)}

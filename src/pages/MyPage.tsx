@@ -126,8 +126,8 @@ const MyPage = () => {
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                         <Shield className="w-4 h-4 text-slate-400" />
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getApprovalStatusColor(user.approvalStatus)}`}>
-                            {getApprovalStatusLabel(user.approvalStatus)}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${getApprovalStatusColor(user.accountApproved)}`}>
+                            {getApprovalStatusLabel(user.accountApproved)}
                         </span>
                     </div>
                     {user.affiliation && (

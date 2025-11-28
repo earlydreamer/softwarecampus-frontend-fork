@@ -245,7 +245,7 @@ const AdminPage = () => {
 
     const filteredUsers = users.filter(user =>
         !userSearchTerm ||
-        user.username.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.userName.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
     );
 
@@ -318,7 +318,7 @@ const AdminPage = () => {
                                 <div className="space-y-3">
                                     {filteredCourseRequests.filter(r => r.status === '대기').slice(0, 3).map(req => (
                                         <div key={req.id} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
-                                            <h4 className="font-semibold text-slate-900 dark:text-white mb-1">{req.courseTitle}</h4>
+                                            <h4 className="font-semibold text-slate-900 dark:text-white mb-1">{req.courseName}</h4>
                                             <p className="text-sm text-slate-600 dark:text-slate-400">{req.academyName} · {req.category}</p>
                                             <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">{req.requestDate}</p>
                                         </div>
@@ -340,11 +340,11 @@ const AdminPage = () => {
                                     {filteredReviewRequests.filter(r => r.status === '대기').slice(0, 3).map(req => (
                                         <div key={req.id} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold text-slate-900 dark:text-white">{req.courseTitle}</h4>
+                                                <h4 className="font-semibold text-slate-900 dark:text-white">{req.courseName}</h4>
                                                 <span className="text-yellow-500">{'⭐'.repeat(req.rating)}</span>
                                             </div>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{req.content}</p>
-                                            <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">{req.authorName} · {req.requestDate}</p>
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{req.comment}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">{req.writerName} · {req.requestDate}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -403,7 +403,7 @@ const AdminPage = () => {
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                         {filteredCourses.map((req) => (
                                             <tr key={req.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30">
-                                                <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{req.courseTitle}</td>
+                                                <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{req.courseName}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{req.academyName}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{req.category}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{req.requestDate}</td>
@@ -495,13 +495,13 @@ const AdminPage = () => {
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <h3 className="font-bold text-lg text-slate-900 dark:text-white">{req.courseTitle}</h3>
+                                                <h3 className="font-bold text-lg text-slate-900 dark:text-white">{req.courseName}</h3>
                                                 <span className="text-yellow-500 flex items-center">
                                                     {'⭐'.repeat(req.rating)}
                                                 </span>
                                             </div>
-                                            <p className="text-slate-700 dark:text-slate-300 mb-3">{req.content}</p>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400">{req.authorName} · {req.requestDate}</p>
+                                            <p className="text-slate-700 dark:text-slate-300 mb-3">{req.comment}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{req.writerName} · {req.requestDate}</p>
                                         </div>
                                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${req.status === '대기' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
                                             req.status === '승인' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
@@ -610,7 +610,7 @@ const AdminPage = () => {
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                         {filteredUsers.map((u) => (
                                             <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30">
-                                                <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{u.username}</td>
+                                                <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">{u.userName}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{u.email}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
                                                     <span className={`px-2 py-1 rounded text-xs font-medium ${u.accountType === 'ADMIN' ? 'bg-red-100 text-red-700' :

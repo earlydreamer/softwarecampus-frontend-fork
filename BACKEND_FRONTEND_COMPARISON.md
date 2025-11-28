@@ -102,6 +102,28 @@
 
 ---
 
+## QnA & Review (문의 및 리뷰)
+
+### CourseReview
+- **백엔드**: `id`, `courseId`, `writer` (Account), `rating`, `comment`, `createdAt`
+- **프론트엔드 추가 필요**:
+  - `title`: 리뷰 제목 (백엔드 없음)
+  - `isVerified`: 수강 인증 여부 (백엔드 없음)
+  - `helpfulCount`: 도움이 돼요 수 (백엔드 없음)
+
+### CourseQna
+- **백엔드**: `id`, `courseId`, `writer` (Account), `title`, `questionText`, `isAnswered`, `answerText`, `answeredBy` (Account), `createdAt`, `viewCount`
+- **프론트엔드 추가 필요**:
+  - `answeredAt`: 답변 일시 (백엔드 없음)
+
+### AcademyQA
+- **백엔드**: `id`, `academyId`, `title`, `questionText`, `answerText`, `isApproved`, `approvedAt`, `createdAt`, `viewCount`
+- **프론트엔드 추가 필요**:
+  - `writer`: 작성자 정보 (백엔드 없음 - 익명 처리?)
+  - `answeredBy`: 답변자 정보 (백엔드 없음)
+
+---
+
 ## 요약
 
 ### 즉시 추가 검토 필요한 백엔드 필드
@@ -117,6 +139,12 @@
    - `website` VARCHAR(200)
    - `establishedDate` DATE
    - `fields` JSON or separate `AcademyFields` table
+
+3. **QnA & Review**
+   - `CourseReview.title`
+   - `CourseQna.answeredAt`
+   - `AcademyQA.writer` (작성자 추적 필요 시)
+   - `AcademyQA.answeredBy` (답변자 추적 필요 시)
 
 ### 계산 필드 (백엔드 API response에서 계산하여 제공)
 - `rating` (reviews 평균)

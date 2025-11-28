@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import HeroBanner from '../HeroBanner';
 import type { Banner } from '../../../types';
@@ -71,16 +71,17 @@ describe('HeroBanner - currentIndex 범위 검증', () => {
         expect(screen.getByText('배너 1')).toBeInTheDocument();
 
         // 자동 슬라이드로 마지막 배너로 이동 (시뮬레이션)
-        vi.advanceTimersByTime(10000); // 2번 슬라이드
-
-        await waitFor(() => {
-            // 배너가 1개로 축소
-            rerender(
-                <BrowserRouter>
-                    <HeroBanner banners={[mockBanners[0]]} loading={false} />
-                </BrowserRouter>
-            );
+        // 자동 슬라이드로 마지막 배너로 이동 (시뮬레이션)
+        await act(async () => {
+            vi.advanceTimersByTime(10000); // 2번 슬라이드
         });
+
+        // 배너가 1개로 축소
+        rerender(
+            <BrowserRouter>
+                <HeroBanner banners={[mockBanners[0]]} loading={false} />
+            </BrowserRouter>
+        );
 
         // currentIndex가 0으로 조정되어 첫 번째 배너 표시
         expect(screen.getByText('배너 1')).toBeInTheDocument();
@@ -98,9 +99,7 @@ describe('HeroBanner - currentIndex 범위 검증', () => {
             </BrowserRouter>
         );
 
-        await waitFor(() => {
-            expect(container.firstChild).toBeNull();
-        });
+        expect(container.firstChild).toBeNull();
     });
 
     it('currentBanner가 undefined일 때 null을 반환해야 함', () => {

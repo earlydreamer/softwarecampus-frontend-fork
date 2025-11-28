@@ -1,4 +1,4 @@
-import type { Banner, Course, CommunityPost, Board, BoardCategory, Academy, CourseReview, CourseQnA, AcademyQnA } from '../types';
+import type { Banner, Course, CommunityPost, Board, BoardCategory, Academy, CourseReview, CourseQna, AcademyQA } from '../types';
 
 // ===== Mock Banners =====
 export const mockBanners: Banner[] = [
@@ -447,7 +447,9 @@ export const mockCourses: Course[] = [
 export const mockCommunityPosts: CommunityPost[] = Array.from({ length: 6 }).map((_, i) => ({
     id: i + 1,
     title: `커뮤니티 게시글 제목입니다 ${i + 1}`,
-    author: `User${i + 1}`,
+    account: {
+        userName: `User${i + 1}`
+    },
     recommendations: 5 + i,
     category: i % 4 === 0 ? 'NOTICE' : i % 4 === 1 ? 'QUESTION' : i % 4 === 2 ? 'COURSE_STORY' : 'CODING_STORY',
     board: i % 4 === 0 ? '공지사항' : i % 4 === 1 ? '문의사항' : i % 4 === 2 ? '진로이야기' : '코딩이야기',
@@ -460,7 +462,7 @@ export const mockBoardPosts: Board[] = Array.from({ length: 20 }).map((_, i) => 
     title: `게시글 제목 ${i + 1}`,
     text: `게시글 내용입니다. ${i + 1}`,
     category: i % 4 === 0 ? 'NOTICE' : i % 4 === 1 ? 'QUESTION' : i % 4 === 2 ? 'COURSE_STORY' : 'CODING_STORY',
-    author: {
+    account: {
         id: i + 1,
         userName: `User${i + 1}`,
         avatar: `https://i.pravatar.cc/150?u=${i}`
@@ -478,14 +480,14 @@ export const mockBoardPosts: Board[] = Array.from({ length: 20 }).map((_, i) => 
 export const mockCourseReviews: CourseReview[] = Array.from({ length: 20 }).map((_, i) => ({
     id: i + 1,
     courseId: (i % 12) + 1,
-    author: {
+    writer: {
         id: i + 100,
         userName: `수강생${i + 1}`,
         avatar: `https://i.pravatar.cc/150?u=${i + 100}`
     },
     rating: 4 + (i % 2),
     title: i % 3 === 0 ? "정말 도움이 많이 되었습니다!" : i % 3 === 1 ? "강의 내용이 알차요" : "취업에 성공했어요!",
-    content: i % 3 === 0
+    comment: i % 3 === 0
         ? "실무 중심의 프로젝트 수업이 정말 좋았습니다. 강사님께서 현업에서 사용하는 기술들을 자세히 알려주셔서 취업 준비하는 데 큰 도움이 되었습니다."
         : i % 3 === 1
             ? "기초부터 탄탄하게 배울 수 있어서 비전공자인 저도 쉽게 따라갈 수 있었습니다. 멘토링 시스템도 훌륭했어요!"
@@ -496,10 +498,10 @@ export const mockCourseReviews: CourseReview[] = Array.from({ length: 20 }).map(
 }));
 
 // ===== Mock Course Q&A =====
-export const mockCourseQnAs: CourseQnA[] = Array.from({ length: 15 }).map((_, i) => ({
+export const mockCourseQnAs: CourseQna[] = Array.from({ length: 15 }).map((_, i) => ({
     id: i + 1,
     courseId: (i % 12) + 1,
-    author: {
+    writer: {
         id: i + 200,
         userName: `학습자${i + 1}`,
         avatar: `https://i.pravatar.cc/150?u=${i + 200}`
@@ -511,7 +513,7 @@ export const mockCourseQnAs: CourseQnA[] = Array.from({ length: 15 }).map((_, i)
             : i % 4 === 2
                 ? "취업 지원은 어떻게 이루어지나요?"
                 : "노트북 사양이 어느 정도 되어야 하나요?",
-    content: i % 4 === 0
+    questionText: i % 4 === 0
         ? "비전공자인데 수강 가능할까요? 사전에 준비해야 할 것이 있다면 알려주세요."
         : i % 4 === 1
             ? "평일 주간반인가요, 야간반인가요? 주말 수업도 있나요?"
@@ -519,58 +521,43 @@ export const mockCourseQnAs: CourseQnA[] = Array.from({ length: 15 }).map((_, i)
                 ? "취업 지원 프로그램에는 어떤 것들이 포함되어 있나요?"
                 : "개인 노트북으로 수업을 들어야 하나요? 어느 정도 사양이 필요한가요?",
     isAnswered: i % 3 !== 0,
-    answer: i % 3 !== 0 ? {
-        content: i % 4 === 0
-            ? "네, 비전공자도 충분히 수강 가능합니다. 기초부터 체계적으로 가르쳐드리며, 별도의 사전 지식은 필요하지 않습니다."
-            : i % 4 === 1
-                ? "평일 오전 9시부터 오후 6시까지 진행되며, 주말 수업은 없습니다."
-                : i % 4 === 2
-                    ? "이력서/포트폴리오 작성 지원, 모의 면접, 기업 매칭 등의 서비스를 제공합니다."
-                    : "개인 노트북 지참을 권장합니다. 최소 RAM 8GB, SSD 256GB 이상을 추천드립니다.",
-        answeredBy: {
-            id: 1,
-            userName: "담당자",
-            avatar: "https://i.pravatar.cc/150?u=admin"
-        },
-        answeredAt: new Date(Date.now() - i * 86400000 + 3600000).toISOString()
+    answerText: i % 3 !== 0 ? (i % 4 === 0
+        ? "네, 비전공자도 충분히 수강 가능합니다. 기초부터 체계적으로 가르쳐드리며, 별도의 사전 지식은 필요하지 않습니다."
+        : i % 4 === 1
+            ? "평일 오전 9시부터 오후 6시까지 진행되며, 주말 수업은 없습니다."
+            : i % 4 === 2
+                ? "이력서/포트폴리오 작성 지원, 모의 면접, 기업 매칭 등의 서비스를 제공합니다."
+                : "개인 노트북 지참을 권장합니다. 최소 RAM 8GB, SSD 256GB 이상을 추천드립니다.") : undefined,
+    answeredBy: i % 3 !== 0 ? {
+        id: 1,
+        userName: "담당자",
+        avatar: "https://i.pravatar.cc/150?u=admin"
     } : undefined,
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
     viewCount: 50 + i * 10
 }));
 
 // ===== Mock Academy Q&A =====
-export const mockAcademyQnAs: AcademyQnA[] = Array.from({ length: 15 }).map((_, i) => ({
+export const mockAcademyQnAs: AcademyQA[] = Array.from({ length: 15 }).map((_, i) => ({
     id: i + 1,
     academyId: (i % 3) + 1,
-    author: {
-        id: i + 300,
-        userName: `문의자${i + 1}`,
-        avatar: `https://i.pravatar.cc/150?u=${i + 300}`
-    },
     title: i % 3 === 0
         ? "국비지원 과정 신청 자격이 어떻게 되나요?"
         : i % 3 === 1
             ? "주말 반도 운영하시나요?"
             : "수료 후 취업 연계는 어떤 식으로 진행되나요?",
-    content: i % 3 === 0
+    questionText: i % 3 === 0
         ? "현재 대학생인데 국비지원 과정 신청이 가능한지 궁금합니다. 졸업 예정자만 가능한가요?"
         : i % 3 === 1
             ? "직장인이라 평일에는 시간이 안 되는데 주말 반 개설 계획이 있으신가요?"
             : "수료 후에 어떤 기업으로 취업이 가능한지, 그리고 취업 지원 기간은 얼마나 되는지 알고 싶습니다.",
-    isAnswered: i % 2 === 0,
-    answer: i % 2 === 0 ? {
-        content: i % 3 === 0
-            ? "네, 졸업 예정자(4학년)부터 신청 가능합니다. 자세한 자격 요건은 고용노동부 HRD-Net을 참고해주세요."
-            : i % 3 === 1
-                ? "현재 주말 반은 운영하고 있지 않습니다. 추후 개설 시 공지해 드리겠습니다."
-                : "수료 후 6개월간 취업 지원을 해드리며, 협약 기업 매칭 및 면접 컨설팅을 제공합니다.",
-        answeredBy: {
-            id: 1,
-            userName: "교육담당자",
-            avatar: "https://i.pravatar.cc/150?u=manager"
-        },
-        answeredAt: new Date(Date.now() - i * 86400000 + 3600000).toISOString()
-    } : undefined,
+    isApproved: i % 2 === 0 ? 'APPROVED' : 'PENDING',
+    answerText: i % 2 === 0 ? (i % 3 === 0
+        ? "네, 졸업 예정자(4학년)부터 신청 가능합니다. 자세한 자격 요건은 고용노동부 HRD-Net을 참고해주세요."
+        : i % 3 === 1
+            ? "현재 주말 반은 운영하고 있지 않습니다. 추후 개설 시 공지해 드리겠습니다."
+            : "수료 후 6개월간 취업 지원을 해드리며, 협약 기업 매칭 및 면접 컨설팅을 제공합니다.") : undefined,
+    approvedAt: i % 2 === 0 ? new Date(Date.now() - i * 86400000 + 3600000).toISOString() : undefined,
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
     viewCount: 30 + i * 5
 }));
@@ -668,7 +655,7 @@ export const fetchBoardPosts = async (
                     return post.title.toLowerCase().includes(keyword) ||
                         post.text.toLowerCase().includes(keyword);
                 case 'author':
-                    return post.author.userName.toLowerCase().includes(keyword);
+                    return post.account.userName.toLowerCase().includes(keyword);
                 case 'comment':
                     // 댓글 검색은 실제 댓글 데이터가 필요하므로 현재는 제목에서 검색
                     // TODO: 실제 API 연동 시 댓글 데이터 조인 필요
@@ -677,7 +664,7 @@ export const fetchBoardPosts = async (
                 default:
                     return post.title.toLowerCase().includes(keyword) ||
                         post.text.toLowerCase().includes(keyword) ||
-                        post.author.userName.toLowerCase().includes(keyword);
+                        post.account.userName.toLowerCase().includes(keyword);
             }
         });
     }
@@ -719,7 +706,7 @@ export const fetchCourseQnAs = async (
     page: number = 1,
     limit: number = 5,
     searchKeyword?: string
-): Promise<{ qnas: CourseQnA[], totalCount: number }> => {
+): Promise<{ qnas: CourseQna[], totalCount: number }> => {
     await new Promise(resolve => setTimeout(resolve, 600));
     let filtered = mockCourseQnAs.filter(q => q.courseId === courseId);
 
@@ -728,8 +715,8 @@ export const fetchCourseQnAs = async (
         const keyword = searchKeyword.toLowerCase();
         filtered = filtered.filter(q =>
             q.title.toLowerCase().includes(keyword) ||
-            q.content.toLowerCase().includes(keyword) ||
-            (q.answer && q.answer.content.toLowerCase().includes(keyword))
+            q.questionText.toLowerCase().includes(keyword) ||
+            (q.answerText && q.answerText.toLowerCase().includes(keyword))
         );
     }
 
@@ -750,7 +737,7 @@ export const fetchAcademyQnAs = async (
     page: number = 1,
     limit: number = 5,
     searchKeyword?: string
-): Promise<{ qnas: AcademyQnA[], totalCount: number }> => {
+): Promise<{ qnas: AcademyQA[], totalCount: number }> => {
     await new Promise(resolve => setTimeout(resolve, 600));
     let filtered = mockAcademyQnAs.filter(q => q.academyId === academyId);
 
@@ -759,8 +746,8 @@ export const fetchAcademyQnAs = async (
         const keyword = searchKeyword.toLowerCase();
         filtered = filtered.filter(q =>
             q.title.toLowerCase().includes(keyword) ||
-            q.content.toLowerCase().includes(keyword) ||
-            (q.answer && q.answer.content.toLowerCase().includes(keyword))
+            q.questionText.toLowerCase().includes(keyword) ||
+            (q.answerText && q.answerText.toLowerCase().includes(keyword))
         );
     }
 

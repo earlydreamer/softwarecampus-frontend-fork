@@ -51,7 +51,9 @@ export interface ApiBoardListResponse {
 export interface CommunityPost {
     id: number;
     title: string;
-    author: string;
+    account: {
+        userName: string;
+    };
     recommendations: number;
     category: 'NOTICE' | 'QUESTION' | 'COURSE_STORY' | 'CODING_STORY';
     board: string;

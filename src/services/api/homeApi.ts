@@ -125,7 +125,9 @@ export const fetchCommunityHighlights = async (limit: number = 6): Promise<Commu
         const posts: CommunityPost[] = response.data.slice(0, limit).map(apiBoard => ({
             id: apiBoard.id,
             title: apiBoard.title,
-            author: apiBoard.userNickName,
+            account: {
+                userName: apiBoard.userNickName
+            },
             recommendations: apiBoard.like ? 1 : 0, // TODO: 추천 수 API 필요
             category: mapBoardCategory(apiBoard.category),
             board: getCategoryDisplayName(apiBoard.category),

@@ -2,14 +2,15 @@
 export type AccountType = 'USER' | 'ACADEMY' | 'ADMIN';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-// ===== 사용자(User) 타입 정의 (백엔드 AccountResponse DTO와 완전 일치) =====
-export interface User {
+// ===== 사용자(Account) 타입 정의 (백엔드 Account 엔티티 참조) =====
+// 변경: User -> Account
+export interface Account {
     id: number; // Long
     email: string;
     userName: string;
     phoneNumber: string;
     accountType: AccountType;
-    approvalStatus: ApprovalStatus;
+    accountApproved: ApprovalStatus; // 변경: approvalStatus -> accountApproved
     address: string | null;
     affiliation: string | null;
     position: string | null;
@@ -118,7 +119,7 @@ export interface Course {
     approvedAt?: string;
     // 커리큘럼 정보 (백엔드: List<CourseCurriculum> curriculums)
     curriculums?: CourseCurriculum[];
-    // UI 표시용 추가 필드 (백엔드에 없음)
+    // UI 표시용 추가 필드 (백엔드에 없음 - 추후 추가 필요)
     rating?: number;
     reviewCount?: number;
     tags?: string[];
@@ -126,7 +127,7 @@ export interface Course {
     description?: string;
     highlights?: string[];
     externalLink?: string;
-    // 호환성을 위한 필드
+    // 호환성을 위한 필드 (제거 예정)
     title?: string;
     institution?: string;
     duration?: string;
@@ -166,7 +167,7 @@ export interface Board {
     title: string;
     text: string; // 백엔드 필드명
     category: BoardCategory;
-    author: {
+    account: { // 변경: author -> account
         id: number;
         userName: string;
         avatar?: string;
@@ -181,7 +182,6 @@ export interface Board {
     hasAttachment?: boolean;
     isRecommended?: boolean;
     // 호환성
-    // 호환성
     isSecret?: boolean;
 }
 
@@ -189,7 +189,7 @@ export interface Comment {
     id: number;
     boardId: number;
     text: string;
-    author: {
+    account: { // 변경: author -> account
         id: number;
         userName: string;
         avatar?: string;
@@ -203,7 +203,9 @@ export interface Comment {
 export interface CommunityPost {
     id: number;
     title: string;
-    author: string;
+    account: {
+        userName: string;
+    };
     recommendations: number;
     category: BoardCategory;
     createdAt: string;
@@ -222,65 +224,71 @@ export interface Banner {
 export interface CourseReview {
     id: number;
     courseId: number;
-    author: {
+    writer: { // 변경: author -> writer
         id: number;
         userName: string;
         avatar?: string;
     };
     rating: number;
-    title: string;
-    content: string;
+    title: string; // 백엔드 없음 (BACKEND_MISSING_FEATURES.md)
+    comment: string; // 변경: content -> comment
     createdAt: string;
     isVerified?: boolean;
     helpfulCount?: number;
 }
 
 // ===== 과정 Q&A 관련 타입 정의 =====
-export interface CourseQnA {
+export interface CourseQna { // 변경: CourseQnA -> CourseQna
     id: number;
     courseId: number;
-    author: {
+    writer: { // 변경: author -> writer
         id: number;
         userName: string;
         avatar?: string;
     };
     title: string;
-    content: string;
+    questionText: string; // 변경: content -> questionText
     isAnswered: boolean;
-    answer?: {
-        content: string;
-        answeredBy: {
-            id: number;
-            userName: string;
-            avatar?: string;
-        };
-        answeredAt: string;
+
+    // 구조 변경: answer 객체 제거 및 평탄화
+    answerText?: string;
+    answeredBy?: {
+        id: number;
+        userName: string;
+        avatar?: string;
     };
+    // answeredAt?: string; // 백엔드 없음
+
     createdAt: string;
     viewCount: number;
 }
 
 // ===== 기관 Q&A 관련 타입 정의 =====
-export interface AcademyQnA {
+export interface AcademyQA { // 변경: AcademyQnA -> AcademyQA
     id: number;
     academyId: number;
-    author: {
+    // TODO: 백엔드 미지원 필드 (보완 예정)
+    writer?: {
         id: number;
         userName: string;
         avatar?: string;
     };
     title: string;
-    content: string;
-    isAnswered: boolean;
-    answer?: {
-        content: string;
-        answeredBy: {
-            id: number;
-            userName: string;
-            avatar?: string;
-        };
-        answeredAt: string;
+    questionText: string; // 변경: content -> questionText
+
+    // 구조 변경
+    answerText?: string;
+
+    // TODO: 백엔드 미지원 필드 (보완 예정)
+    answeredBy?: {
+        id: number;
+        userName: string;
+        avatar?: string;
     };
+
+    isApproved: ApprovalStatus; // 추가
+    approvedAt?: string; // 추가
+
     createdAt: string;
     viewCount: number;
 }

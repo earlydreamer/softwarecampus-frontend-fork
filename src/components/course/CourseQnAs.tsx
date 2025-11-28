@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { CourseQnA } from '../../types';
+import type { CourseQna } from '../../types';
 import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import QnAForm from '../common/QnAForm';
 import { sanitizeUrl } from '../../utils/security';
 import { QNA_PER_PAGE } from '../../constants';
 
 interface CourseQnAsProps {
-    qnas: CourseQnA[];
+    qnas: CourseQna[];
     totalCount: number;
     page: number;
     onPageChange: (page: number) => void;
@@ -141,15 +141,15 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                                        {qna.author.avatar ? (
-                                            <img src={sanitizeUrl(qna.author.avatar)} alt={qna.author.userName} className="w-full h-full object-cover" />
+                                        {qna.writer.avatar ? (
+                                            <img src={sanitizeUrl(qna.writer.avatar)} alt={qna.writer.userName} className="w-full h-full object-cover" />
                                         ) : (
-                                            <span className="text-slate-400 font-bold text-sm">{qna.author.userName[0]}</span>
+                                            <span className="text-slate-400 font-bold text-sm">{qna.writer.userName[0]}</span>
                                         )}
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <span className="font-medium text-slate-900">{qna.author.userName}</span>
+                                            <span className="font-medium text-slate-900">{qna.writer.userName}</span>
                                             <span className="text-sm text-slate-500">
                                                 {new Date(qna.createdAt).toLocaleDateString()}
                                             </span>
@@ -187,30 +187,28 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
                             {expandedQnaId === qna.id && (
                                 <div className="border-t border-slate-100 animate-fadeIn">
                                     <div className="p-6 bg-slate-50/50">
-                                        <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: qna.content }} />
+                                        <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: qna.questionText }} />
                                     </div>
 
-                                    {qna.answer && (
+                                    {qna.isAnswered && qna.answerText && qna.answeredBy && (
                                         <div className="bg-primary-50/30 p-6 border-t border-slate-100">
                                             <div className="flex items-start gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden shrink-0 border-2 border-white shadow-sm">
-                                                    {qna.answer.answeredBy.avatar ? (
-                                                        <img src={sanitizeUrl(qna.answer.answeredBy.avatar)} alt={qna.answer.answeredBy.userName} className="w-full h-full object-cover" />
+                                                    {qna.answeredBy.avatar ? (
+                                                        <img src={sanitizeUrl(qna.answeredBy.avatar)} alt={qna.answeredBy.userName} className="w-full h-full object-cover" />
                                                     ) : (
-                                                        <span className="text-primary-600 font-bold text-sm">{qna.answer.answeredBy.userName[0]}</span>
+                                                        <span className="text-primary-600 font-bold text-sm">{qna.answeredBy.userName[0]}</span>
                                                     )}
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <span className="font-bold text-primary-700">{qna.answer.answeredBy.userName}</span>
+                                                        <span className="font-bold text-primary-700">{qna.answeredBy.userName}</span>
                                                         <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-bold border border-primary-200">
                                                             담당자
                                                         </span>
-                                                        <span className="text-sm text-slate-500">
-                                                            {new Date(qna.answer.answeredAt).toLocaleDateString()}
-                                                        </span>
+                                                        {/* TODO: 백엔드 미지원 필드 (answeredAt) */}
                                                     </div>
-                                                    <div className="prose prose-sm max-w-none text-slate-800 bg-white p-4 rounded-xl border border-primary-100 shadow-sm" dangerouslySetInnerHTML={{ __html: qna.answer.content }} />
+                                                    <div className="prose prose-sm max-w-none text-slate-800 bg-white p-4 rounded-xl border border-primary-100 shadow-sm" dangerouslySetInnerHTML={{ __html: qna.answerText }} />
                                                 </div>
                                             </div>
                                         </div>
