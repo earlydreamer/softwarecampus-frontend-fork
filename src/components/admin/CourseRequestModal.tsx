@@ -25,7 +25,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     const previousFocusRef = useRef<HTMLElement | null>(null);
 
     const [form, setForm] = useState<CourseFormState>({
-        courseTitle: '',
+        courseName: '',
         category: '프론트엔드',
         target: '취업예정자',
         format: '온라인',
@@ -61,7 +61,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
             } else {
                 // 초기화
                 setForm({
-                    courseTitle: '',
+                    courseName: '',
                     category: '프론트엔드',
                     target: '취업예정자',
                     format: '온라인',
@@ -152,7 +152,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.courseTitle || form.courseTitle.trim() === '') {
+        if (!form.courseName || form.courseName.trim() === '') {
             setError('과정명을 입력해주세요.');
             return;
         }
@@ -242,9 +242,9 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                             </label>
                             <input
                                 type="text"
-                                value={form.courseTitle || ''}
+                                value={form.courseName || ''}
                                 onChange={e => {
-                                    setForm({ ...form, courseTitle: e.target.value });
+                                    setForm({ ...form, courseName: e.target.value });
                                     if (error) setError(null);
                                 }}
                                 className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-primary-500'

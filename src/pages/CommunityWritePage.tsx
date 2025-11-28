@@ -104,7 +104,7 @@ const CommunityWritePage = () => {
             title,
             text,
             category,
-            author: {
+            account: {
                 id: user.id,
                 userName: user.userName,
             },

@@ -73,7 +73,7 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                                     </h3>
 
                                     <div className="flex justify-between items-center text-sm text-slate-500">
-                                        <span className="font-medium">{post.author}</span>
+                                        <span className="font-medium">{post.account.userName}</span>
                                         <div className="flex items-center gap-3">
                                             <div className="flex items-center gap-1">
                                                 <ThumbsUp className="w-4 h-4" />

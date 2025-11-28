@@ -47,7 +47,7 @@ export const fetchComments = async (postId: number): Promise<Comment[]> => {
     const mockComments: Comment[] = Array.from({ length: Math.floor(Math.random() * 10) + 3 }).map((_, i) => ({
         id: i + 1,
         boardId: postId,
-        author: {
+        account: {
             id: i + 100,
             userName: `사용자${i + 1}`,
         },
@@ -83,7 +83,7 @@ export const createComment = async (postId: number, text: string): Promise<Comme
     const newComment: Comment = {
         id: Date.now(),
         boardId: postId,
-        author: {
+        account: {
             id: 1,
             userName: '현재사용자',
         },
@@ -113,7 +113,7 @@ export const updateComment = async (commentId: number, postId: number, text: str
     const updatedComment: Comment = {
         id: commentId,
         boardId: postId,  // 전달받은 postId 사용
-        author: {
+        account: {
             id: 1,
             userName: '현재사용자',
         },
@@ -141,7 +141,7 @@ export const createBoardPost = async (data: {
     title: string;
     text: string;
     category: BoardCategory;
-    author: {
+    account: {
         id: number;
         userName: string;
     };
@@ -163,7 +163,7 @@ export const createBoardPost = async (data: {
         title: data.title,
         text: data.text,
         category: data.category as BoardCategory,
-        author: data.author,
+        account: data.account,
         hits: 0,
         secret: data.isSecret,
         createdAt: new Date().toISOString(),

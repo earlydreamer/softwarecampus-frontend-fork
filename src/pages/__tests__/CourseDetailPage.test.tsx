@@ -27,6 +27,7 @@ const renderWithRouter = (initialPath: string) => {
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
                 <Routes>
+                    <Route path="/courses" element={<CourseDetailPage />} />
                     <Route path="/courses/:courseId" element={<CourseDetailPage />} />
                 </Routes>
             </BrowserRouter>

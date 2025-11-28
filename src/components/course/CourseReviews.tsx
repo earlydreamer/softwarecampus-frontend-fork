@@ -96,17 +96,18 @@ const CourseReviews = ({ reviews, isLoading }: CourseReviewsProps) => {
                     <div key={review.id} className="bg-white p-6 rounded-xl border border-slate-200 hover:border-primary-200 transition-colors">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                                {review.author.avatar ? (
-                                    <img src={sanitizeUrl(review.author.avatar)} alt={review.author.userName} className="w-full h-full object-cover" />
+                                {review.writer.avatar ? (
+                                    <img src={sanitizeUrl(review.writer.avatar)} alt={review.writer.userName} className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-slate-400 font-bold">{review.author.userName[0]}</span>
+                                    <span className="text-slate-400 font-bold">{review.writer.userName[0]}</span>
                                 )}
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center justify-between mb-2">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold text-slate-900">{review.author.userName}</span>
+                                            <span className="font-semibold text-slate-900">{review.writer.userName}</span>
+                                            {/* TODO: 백엔드 미지원 필드 (isVerified) */}
                                             {review.isVerified && (
                                                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
                                                     <CheckCircle className="w-3 h-3" />
@@ -129,9 +130,11 @@ const CourseReviews = ({ reviews, isLoading }: CourseReviewsProps) => {
                                         </div>
                                     </div>
                                 </div>
+                                {/* TODO: 백엔드 미지원 필드 (title) */}
                                 <h4 className="font-semibold text-slate-900 mb-2">{review.title}</h4>
-                                <p className="text-slate-600 leading-relaxed whitespace-pre-line">{review.content}</p>
+                                <p className="text-slate-600 leading-relaxed whitespace-pre-line">{review.comment}</p>
                                 <div className="mt-4 flex items-center gap-4 text-sm text-slate-500">
+                                    {/* TODO: 백엔드 미지원 필드 (helpfulCount) */}
                                     <button className="flex items-center gap-1 hover:text-primary-600 transition-colors">
                                         <ThumbsUp className="w-4 h-4" />
                                         도움이 돼요 ({review.helpfulCount || 0})

@@ -150,11 +150,10 @@ const CommunityPage = () => {
                             <button
                                 key={category || 'all'}
                                 onClick={() => handleCategoryChange(category)}
-                                className={`flex-1 min-w-[100px] py-4 px-4 text-sm font-semibold transition-all relative whitespace-nowrap ${
-                                    currentCategory === category
-                                        ? 'text-primary-600 dark:text-primary-400 bg-white/80 dark:bg-slate-700/50'
-                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/40 dark:hover:bg-slate-700/30'
-                                }`}
+                                className={`flex-1 min-w-[100px] py-4 px-4 text-sm font-semibold transition-all relative whitespace-nowrap ${currentCategory === category
+                                    ? 'text-primary-600 dark:text-primary-400 bg-white/80 dark:bg-slate-700/50'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-white/40 dark:hover:bg-slate-700/30'
+                                    }`}
                             >
                                 {category ? BOARD_CATEGORY_LABELS[category] : '전체'}
                                 {currentCategory === category && (
@@ -177,41 +176,37 @@ const CommunityPage = () => {
                             <div className="flex flex-wrap gap-2">
                                 <button
                                     onClick={() => handleSortChange('latest')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                        sortType === 'latest'
-                                            ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                    }`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${sortType === 'latest'
+                                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
                                 >
                                     최신순
                                 </button>
                                 <button
                                     onClick={() => handleSortChange('popular')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                        sortType === 'popular'
-                                            ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                    }`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${sortType === 'popular'
+                                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
                                 >
                                     추천순
                                 </button>
                                 <button
                                     onClick={() => handleSortChange('views')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                        sortType === 'views'
-                                            ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                    }`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${sortType === 'views'
+                                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
                                 >
                                     조회순
                                 </button>
                                 <button
                                     onClick={() => handleSortChange('comments')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                        sortType === 'comments'
-                                            ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                    }`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${sortType === 'comments'
+                                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
                                 >
                                     댓글순
                                 </button>
@@ -285,7 +280,7 @@ const CommunityPage = () => {
                                         </div>
                                     </div>
                                     <div className="col-span-2 text-center text-sm text-slate-600">
-                                        {post.author.userName}
+                                        {post.account.userName}
                                     </div>
                                     <div className="col-span-1 text-center text-sm text-slate-500">
                                         {post.hits}
@@ -313,7 +308,7 @@ const CommunityPage = () => {
                                         {post.title}
                                     </h3>
                                     <div className="flex items-center justify-between text-sm text-slate-500">
-                                        <span>{post.author.userName}</span>
+                                        <span>{post.account.userName}</span>
                                         <div className="flex items-center gap-3">
                                             <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {post.hits}</span>
                                             <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {post.recommendCount}</span>
@@ -337,11 +332,10 @@ const CommunityPage = () => {
                                     key={type}
                                     type="button"
                                     onClick={() => handleSearchTypeChange(type)}
-                                    className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                                        searchType === type
-                                            ? 'bg-primary-600 text-white'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                    }`}
+                                    className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${searchType === type
+                                        ? 'bg-primary-600 text-white'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
                                 >
                                     {SEARCH_TYPE_LABELS[type]}
                                 </button>
@@ -400,7 +394,7 @@ const CommunityPage = () => {
                             >
                                 이전
                             </button>
-                            
+
                             {/* 페이지 번호들 - 최대 7개만 표시 */}
                             {(() => {
                                 const pageNumbers = [];
@@ -436,11 +430,10 @@ const CommunityPage = () => {
                                         <button
                                             key={i}
                                             onClick={() => handlePageChange(i)}
-                                            className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                                                currentPage === i
-                                                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
-                                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                            }`}
+                                            className={`w-10 h-10 rounded-lg font-medium transition-all ${currentPage === i
+                                                ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
+                                                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                                }`}
                                         >
                                             {i}
                                         </button>
