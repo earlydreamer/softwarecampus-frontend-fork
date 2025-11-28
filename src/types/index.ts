@@ -28,6 +28,9 @@ export interface SignupFormData {
     position: string | null;
     accountType: AccountType;
     academyId: number | null;
+    termsAgreed: boolean;
+    privacyAgreed: boolean;
+    marketingAgreed: boolean;
 }
 
 // 백엔드 BoardCategory enum (NOTICE, QUESTION, COURSE_STORY, CODING_STORY)

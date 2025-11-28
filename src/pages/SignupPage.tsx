@@ -4,6 +4,8 @@ import { AlertCircle, Eye, EyeOff, CheckCircle, Building2, Mail } from 'lucide-r
 import type { SignupFormData, Academy } from '../types';
 import AcademySelectModal from '../components/auth/AcademySelectModal';
 import EmailVerificationModal from '../components/auth/EmailVerificationModal';
+import TermsModal from '../components/auth/TermsModal';
+import { TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_CONSENT } from '../data/terms';
 
 import {
     isValidEmail,
@@ -25,6 +27,15 @@ const SignupPage = () => {
     const [selectedAcademy, setSelectedAcademy] = useState<Academy | null>(null);
     const [errors, setErrors] = useState<Partial<Record<keyof SignupFormData | 'passwordConfirm' | 'submit', string>>>({});
 
+    // 약관 모달 상태
+    const [termsModalState, setTermsModalState] = useState<{
+        isOpen: boolean;
+        type: 'TERMS' | 'PRIVACY' | 'MARKETING' | null;
+    }>({
+        isOpen: false,
+        type: null
+    });
+
     const [formData, setFormData] = useState<SignupFormData>({
         email: '',
         password: '',
@@ -35,6 +46,9 @@ const SignupPage = () => {
         position: null,
         accountType: 'USER',
         academyId: null,
+        termsAgreed: false,
+        privacyAgreed: false,
+        marketingAgreed: false,
     });
 
     const handleTabChange = (tab: 'USER' | 'ACADEMY') => {
@@ -49,11 +63,63 @@ const SignupPage = () => {
             position: null,
             accountType: tab,
             academyId: null,
+            termsAgreed: false,
+            privacyAgreed: false,
+            marketingAgreed: false,
         });
         setPasswordConfirm('');
         setSelectedAcademy(null);
         setErrors({});
         setIsEmailVerified(false);
+    };
+
+    const handleAgreementChange = (name: keyof Pick<SignupFormData, 'termsAgreed' | 'privacyAgreed' | 'marketingAgreed'>) => {
+        setFormData(prev => {
+            const newData = { ...prev, [name]: !prev[name] };
+            // 에러 상태 초기화
+            if (errors[name as keyof typeof errors]) {
+                setErrors(prevErrors => ({ ...prevErrors, [name]: undefined }));
+            }
+            return newData;
+        });
+    };
+
+    const handleAllAgreementChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const checked = e.target.checked;
+        setFormData(prev => ({
+            ...prev,
+            termsAgreed: checked,
+            privacyAgreed: checked,
+            marketingAgreed: checked,
+        }));
+        // 전체 동의 시 관련 에러 제거
+        if (checked) {
+            setErrors(prev => ({
+                ...prev,
+                termsAgreed: undefined,
+                privacyAgreed: undefined
+            }));
+        }
+    };
+
+    const openTermsModal = (type: 'TERMS' | 'PRIVACY' | 'MARKETING') => {
+        setTermsModalState({
+            isOpen: true,
+            type
+        });
+    };
+
+    const getTermsContent = () => {
+        switch (termsModalState.type) {
+            case 'TERMS':
+                return { title: '이용약관', content: TERMS_OF_SERVICE };
+            case 'PRIVACY':
+                return { title: '개인정보 수집 및 이용 동의', content: PRIVACY_POLICY };
+            case 'MARKETING':
+                return { title: '마케팅 정보 수신 동의', content: MARKETING_CONSENT };
+            default:
+                return { title: '', content: '' };
+        }
     };
 
     const handleAcademySelect = (academy: Academy) => {
@@ -123,6 +189,14 @@ const SignupPage = () => {
 
         if (formData.accountType === 'ACADEMY' && !formData.academyId) {
             newErrors.academyId = '소속 기관을 선택해주세요';
+        }
+
+        if (!formData.termsAgreed) {
+            newErrors.termsAgreed = '이용약관에 동의해주세요';
+        }
+
+        if (!formData.privacyAgreed) {
+            newErrors.privacyAgreed = '개인정보 수집 및 이용에 동의해주세요';
         }
 
         setErrors(newErrors);
@@ -456,6 +530,100 @@ const SignupPage = () => {
                             </div>
                         )}
 
+                        {/* 약관 동의 */}
+                        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    id="allAgreed"
+                                    checked={formData.termsAgreed && formData.privacyAgreed && formData.marketingAgreed}
+                                    onChange={handleAllAgreementChange}
+                                    className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                />
+                                <label htmlFor="allAgreed" className="font-bold text-slate-900 dark:text-white cursor-pointer select-none">
+                                    전체 약관에 동의합니다
+                                </label>
+                            </div>
+
+                            <div className="space-y-2 pl-1">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="termsAgreed"
+                                            checked={formData.termsAgreed}
+                                            onChange={() => handleAgreementChange('termsAgreed')}
+                                            className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                        />
+                                        <label htmlFor="termsAgreed" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                                            (필수) 이용약관 동의
+                                        </label>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => openTermsModal('TERMS')}
+                                        className="text-xs text-slate-500 underline hover:text-slate-800 dark:hover:text-slate-200"
+                                    >
+                                        내용 보기
+                                    </button>
+                                </div>
+                                {errors.termsAgreed && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 pl-6">
+                                        {errors.termsAgreed}
+                                    </p>
+                                )}
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="privacyAgreed"
+                                            checked={formData.privacyAgreed}
+                                            onChange={() => handleAgreementChange('privacyAgreed')}
+                                            className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                        />
+                                        <label htmlFor="privacyAgreed" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                                            (필수) 개인정보 수집 및 이용 동의
+                                        </label>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => openTermsModal('PRIVACY')}
+                                        className="text-xs text-slate-500 underline hover:text-slate-800 dark:hover:text-slate-200"
+                                    >
+                                        내용 보기
+                                    </button>
+                                </div>
+                                {errors.privacyAgreed && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 pl-6">
+                                        {errors.privacyAgreed}
+                                    </p>
+                                )}
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id="marketingAgreed"
+                                            checked={formData.marketingAgreed}
+                                            onChange={() => handleAgreementChange('marketingAgreed')}
+                                            className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                        />
+                                        <label htmlFor="marketingAgreed" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                                            (선택) 마케팅 정보 수신 동의
+                                        </label>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => openTermsModal('MARKETING')}
+                                        className="text-xs text-slate-500 underline hover:text-slate-800 dark:hover:text-slate-200"
+                                    >
+                                        내용 보기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* 전역 에러 메시지 */}
                         {errors.submit && (
                             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg flex items-center gap-2">
@@ -504,6 +672,14 @@ const SignupPage = () => {
                     setIsEmailVerified(true);
                     setErrors(prev => ({ ...prev, email: undefined }));
                 }}
+            />
+
+            {/* 약관 모달 */}
+            <TermsModal
+                isOpen={termsModalState.isOpen}
+                onClose={() => setTermsModalState(prev => ({ ...prev, isOpen: false }))}
+                title={getTermsContent().title}
+                content={getTermsContent().content}
             />
         </div>
     );
