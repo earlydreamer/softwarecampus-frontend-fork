@@ -1,6 +1,7 @@
 import apiClient from './api/client';
 import type { Course, CategoryType, CourseCategory, Academy, ApprovalStatus } from '../types/index';
 import type { ApiCourseResponse } from './api/types';
+import { formatCourseDuration } from '../utils/dateUtils';
 
 // Helper to map DTO to Course (Frontend Type)
 const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
@@ -41,7 +42,7 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60', // Placeholder image
         description: dto.requirement,
         format: dto.isOffline ? '오프라인' : '온라인',
-        duration: `${dto.courseStart} ~ ${dto.courseEnd}`,
+        duration: formatCourseDuration(dto.courseStart, dto.courseEnd),
     };
 };
 

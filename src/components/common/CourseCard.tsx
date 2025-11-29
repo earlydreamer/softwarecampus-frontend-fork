@@ -3,12 +3,19 @@ import { Link } from 'react-router-dom';
 import type { Course } from '../../types';
 import { Star, MessageSquare } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
+import { getCourseDurationInfo } from '../../utils/dateUtils';
 
 interface CourseCardProps {
     course: Course;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+    // 강의 기간 정보 계산
+    const durationInfo = getCourseDurationInfo(
+        course.courseStart || '',
+        course.courseEnd || ''
+    );
+
     return (
         <div className="glass-panel rounded-xl overflow-hidden hover:scale-[1.02] transition-transform duration-300 group">
             <Link to={`/lectures/${course.id}`} className="block h-full">
@@ -37,9 +44,16 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
                         {course.name}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-1">
-                        {course.duration || '기간 미정'}
-                    </p>
+                    <div className="flex items-center gap-2 mb-4">
+                        {durationInfo.months > 0 && (
+                            <span className="text-xs font-semibold text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                                {durationInfo.months}개월
+                            </span>
+                        )}
+                        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
+                            {durationInfo.duration}
+                        </p>
+                    </div>
 
                     <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
                         <div className="flex items-center gap-1 text-amber-500">

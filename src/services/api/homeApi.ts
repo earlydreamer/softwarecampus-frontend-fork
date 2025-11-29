@@ -1,6 +1,7 @@
 import apiClient from './client';
 import type { ApiCourseResponse, ApiHomeCommunityResponse, CommunityPost } from './types';
 import type { Course } from '../../types';
+import { formatCourseDuration } from '../../utils/dateUtils';
 
 /**
  * 과정 목록 조회
@@ -50,7 +51,7 @@ export const fetchCoursesByType = async (
             isApproved: apiCourse.approvalStatus,
 
             // 프론트엔드 전용 필드 (기본값 설정)
-            duration: calculateDuration(apiCourse.courseStart, apiCourse.courseEnd),
+            duration: formatCourseDuration(apiCourse.courseStart, apiCourse.courseEnd),
             format: apiCourse.isOffline ? '오프라인' : '온라인',
             rating: 0, // TODO: 리뷰 API 연동 필요
             reviewCount: 0,
@@ -143,17 +144,6 @@ export const fetchCommunityHighlights = async (limit: number = 6): Promise<Commu
         return [];
     }
 };
-
-/**
- * 과정 기간 계산 (개월 수)
- */
-function calculateDuration(startDate: string, endDate: string): string {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    const months = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30));
-    return `${months}개월`;
-}
 
 /**
  * 게시판 카테고리 매핑
