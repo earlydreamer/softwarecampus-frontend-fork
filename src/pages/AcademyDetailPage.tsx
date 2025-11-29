@@ -154,47 +154,47 @@ const AcademyDetailPage = () => {
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Overview Card */}
-                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">기관 소개</h2>
-                            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-8">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">기관 소개</h2>
+                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                                 {academy.description}
                             </p>
 
                             {/* Stats */}
-                            <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-100">
+                            <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-100 dark:border-slate-700">
                                 <div className="text-center">
-                                    <div className="w-10 h-10 mx-auto bg-primary-50 text-primary-600 rounded-full flex items-center justify-center mb-3">
+                                    <div className="w-10 h-10 mx-auto bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center mb-3">
                                         <BookOpen className="w-5 h-5" />
                                     </div>
-                                    <div className="text-2xl font-bold text-slate-900">{academy.courseCount}</div>
-                                    <div className="text-xs text-slate-500 mt-1">운영 과정</div>
+                                    <div className="text-2xl font-bold text-slate-900 dark:text-white">{academy.courseCount}</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">운영 과정</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="w-10 h-10 mx-auto bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-3">
+                                    <div className="w-10 h-10 mx-auto bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-3">
                                         <Users className="w-5 h-5" />
                                     </div>
-                                    <div className="text-2xl font-bold text-slate-900">1,200+</div>
-                                    <div className="text-xs text-slate-500 mt-1">누적 수강생</div>
+                                    <div className="text-2xl font-bold text-slate-900 dark:text-white">1,200+</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">누적 수강생</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="w-10 h-10 mx-auto bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-3">
+                                    <div className="w-10 h-10 mx-auto bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mb-3">
                                         <Award className="w-5 h-5" />
                                     </div>
-                                    <div className="text-2xl font-bold text-slate-900">95%</div>
-                                    <div className="text-xs text-slate-500 mt-1">취업률</div>
+                                    <div className="text-2xl font-bold text-slate-900 dark:text-white">95%</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">취업률</div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Tabs Navigation */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-                            <div className="border-b border-slate-200">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
+                            <div className="border-b border-slate-200 dark:border-slate-700">
                                 <div className="flex">
                                     <button
                                         onClick={() => setActiveTab('info')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'info'
                                             ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
                                         상세 정보
@@ -203,7 +203,7 @@ const AcademyDetailPage = () => {
                                         onClick={() => setActiveTab('courses')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'courses'
                                             ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
                                         개설 과정 {courses && `(${courses.length})`}
@@ -212,7 +212,7 @@ const AcademyDetailPage = () => {
                                         onClick={() => setActiveTab('qna')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'qna'
                                             ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
                                         Q&A {qnaData && `(${qnaData.totalCount})`}
@@ -224,40 +224,40 @@ const AcademyDetailPage = () => {
                                 {activeTab === 'info' && (
                                     <div className="space-y-6">
                                         <div>
-                                            <h3 className="text-lg font-bold text-slate-900 mb-4">기관 특징</h3>
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">기관 특징</h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="flex items-start gap-3">
                                                     <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                                                    <span className="text-slate-700">고용노동부 인증 우수 훈련 기관</span>
+                                                    <span className="text-slate-700 dark:text-slate-300">고용노동부 인증 우수 훈련 기관</span>
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                                                    <span className="text-slate-700">실무 중심의 프로젝트 기반 학습</span>
+                                                    <span className="text-slate-700 dark:text-slate-300">실무 중심의 프로젝트 기반 학습</span>
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                                                    <span className="text-slate-700">전문 취업 컨설턴트의 1:1 케어</span>
+                                                    <span className="text-slate-700 dark:text-slate-300">전문 취업 컨설턴트의 1:1 케어</span>
                                                 </div>
                                                 <div className="flex items-start gap-3">
                                                     <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                                                    <span className="text-slate-700">최신 사양의 교육 장비 지원</span>
+                                                    <span className="text-slate-700 dark:text-slate-300">최신 사양의 교육 장비 지원</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="pt-6 border-t border-slate-100">
-                                            <h3 className="text-lg font-bold text-slate-900 mb-4">기관 설명</h3>
-                                            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                                        <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">기관 설명</h3>
+                                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                                                 {academy.description}
                                             </p>
                                         </div>
 
-                                        <div className="pt-6 border-t border-slate-100">
-                                            <h3 className="text-lg font-bold text-slate-900 mb-4">위치 안내</h3>
+                                        <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">위치 안내</h3>
                                             <div className="h-[300px] w-full">
                                                 <MapEmbed address={academy.address} height="100%" />
                                             </div>
-                                            <p className="mt-2 text-slate-600 flex items-center gap-2">
+                                            <p className="mt-2 text-slate-600 dark:text-slate-400 flex items-center gap-2">
                                                 <MapPin className="w-4 h-4" />
                                                 {academy.address}
                                             </p>
@@ -332,26 +332,26 @@ const AcademyDetailPage = () => {
 
                     {/* Sidebar Info */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 sticky top-24">
-                            <h3 className="font-bold text-slate-900 mb-6 pb-4 border-b border-slate-100">기관 상세 정보</h3>
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-6 sticky top-24">
+                            <h3 className="font-bold text-slate-900 dark:text-white mb-6 pb-4 border-b border-slate-100 dark:border-slate-700">기관 상세 정보</h3>
                             <div className="space-y-4 text-sm">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-500">설립일</span>
-                                    <span className="font-medium text-slate-900">{academy.establishedDate}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">설립일</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{academy.establishedDate}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-500">사업자 등록번호</span>
-                                    <span className="font-medium text-slate-900">{academy.businessNumber}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">사업자 등록번호</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{academy.businessNumber}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-slate-500">이메일</span>
-                                    <span className="font-medium text-slate-900">{academy.email}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">이메일</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{academy.email}</span>
                                 </div>
                                 <div>
-                                    <div className="text-slate-500 mb-2">주요 분야</div>
+                                    <div className="text-slate-500 dark:text-slate-400 mb-2">주요 분야</div>
                                     <div className="flex flex-wrap gap-2">
                                         {academy.fields?.map(field => (
-                                            <span key={field} className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-xs font-medium">
+                                            <span key={field} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md text-xs font-medium">
                                                 {field}
                                             </span>
                                         ))}
@@ -359,7 +359,7 @@ const AcademyDetailPage = () => {
                                 </div>
                             </div>
 
-                            <div className="mt-8 pt-6 border-t border-slate-100">
+                            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-700">
                                 {academy.website ? (
                                     <a
                                         href={sanitizeUrl(academy.website)}
@@ -374,7 +374,7 @@ const AcademyDetailPage = () => {
                                         기관 홈페이지 바로가기
                                     </button>
                                 )}
-                                <button className="w-full py-3.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-lg hover:bg-slate-50 transition-all">
+                                <button className="w-full py-3.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
                                     공유하기
                                 </button>
                             </div>

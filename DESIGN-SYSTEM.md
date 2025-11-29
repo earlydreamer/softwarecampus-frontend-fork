@@ -203,9 +203,9 @@ xl: '1280px',  //  Large desktop
 ## Dark Mode
 
 ### 구현 방식
-- Tailwind의 `dark:` variant 사용
-- Zustand로 상태 관리
-- LocalStorage에 저장
+### 구현 방식
+- 시스템 설정(OS/Browser Preference)을 따름 (`prefers-color-scheme`)
+- Tailwind의 `dark:` variant 사용 (media strategy)
 
 ### 색상 매핑
 ```css

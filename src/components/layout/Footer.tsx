@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
     return (
-        <footer className="bg-slate-900 text-slate-300 py-12" aria-label="Site footer">
+        <footer className="bg-slate-900 dark:bg-slate-950 text-slate-300 py-12" aria-label="Site footer">
             <div className="container mx-auto px-4">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                     <div>
@@ -40,7 +40,7 @@ const Footer = () => {
                         </ul>
                     </div>
                 </div>
-                <div className="border-t border-slate-800 pt-8 text-center text-sm text-slate-500">
+                <div className="border-t border-slate-800 dark:border-slate-900 pt-8 text-center text-sm text-slate-500">
                     &copy; {new Date().getFullYear()} SoftwareCampus. All rights reserved.
                 </div>
             </div>
