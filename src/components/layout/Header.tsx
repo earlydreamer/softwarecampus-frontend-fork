@@ -79,6 +79,7 @@ const Header = () => {
                                     <Link
                                         to={buildPath('/lectures', node.query)}
                                         className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 py-2"
+                                        onClick={(e) => e.currentTarget.blur()}
                                     >
                                         {node.label}
                                         <ChevronDown className="w-4 h-4" />
@@ -143,12 +144,14 @@ const Header = () => {
 
                         {/* Community Dropdown */}
                         <div className="relative group">
-                            <NavLink to="/community" className={navLinkClasses}>
-                                <span className="flex items-center gap-1">
-                                    커뮤니티
-                                    <ChevronDown className="w-4 h-4" />
-                                </span>
-                            </NavLink>
+                            <Link
+                                to="/community"
+                                className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 py-2"
+                                onClick={(e) => e.currentTarget.blur()}
+                            >
+                                커뮤니티
+                                <ChevronDown className="w-4 h-4" />
+                            </Link>
                             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus-within:translate-y-0">
                                 <div className="w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-2 relative before:absolute before:-top-1.5 before:left-1/2 before:-translate-x-1/2 before:w-3 before:h-3 before:bg-white dark:before:bg-slate-800 before:border-t before:border-l before:border-slate-100 dark:before:border-slate-700 before:rotate-45 before:z-0">
                                     {rawCommunityNav.children?.map((child) => (
