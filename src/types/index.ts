@@ -280,6 +280,7 @@ export interface AcademyQA { // 변경: AcademyQnA -> AcademyQA
 
     // 구조 변경
     answerText?: string;
+    isAnswered?: boolean; // 추가: 답변 완료 여부
 
     // TODO: 백엔드 미지원 필드 (보완 예정)
     answeredBy?: {

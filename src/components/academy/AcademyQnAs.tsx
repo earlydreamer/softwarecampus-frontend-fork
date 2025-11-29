@@ -157,7 +157,7 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
                                             <span className="text-sm text-slate-500">
                                                 {new Date(qna.createdAt).toLocaleDateString()}
                                             </span>
-                                            {qna.answerText ? (
+                                            {qna.isAnswered ?? !!qna.answerText ? (
                                                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 font-medium">
                                                     <CheckCircle2 className="w-3 h-3" />
                                                     답변완료

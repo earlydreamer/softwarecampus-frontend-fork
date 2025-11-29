@@ -3,13 +3,15 @@ import type { Course, CategoryType, CourseCategory, Academy, ApprovalStatus } fr
 import type { ApiCourseResponse } from './api/types';
 import { formatCourseDuration } from '../utils/dateUtils';
 
+const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60';
+
 // Helper to map DTO to Course (Frontend Type)
 const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
     return {
         id: dto.id,
         name: dto.name,
         academy: {
-            id: 0, // Placeholder: DTO does not provide academy ID
+            id: Math.floor(Math.random() * 1000000), // Placeholder: Random ID to avoid key errors
             name: dto.academyName,
             address: '',
             businessNumber: '',
@@ -17,7 +19,7 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
             isApproved: 'APPROVED',
         } as Academy,
         category: {
-            id: 0, // Placeholder: DTO does not provide category ID
+            id: Math.floor(Math.random() * 1000000), // Placeholder: Random ID to avoid key errors
             categoryName: dto.categoryName,
             categoryType: dto.categoryType as CategoryType,
             name: dto.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
@@ -39,7 +41,7 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         // UI fields (Default values or mapped)
         rating: 0, // Backend does not provide rating yet
         reviewCount: 0, // Backend does not provide review count yet
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60', // Placeholder image
+        imageUrl: DEFAULT_COURSE_IMAGE, // Placeholder image
         description: dto.requirement,
         format: dto.isOffline ? '오프라인' : '온라인',
         duration: formatCourseDuration(dto.courseStart, dto.courseEnd),
@@ -59,30 +61,18 @@ export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course
     let courses: ApiCourseResponse[] = [];
 
     try {
-        if (keyword) {
-            // Search Mode
-            if (!categoryType || categoryType === 'ALL') {
-                const [employeeRes, jobSeekerRes] = await Promise.all([
-                    apiClient.get<ApiCourseResponse[]>('/api/EMPLOYEE/course/search', { params: { keyword } }),
-                    apiClient.get<ApiCourseResponse[]>('/api/JOB_SEEKER/course/search', { params: { keyword } })
-                ]);
-                courses = [...employeeRes.data, ...jobSeekerRes.data];
-            } else {
-                const response = await apiClient.get<ApiCourseResponse[]>(`/api/${categoryType}/course/search`, { params: { keyword } });
-                courses = response.data;
-            }
+        const pathSuffix = keyword ? '/search' : '';
+        const params = keyword ? { keyword } : undefined;
+
+        if (!categoryType || categoryType === 'ALL') {
+            const [employeeRes, jobSeekerRes] = await Promise.all([
+                apiClient.get<ApiCourseResponse[]>(`/api/EMPLOYEE/course${pathSuffix}`, { params }),
+                apiClient.get<ApiCourseResponse[]>(`/api/JOB_SEEKER/course${pathSuffix}`, { params })
+            ]);
+            courses = [...employeeRes.data, ...jobSeekerRes.data];
         } else {
-            // List Mode
-            if (!categoryType || categoryType === 'ALL') {
-                const [employeeRes, jobSeekerRes] = await Promise.all([
-                    apiClient.get<ApiCourseResponse[]>('/api/EMPLOYEE/course'),
-                    apiClient.get<ApiCourseResponse[]>('/api/JOB_SEEKER/course')
-                ]);
-                courses = [...employeeRes.data, ...jobSeekerRes.data];
-            } else {
-                const response = await apiClient.get<ApiCourseResponse[]>(`/api/${categoryType}/course`);
-                courses = response.data;
-            }
+            const response = await apiClient.get<ApiCourseResponse[]>(`/api/${categoryType}/course${pathSuffix}`, { params });
+            courses = response.data;
         }
     } catch (error) {
         console.error('Failed to fetch courses:', error);
