@@ -39,7 +39,7 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                     <p className="text-slate-500">등록된 게시글이 없습니다.</p>
                 </div>
             ) : (
-                <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:gap-6 md:pb-0 hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="flex overflow-x-auto pb-10 gap-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:gap-6 md:pb-0 md:overflow-visible hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                     {loading ? (
                         Array.from({ length: 3 }).map((_, i) => (
                             <div key={i} className="min-w-[280px] w-[85vw] md:w-auto snap-center glass-panel p-6 rounded-xl space-y-4">
