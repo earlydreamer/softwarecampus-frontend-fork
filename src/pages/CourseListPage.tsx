@@ -82,8 +82,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ label, value, options, 
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
                     className={`flex items-center justify-between gap-2 w-36 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${isActive
-                        ? 'border-primary-200 bg-primary-50 text-primary-700'
-                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                        ? 'border-primary-200 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-700'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'
                         }`}
                 >
                     <span className="truncate">{displayLabel}</span>
@@ -91,7 +91,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ label, value, options, 
                 </button>
 
                 {isOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-full min-w-[144px] bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="absolute top-full left-0 mt-1 w-full min-w-[144px] bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
                         {options.map((option) => (
                             <button
                                 key={option.value}
@@ -101,8 +101,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({ label, value, options, 
                                     setIsOpen(false);
                                 }}
                                 className={`w-full text-left px-4 py-2 text-sm transition-colors ${value === option.value
-                                    ? 'bg-primary-50 text-primary-700 font-medium'
-                                    : 'text-slate-600 hover:bg-slate-50'
+                                    ? 'bg-primary-50 text-primary-700 font-medium dark:bg-primary-900/30 dark:text-primary-300'
+                                    : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-700'
                                     }`}
                             >
                                 {option.label}
@@ -216,7 +216,7 @@ const CourseListPage: React.FC = () => {
                                         id="keyword"
                                         type="text"
                                         placeholder="과정명, 기술 스택, 혹은 키워드로 검색..."
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-5 py-2.5 pl-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-sm"
+                                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-5 py-2.5 pl-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all shadow-sm"
                                         {...register('keyword')}
                                     />
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -243,13 +243,13 @@ const CourseListPage: React.FC = () => {
                 </section>
 
                 {isError ? (
-                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
-                        <p className="text-slate-500">데이터를 불러오는 데 실패했습니다.</p>
+                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
+                        <p className="text-slate-500 dark:text-slate-400">데이터를 불러오는 데 실패했습니다.</p>
                     </div>
                 ) : noResult ? (
-                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
+                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">조건에 맞는 과정이 없습니다</h2>
-                        <p className="text-slate-500">다른 키워드나 필터를 선택해 다시 검색해 보세요.</p>
+                        <p className="text-slate-500 dark:text-slate-400">다른 키워드나 필터를 선택해 다시 검색해 보세요.</p>
                     </div>
                 ) : (
                     <CourseSection title="검색 결과" courses={courses} loading={isLoading} viewMode="grid" />

@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'media',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -33,6 +34,7 @@ export default {
           900: '#4c1d95',
           950: '#2e1065',
         },
+        // Dark mode specific overrides if needed, but slate is good default
       },
       fontFamily: {
         sans: ['Outfit', 'Inter', 'sans-serif'],
