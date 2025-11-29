@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { fetchAcademies } from '../services/academyService';
+import { getApprovedAcademies } from '../services/academyService';
 import { MapPin, Star, BookOpen, Award, Search } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
@@ -10,7 +10,7 @@ const AcademyListPage = () => {
     const [keyword, setKeyword] = useState('');
     const { data: academies, isLoading, isError } = useQuery({
         queryKey: ['academies'],
-        queryFn: fetchAcademies,
+        queryFn: () => getApprovedAcademies(true),
     });
 
     const filteredAcademies = academies?.filter(academy =>

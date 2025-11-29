@@ -10,7 +10,7 @@ export interface Account {
     userName: string;
     phoneNumber: string;
     accountType: AccountType;
-    accountApproved: ApprovalStatus; // 변경: approvalStatus -> accountApproved
+    approvalStatus: ApprovalStatus; // 변경: accountApproved -> approvalStatus (백엔드 일치)
     address: string | null;
     affiliation: string | null;
     position: string | null;
