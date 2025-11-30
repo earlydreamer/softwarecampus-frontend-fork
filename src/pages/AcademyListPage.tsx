@@ -92,7 +92,7 @@ const AcademyListPage = () => {
                                                 <h3 className="text-lg font-bold text-slate-900 truncate group-hover:text-primary-600 transition-colors">
                                                     {academy.name}
                                                 </h3>
-                                                {academy.isApproved === 'APPROVED' && (
+                                                {academy.approvalStatus === 'APPROVED' && (
                                                     <span className="shrink-0">
                                                         <Award className="w-4 h-4 text-blue-600" />
                                                     </span>
