@@ -8,8 +8,15 @@ export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * 비밀번호 검증 정규식
  * - 8~20자
  * - 영문, 숫자, 특수문자 포함
+ * - 허용 특수문자: ! @ # $ % ^ & * ( ) - _ = + [ ] { } | ; : ' " , . < > / ? ~
  */
-export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
+export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()\-_=+[\]{}|;:'",.<>/?~])[A-Za-z\d!@#$%^&*()\-_=+[\]{}|;:'",.<>/?~]{8,20}$/;
+
+/**
+ * 비밀번호 최소/최대 길이 상수
+ */
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 20;
 
 /**
  * 휴대폰 번호 검증 정규식
@@ -29,6 +36,69 @@ export const isValidEmail = (email: string): boolean => {
  */
 export const isValidPassword = (password: string): boolean => {
     return PASSWORD_REGEX.test(password);
+};
+
+/**
+ * 비밀번호 강도 체크 결과 타입
+ */
+export interface PasswordStrengthChecks {
+    length: boolean;
+    letter: boolean;
+    number: boolean;
+    special: boolean;
+}
+
+/**
+ * 비밀번호 강도 체크
+ * 각 조건별로 충족 여부를 반환
+ */
+export const getPasswordStrengthChecks = (password: string): PasswordStrengthChecks => {
+    return {
+        length: password.length >= PASSWORD_MIN_LENGTH && password.length <= PASSWORD_MAX_LENGTH,
+        letter: /[A-Za-z]/.test(password),
+        number: /\d/.test(password),
+        special: /[!@#$%^&*()\-_=+[\]{}|;:'",.<>/?~]/.test(password),
+    };
+};
+
+/**
+ * 비밀번호 유효성 검사 결과 타입
+ */
+export interface PasswordValidationResult {
+    isValid: boolean;
+    error: string | null;
+}
+
+/**
+ * 비밀번호 유효성 검사 (에러 메시지 포함)
+ * @param password - 검사할 비밀번호
+ * @param confirmPassword - 확인용 비밀번호 (선택)
+ * @returns 유효성 검사 결과와 에러 메시지
+ */
+export const validatePassword = (
+    password: string,
+    confirmPassword?: string
+): PasswordValidationResult => {
+    // 비밀번호 확인 체크 (confirmPassword가 제공된 경우)
+    if (confirmPassword !== undefined && password !== confirmPassword) {
+        return { isValid: false, error: '비밀번호가 일치하지 않습니다.' };
+    }
+
+    // 길이 체크
+    if (password.length < PASSWORD_MIN_LENGTH) {
+        return { isValid: false, error: `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다.` };
+    }
+
+    if (password.length > PASSWORD_MAX_LENGTH) {
+        return { isValid: false, error: `비밀번호는 ${PASSWORD_MAX_LENGTH}자 이하여야 합니다.` };
+    }
+
+    // 정규식 체크
+    if (!PASSWORD_REGEX.test(password)) {
+        return { isValid: false, error: '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.' };
+    }
+
+    return { isValid: true, error: null };
 };
 
 /**

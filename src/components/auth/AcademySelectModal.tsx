@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
-import { fetchAcademies } from '../../services/academyService';
+import { getApprovedAcademies, createAcademy } from '../../services/academyService';
 
 interface AcademySelectModalProps {
     isOpen: boolean;
@@ -18,6 +18,20 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showRegisterForm, setShowRegisterForm] = useState(false);
+
+    // useQuery로 아카데미 목록 가져오기
+    const { data: academies = [], isLoading, isError } = useQuery({
+        queryKey: ['approvedAcademies'],
+        queryFn: () => getApprovedAcademies(true),
+        enabled: isOpen,
+    });
+
+    // Registration Form State
+    const [regName, setRegName] = useState('');
+    const [regBusinessNumber, setRegBusinessNumber] = useState('');
+    const [regAddress, setRegAddress] = useState('');
+    const [regEmail, setRegEmail] = useState('');
+
     interface UploadedFile {
         id: string;
         file: File;
@@ -26,13 +40,6 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [filePreviewUrls, setFilePreviewUrls] = useState<{ [key: string]: string }>({});
     const [isDragging, setIsDragging] = useState(false);
-
-    // 기관 목록 조회 (백엔드 API)
-    const { data: academies = [], isLoading, error } = useQuery({
-        queryKey: ['academies', searchTerm],
-        queryFn: () => fetchAcademies(searchTerm ? { keyword: searchTerm } : undefined),
-        enabled: isOpen, // 모달이 열렸을 때만 조회
-    });
 
     // 모달 열릴 때 body 스크롤 방지 및 포커스 관리
     useEffect(() => {
@@ -91,14 +98,76 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
             setSearchTerm('');
             setUploadedFiles([]);
             setFilePreviewUrls({});
+            // Reset form
+            setRegName('');
+            setRegBusinessNumber('');
+            setRegAddress('');
+            setRegEmail('');
         }
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
+    const filteredAcademies = academies.filter((academy) =>
+        academy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (academy.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+        academy.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const handleSelect = (academy: Academy) => {
         onSelect(academy);
         onClose();
+    };
+
+    const handleRegister = async () => {
+        if (!regName || !regBusinessNumber || !regAddress || !regEmail) {
+            alert('모든 필수 정보를 입력해주세요.');
+            return;
+        }
+
+        if (uploadedFiles.length === 0) {
+            alert('사업자등록증 파일을 첨부해주세요.');
+            return;
+        }
+
+        /* 
+        // Real API implementation
+        const formData = new FormData();
+        formData.append('name', regName);
+        formData.append('businessNumber', regBusinessNumber);
+        formData.append('address', regAddress);
+        formData.append('email', regEmail);
+        formData.append('businessRegistration', uploadedFiles[0].file);
+
+        try {
+            await createAcademy(formData);
+            alert('기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.');
+            onClose();
+        } catch (error) {
+            console.error('Registration failed:', error);
+            alert('기관 등록 요청 중 오류가 발생했습니다.');
+        }
+        */
+
+        // Mock implementation for UI testing
+        try {
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            console.log('Mock Registration Data:', {
+                name: regName,
+                businessNumber: regBusinessNumber,
+                address: regAddress,
+                email: regEmail,
+                files: uploadedFiles
+            });
+
+            alert('기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.');
+            onClose();
+        } catch (error) {
+            console.error('Registration failed:', error);
+            alert('기관 등록 요청 중 오류가 발생했습니다.');
+        }
     };
 
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -233,6 +302,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="text"
+                                    value={regName}
+                                    onChange={(e) => setRegName(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="교육기관 이름"
                                 />
@@ -243,6 +314,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="text"
+                                    value={regBusinessNumber}
+                                    onChange={(e) => setRegBusinessNumber(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="000-00-00000"
                                 />
@@ -253,6 +326,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="text"
+                                    value={regAddress}
+                                    onChange={(e) => setRegAddress(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="서울시 강남구..."
                                 />
@@ -263,6 +338,8 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </label>
                                 <input
                                     type="email"
+                                    value={regEmail}
+                                    onChange={(e) => setRegEmail(e.target.value)}
                                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
                                     placeholder="info@academy.com"
                                 />
@@ -400,18 +477,17 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                         <div className="flex-1 overflow-y-auto p-6">
                             {isLoading ? (
                                 <div className="text-center py-12">
-                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-                                    <p className="mt-2 text-slate-500 dark:text-slate-400">로딩 중...</p>
+                                    <p className="text-slate-600 dark:text-slate-400">로딩 중...</p>
                                 </div>
-                            ) : error ? (
+                            ) : isError ? (
                                 <div className="text-center py-12">
                                     <Building2 className="w-16 h-16 mx-auto text-red-300 dark:text-red-600 mb-4" />
-                                    <p className="text-red-600 dark:text-red-400 mb-2">기관 목록을 불러오는데 실패했습니다</p>
+                                    <p className="text-red-600 dark:text-red-400 mb-2">데이터를 불러오는데 실패했습니다</p>
                                     <p className="text-sm text-slate-500 dark:text-slate-500">
                                         잠시 후 다시 시도해주세요
                                     </p>
                                 </div>
-                            ) : academies.length === 0 ? (
+                            ) : filteredAcademies.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Building2 className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                                     <p className="text-slate-600 dark:text-slate-400 mb-2">검색 결과가 없습니다</p>
@@ -421,7 +497,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </div>
                             ) : (
                                 <div className="grid gap-4">
-                                    {academies.map((academy) => (
+                                    {filteredAcademies.map((academy) => (
                                         <button
                                             key={academy.id}
                                             onClick={() => handleSelect(academy)}
@@ -500,10 +576,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                     ← 목록으로 돌아가기
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        alert('목업: 기관 등록 요청이 제출되었습니다.');
-                                        onClose();
-                                    }}
+                                    onClick={handleRegister}
                                     className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition font-medium text-sm"
                                 >
                                     등록 요청

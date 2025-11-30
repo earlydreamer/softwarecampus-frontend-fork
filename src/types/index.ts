@@ -10,11 +10,12 @@ export interface Account {
     userName: string;
     phoneNumber: string;
     accountType: AccountType;
-    accountApproved: ApprovalStatus; // 변경: approvalStatus -> accountApproved
+    approvalStatus: ApprovalStatus; // 변경: accountApproved -> approvalStatus (백엔드 일치)
     address: string | null;
     affiliation: string | null;
     position: string | null;
     academyId?: number | null; // 기관 회원일 경우 기관 ID, 일반 회원은 null
+    profileImage?: string | null; // 프로필 이미지 URL
 }
 
 // ===== 회원가입 폼 데이터 (백엔드 SignupRequest DTO와 완전 일치) =====
@@ -28,6 +29,9 @@ export interface SignupFormData {
     position: string | null;
     accountType: AccountType;
     academyId: number | null;
+    termsAgreed: boolean;
+    privacyAgreed: boolean;
+    marketingAgreed: boolean;
 }
 
 // 백엔드 BoardCategory enum (NOTICE, QUESTION, COURSE_STORY, CODING_STORY)

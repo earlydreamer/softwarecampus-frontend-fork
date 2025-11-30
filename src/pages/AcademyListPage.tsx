@@ -1,26 +1,23 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { fetchAcademies } from '../services/academyService';
+import { getApprovedAcademies } from '../services/academyService';
 import { MapPin, Star, BookOpen, Award, Search } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 
 const AcademyListPage = () => {
     const [keyword, setKeyword] = useState('');
-
-    // Debounce 처리를 위해 실제 쿼리에 사용할 키워드 분리 (선택 사항이지만 권장)
-    // 여기서는 간단하게 직접 연결하되, 입력 시마다 요청이 가는 것을 방지하려면 
-    // 별도의 검색 버튼을 두거나 useDebounce 훅을 사용하는 것이 좋음.
-    // 현재는 기존 동작 유지를 위해 바로 연결.
-
-    const { data: academies = [], isLoading, isError } = useQuery({
-        queryKey: ['academies', keyword], // keyword가 바뀌면 쿼리 재실행
-        queryFn: () => fetchAcademies({ keyword }), // API에 keyword 전달
+    const { data: academies, isLoading, isError, error, refetch } = useQuery({
+        queryKey: ['academies'],
+        queryFn: () => getApprovedAcademies(true),
     });
 
-    // 클라이언트 사이드 필터링 제거 -> 백엔드에서 처리된 데이터 사용
-    const filteredAcademies = academies;
+    const filteredAcademies = academies?.filter(academy =>
+        academy.name.toLowerCase().includes(keyword.toLowerCase()) ||
+        academy.address.toLowerCase().includes(keyword.toLowerCase()) ||
+        academy.fields?.some(field => field.toLowerCase().includes(keyword.toLowerCase()))
+    );
 
     const noResult = !isLoading && filteredAcademies?.length === 0;
 
@@ -40,7 +37,7 @@ const AcademyListPage = () => {
                     <div className="flex flex-col md:flex-row gap-4">
                         {/* Search Bar */}
                         <div className="flex flex-col gap-1.5 flex-grow max-w-xl">
-                            <label htmlFor="keyword" className="text-xs font-semibold text-slate-500 ml-1">기관 검색</label>
+                            <label htmlFor="keyword" className="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">기관 검색</label>
                             <div className="relative">
                                 <input
                                     id="keyword"
@@ -48,7 +45,7 @@ const AcademyListPage = () => {
                                     value={keyword}
                                     onChange={(e) => setKeyword(e.target.value)}
                                     placeholder="기관명, 주소, 혹은 분야로 검색..."
-                                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-5 py-2.5 pl-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-800 dark:text-white transition-all shadow-sm"
+                                    className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-5 py-2.5 pl-12 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-600 transition-all shadow-sm"
                                 />
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             </div>
@@ -65,7 +62,18 @@ const AcademyListPage = () => {
                     </div>
                 ) : isError ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
-                        <p className="text-slate-500 dark:text-slate-400">데이터를 불러오는 데 실패했습니다.</p>
+                        <p className="text-slate-500 dark:text-slate-400 mb-4">
+                            데이터를 불러오는 데 실패했습니다.
+                            {error instanceof Error && (
+                                <span className="block text-sm mt-2">{error.message}</span>
+                            )}
+                        </p>
+                        <button
+                            onClick={() => refetch()}
+                            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                        >
+                            다시 시도
+                        </button>
                     </div>
                 ) : noResult ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
@@ -78,7 +86,7 @@ const AcademyListPage = () => {
                             <Link
                                 key={academy.id}
                                 to={`/academies/${academy.id}`}
-                                className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-primary-300 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+                                className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-xl transition-all duration-300 flex flex-col h-full"
                             >
                                 {/* Header with Logo */}
                                 <div className="p-6 border-b border-slate-100 dark:border-slate-700">
@@ -87,7 +95,7 @@ const AcademyListPage = () => {
                                             {academy.logoUrl ? (
                                                 <img src={sanitizeUrl(academy.logoUrl)} alt={academy.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <span className="text-2xl font-bold text-slate-400">{academy.name[0]}</span>
+                                                <span className="text-2xl font-bold text-slate-400 dark:text-slate-500">{academy.name[0]}</span>
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -97,7 +105,7 @@ const AcademyListPage = () => {
                                                 </h3>
                                                 {academy.approvalStatus === 'APPROVED' && (
                                                     <span className="shrink-0">
-                                                        <Award className="w-4 h-4 text-blue-600" />
+                                                        <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                                     </span>
                                                 )}
                                             </div>

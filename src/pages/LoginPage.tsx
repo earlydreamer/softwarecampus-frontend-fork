@@ -38,15 +38,15 @@ const LoginPage = () => {
             <div className="glass-panel p-8 rounded-2xl w-full max-w-md">
                 <h1 className="text-3xl font-bold text-center mb-8 text-slate-900 dark:text-white">로그인</h1>
 
-                {/* 샘플 계정 안내 */}
-                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">테스트 계정</p>
-                    <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-                        <p>• 관리자: admin@test.com / test</p>
-                        <p>• 사용자: user@test.com / test</p>
-                        <p>• 교육기관: academy@test.com / user</p>
+                {/* 샘플 계정 안내 - 개발 환경에서만 표시 */}
+                {import.meta.env.DEV && (
+                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">테스트 계정 (개발용)</p>
+                        <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
+                            <p>• 관리자: admin@test.com / test</p>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {error && (
@@ -88,8 +88,13 @@ const LoginPage = () => {
                         {isLoading ? '로그인 중...' : '로그인'}
                     </button>
                 </form>
-                <div className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                    계정이 없으신가요? <Link to="/signup" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">회원가입</Link>
+                <div className="mt-6 text-center space-y-2">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        계정이 없으신가요? <Link to="/signup" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">회원가입</Link>
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        비밀번호를 잊으셨나요? <Link to="/forgot-password" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">비밀번호 찾기</Link>
+                    </p>
                 </div>
             </div>
         </div>

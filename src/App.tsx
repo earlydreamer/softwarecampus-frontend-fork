@@ -11,6 +11,7 @@ import CommunityWritePage from './pages/CommunityWritePage';
 import CommunityEditPage from './pages/CommunityEditPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import MyPage from './pages/MyPage';
 import AdminPage from './pages/AdminPage';
 import PlaceholderPage from './pages/PlaceholderPage';
@@ -45,6 +46,7 @@ function App() {
             {/* Auth */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/admin" element={<AdminPage />} />
 
