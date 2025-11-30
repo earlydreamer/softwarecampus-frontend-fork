@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance } from 'axios';
+import { getAccessToken } from '../../utils/tokenManager';
 
 
 /**
@@ -19,15 +20,15 @@ const apiClient: AxiosInstance = axios.create({
 
 /**
  * 요청 인터셉터
- * - 필요 시 인증 토큰 추가
+ * - 인증 토큰 자동 추가 (SSR 안전, XSS 완화)
  */
 apiClient.interceptors.request.use(
     (config) => {
-        // TODO: 추후 JWT 토큰 추가
-        // const token = localStorage.getItem('accessToken');
-        // if (token) {
-        //     config.headers.Authorization = `Bearer ${token}`;
-        // }
+        // 안전한 토큰 관리자를 통해 JWT 토큰 가져오기
+        const token = getAccessToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
     },
     (error) => {

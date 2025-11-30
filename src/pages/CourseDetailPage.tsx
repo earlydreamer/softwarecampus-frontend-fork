@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCourseById, fetchCourseReviews, fetchCourseQnAs } from '../services/courseService';
+import { addCourseFavorite, removeCourseFavorite, checkCourseFavorite } from '../services/favoriteService';
 import { Calendar, MapPin, Clock, Building, CheckCircle2, Share2, Heart } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseReviews from '../components/course/CourseReviews';
 import CourseQnAs from '../components/course/CourseQnAs';
+import ShareModal from '../components/ui/ShareModal';
 import { QNA_PER_PAGE } from '../constants';
 
 
@@ -21,6 +23,9 @@ const CourseDetailPage = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'qna'>('overview');
     const [qnaPage, setQnaPage] = useState(1);
     const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
+    const [showShareModal, setShowShareModal] = useState(false);
+
+    const queryClient = useQueryClient();
 
     const {
         data: course,
@@ -53,16 +58,67 @@ const CourseDetailPage = () => {
         error: qnasError,
         refetch: refetchQnAs
     } = useQuery({
-        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword, course?.category.categoryType],
+        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword],
         queryFn: () => fetchCourseQnAs(
             id!,
             qnaPage,
             QNA_PER_PAGE,
-            qnaSearchKeyword,
-            course?.category.categoryType
+            qnaSearchKeyword
         ),
         enabled: isValidId && !!course, // course 정보가 로드된 후에 실행
     });
+
+    // 찜하기 상태 조회 (인증 토큰으로 사용자 식별)
+    const {
+        data: favoriteCheckResult
+    } = useQuery({
+        queryKey: ['course-favorite', id],
+        queryFn: () => checkCourseFavorite(id!),
+        enabled: isValidId && !!course,
+    });
+
+    // 찜 상태를 query 결과에서 직접 계산
+    const isFavorite = favoriteCheckResult?.favorited ?? false;
+
+    // 찜하기 추가 Mutation
+    const addFavoriteMutation = useMutation({
+        mutationFn: () => addCourseFavorite(id!),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
+        },
+        onError: (error) => {
+            console.error('Failed to add favorite:', error);
+            alert('찜하기 처리 중 오류가 발생했습니다.');
+        }
+    });
+
+    // 찜하기 삭제 Mutation
+    const removeFavoriteMutation = useMutation({
+        mutationFn: () => removeCourseFavorite(id!),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
+        },
+        onError: (error) => {
+            console.error('Failed to remove favorite:', error);
+            alert('찜 삭제 처리 중 오류가 발생했습니다.');
+        }
+    });
+
+    const handleFavoriteClick = () => {
+        if (!course) return;
+        
+        if (isFavorite) {
+            removeFavoriteMutation.mutate();
+        } else {
+            addFavoriteMutation.mutate();
+        }
+    };
+
+    const handleShareClick = () => {
+        setShowShareModal(true);
+    };
+
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
 
     // 유효하지 않은 ID 처리
     if (!isValidId) {
@@ -342,7 +398,12 @@ const CourseDetailPage = () => {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <CourseReviews reviews={reviews?.reviews || []} isLoading={isReviewsLoading} />
+                                            <CourseReviews 
+                                                reviews={reviews?.reviews || []} 
+                                                courseId={Number(id!)}
+                                                isLoading={isReviewsLoading}
+                                                onReviewsUpdate={() => refetchReviews()}
+                                            />
                                         )}
                                     </>
                                 )}
@@ -445,11 +506,22 @@ const CourseDetailPage = () => {
                                     자세히 보기
                                 </button>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                                        <Heart className="w-5 h-5" />
-                                        찜하기
+                                    <button 
+                                        onClick={handleFavoriteClick}
+                                        disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
+                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border font-medium transition-all ${
+                                            isFavorite
+                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                                                : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                                        {isFavorite ? '찜 완료' : '찜하기'}
                                     </button>
-                                    <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                    <button 
+                                        onClick={handleShareClick}
+                                        className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                    >
                                         <Share2 className="w-5 h-5" />
                                         공유
                                     </button>
@@ -478,6 +550,15 @@ const CourseDetailPage = () => {
                     </div>
                 </div>
             </div>
+            
+            {/* 공유 모달 */}
+            {showShareModal && (
+                <ShareModal 
+                    url={shareUrl}
+                    title={course?.name || ''}
+                    onClose={() => setShowShareModal(false)}
+                />
+            )}
         </div>
     );
 };

@@ -228,21 +228,44 @@ export interface Banner {
 }
 
 // ===== 과정 리뷰 관련 타입 정의 =====
+export type ReviewSectionType = 'CURRICULUM' | 'COURSEWARE' | 'INSTRUCTOR' | 'EQUIPMENT' | 'OTHER';
+
+export const REVIEW_SECTION_LABELS: Record<ReviewSectionType, string> = {
+    CURRICULUM: '커리큘럼',
+    COURSEWARE: '교재/강의자료',
+    INSTRUCTOR: '강사',
+    EQUIPMENT: '실습장비',
+    OTHER: '기타의견',
+};
+
+export interface ReviewSection {
+    sectionType: ReviewSectionType;
+    score: number;
+    comment?: string;
+}
+
+export interface ReviewAttachment {
+    id: number;
+    originalFileName: string;
+    downloadUrl: string;
+    fileSize: number;
+    contentType: string;
+    uploadedAt: string;
+}
+
 export interface CourseReview {
     id: number;
     courseId: number;
-    writerName: string; // Backend: writerName
-    writer?: { // Legacy support, optional
-        id: number;
-        userName: string;
-        avatar?: string;
-    };
-    rating: number; // Backend: averageScore
-    title?: string; // Backend missing
-    comment: string; // Backend: comment
-    createdAt: string; // Backend: createdAt
-    isVerified?: boolean;
-    helpfulCount?: number; // Backend: likeCount
+    writerId: number;
+    writerName: string; // 백엔드에서 제공
+    averageScore: number; // 백엔드: averageScore
+    sections: ReviewSection[]; // 백엔드: sections (CURRICULUM, COURSEWARE, INSTRUCTOR, EQUIPMENT)
+    comment: string; // 기타 의견
+    attachments: ReviewAttachment[]; // 첨부파일
+    likeCount: number;
+    dislikeCount: number;
+    approvalStatus: ApprovalStatus;
+    createdAt: string; // 백엔드에서 제공 (ISO 8601)
 }
 
 // ===== 과정 Q&A 관련 타입 정의 =====
