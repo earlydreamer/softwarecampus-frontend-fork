@@ -20,8 +20,8 @@ const mapDtoToBoard = (dto: ApiBoardResponseDTO): Board => {
         updatedAt: undefined, // 백엔드 미제공
 
         likeCount: dto.likeCount,
-        isRecommended: dto.like,
-        isOwner: dto.owner,
+        like: dto.like,
+        owner: dto.owner,
 
         commentCount: dto.boardComments.length,
         hasAttachment: dto.boardAttachs.length > 0,
@@ -55,7 +55,7 @@ export const fetchBoardPosts = async (
     page: number = 1,
     limit: number = 20,
     searchKeyword?: string,
-    sortType?: 'latest' | 'popular' | 'views' | 'comments',
+    _sortType?: 'latest' | 'popular' | 'views' | 'comments',
     searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment'
 ): Promise<{ posts: Board[], total: number }> => {
     try {
@@ -81,7 +81,8 @@ export const fetchBoardPosts = async (
             secret: dto.secret,
             createdAt: dto.createdAt,
             likeCount: 0, // DTO에 likeCount 없음? (ApiBoardListResponse 확인 필요)
-            isRecommended: dto.like,
+            like: false, // 목록 API에서는 제공하지 않음
+            commentCount: dto.commentCount,
         } as Board));
 
         return { posts, total: posts.length }; // 페이징 정보가 헤더나 별도 필드에 있는지 확인 필요
@@ -94,7 +95,7 @@ export const fetchBoardPosts = async (
 /**
  * 게시글 상세 조회
  */
-export const fetchBoardPost = async (postId: number, userId?: number): Promise<Board> => {
+export const fetchBoardPost = async (postId: number): Promise<Board> => {
     try {
         const response = await apiClient.get<ApiBoardResponseDTO>(`/api/boards/${postId}`);
         return mapDtoToBoard(response.data);
@@ -119,8 +120,8 @@ export const fetchComments = async (postId: number): Promise<Comment[]> => {
 /**
  * 게시글 추천
  */
-export const recommendBoardPost = async (postId: number, userId: number): Promise<void> => {
-    await apiClient.post(`/api/boards/${postId}/like`);
+export const recommendBoardPost = async (postId: number): Promise<void> => {
+    await apiClient.post(`/api/boards/${postId}/recommends`);
 };
 
 /**
@@ -135,15 +136,15 @@ export const createComment = async (postId: number, text: string): Promise<Comme
  * 댓글 수정
  */
 export const updateComment = async (commentId: number, postId: number, text: string): Promise<Comment> => {
-    const response = await apiClient.patch<ApiCommentDTO>(`/api/boards/comments/${commentId}`, { text });
+    const response = await apiClient.patch<ApiCommentDTO>(`/api/boards/${postId}/comments/${commentId}`, { text });
     return mapDtoToComment(response.data);
 };
 
 /**
  * 댓글 삭제
  */
-export const deleteComment = async (commentId: number): Promise<void> => {
-    await apiClient.delete(`/api/boards/comments/${commentId}`);
+export const deleteComment = async (commentId: number, postId: number): Promise<void> => {
+    await apiClient.delete(`/api/boards/${postId}/comments/${commentId}`);
 };
 
 /**

@@ -27,7 +27,7 @@ export const fetchCoursesByType = async (
                 address: '',
                 businessNumber: '',
                 email: '',
-                isApproved: 'APPROVED',
+                approvalStatus: 'APPROVED',
                 approvedAt: '',
             },
             category: {
@@ -44,15 +44,15 @@ export const fetchCoursesByType = async (
             cost: apiCourse.cost,
             classDay: apiCourse.classDay,
             location: apiCourse.location,
-            isKdt: apiCourse.isKdt,
-            isNailbaeum: apiCourse.isNailbaeum,
-            isOffline: apiCourse.isOffline,
+            kdt: apiCourse.kdt,
+            nailbaeum: apiCourse.nailbaeum,
+            offline: apiCourse.offline,
             requirement: apiCourse.requirement,
-            isApproved: apiCourse.approvalStatus,
+            approvalStatus: apiCourse.approvalStatus,
 
             // 프론트엔드 전용 필드 (기본값 설정)
             duration: formatCourseDuration(apiCourse.courseStart, apiCourse.courseEnd),
-            format: apiCourse.isOffline ? '오프라인' : '온라인',
+            format: apiCourse.offline ? '오프라인' : '온라인',
             rating: 0, // TODO: 리뷰 API 연동 필요
             reviewCount: 0,
             tags: [], // TODO: 태그 정보 필요
@@ -106,12 +106,6 @@ export const fetchClosingSoonCourses = async (limit: number = 4): Promise<Course
         throw error;
     }
 };
-
-/**
- * 커뮤니티 하이라이트 조회
- * 최근 게시글 n개
- */
-
 
 /**
  * 커뮤니티 하이라이트 조회

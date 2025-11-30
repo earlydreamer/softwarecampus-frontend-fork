@@ -111,11 +111,11 @@ export interface Course {
     cost?: number;
     classDay?: string;
     location?: string;
-    isKdt: boolean;
-    isNailbaeum: boolean;
-    isOffline: boolean;
+    kdt: boolean;
+    nailbaeum: boolean;
+    offline: boolean;
     requirement?: string;
-    isApproved: ApprovalStatus;
+    approvalStatus: ApprovalStatus;
     approvedAt?: string;
     // 커리큘럼 정보 (백엔드: List<CourseCurriculum> curriculums)
     curriculums?: CourseCurriculum[];
@@ -142,7 +142,7 @@ export interface Academy {
     address: string;
     businessNumber: string;
     email: string;
-    isApproved: ApprovalStatus;
+    approvalStatus: ApprovalStatus;
     approvedAt?: string;
     // UI 표시용 추가 필드 (백엔드에 없음)
     description?: string;
@@ -179,8 +179,8 @@ export interface Board {
 
     // 백엔드 추가 필드
     likeCount: number;
-    isRecommended?: boolean; // like 필드와 매핑
-    isOwner?: boolean; // owner 필드와 매핑
+    like?: boolean; // 백엔드 필드명: like
+    owner?: boolean; // 백엔드 필드명: owner
 
     // 계산된 필드 및 호환성
     commentCount?: number;

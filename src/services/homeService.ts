@@ -54,7 +54,7 @@ export const fetchHomeCourseSections = async () => {
                 address: '',
                 businessNumber: '',
                 email: '',
-                isApproved: 'APPROVED',
+                approvalStatus: 'APPROVED',
                 approvedAt: '',
             },
             category: {
@@ -71,11 +71,11 @@ export const fetchHomeCourseSections = async () => {
             cost: apiCourse.cost,
             classDay: '',
             location: apiCourse.location,
-            isKdt: apiCourse.isKdt,
-            isNailbaeum: apiCourse.isNailbaeum,
-            isOffline: apiCourse.isOffline,
+            kdt: apiCourse.isKdt,
+            nailbaeum: apiCourse.isNailbaeum,
+            offline: apiCourse.isOffline,
             requirement: '',
-            isApproved: 'APPROVED',
+            approvalStatus: 'APPROVED',
 
             // 프론트엔드 전용 필드
             duration: calculateDuration(apiCourse.courseStart, apiCourse.courseEnd),

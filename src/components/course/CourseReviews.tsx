@@ -96,17 +96,17 @@ const CourseReviews = ({ reviews, isLoading }: CourseReviewsProps) => {
                     <div key={review.id} className="bg-white p-6 rounded-xl border border-slate-200 hover:border-primary-200 transition-colors">
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                                {review.writer.avatar ? (
-                                    <img src={sanitizeUrl(review.writer.avatar)} alt={review.writer.userName} className="w-full h-full object-cover" />
+                                {review.writer?.avatar ? (
+                                    <img src={sanitizeUrl(review.writer.avatar)} alt={review.writerName} className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-slate-400 font-bold">{review.writer.userName[0]}</span>
+                                    <span className="text-slate-400 font-bold">{review.writerName[0]}</span>
                                 )}
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center justify-between mb-2">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold text-slate-900">{review.writer.userName}</span>
+                                            <span className="font-semibold text-slate-900">{review.writerName}</span>
                                             {/* TODO: 백엔드 미지원 필드 (isVerified) */}
                                             {review.isVerified && (
                                                 <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
