@@ -88,8 +88,13 @@ const LoginPage = () => {
                         {isLoading ? '로그인 중...' : '로그인'}
                     </button>
                 </form>
-                <div className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                    계정이 없으신가요? <Link to="/signup" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">회원가입</Link>
+                <div className="mt-6 text-center space-y-2">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        계정이 없으신가요? <Link to="/signup" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">회원가입</Link>
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        비밀번호를 잊으셨나요? <Link to="/forgot-password" className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">비밀번호 찾기</Link>
+                    </p>
                 </div>
             </div>
         </div>
