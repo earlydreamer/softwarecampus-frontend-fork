@@ -28,7 +28,10 @@ const CourseSection: React.FC<CourseSectionProps> = ({
     const isEmpty = !loading && courses.length === 0;
 
     const containerClasses = viewMode === 'carousel'
-        ? "flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 sm:pb-0 hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+        ? [
+            'flex overflow-x-auto pb-10 gap-4 snap-x snap-mandatory hide-scrollbar -mx-4 px-4',
+            'sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 sm:pb-0 sm:overflow-visible sm:mx-0 sm:px-0'
+        ].join(' ')
         : "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4";
 
     const itemClasses = viewMode === 'carousel'

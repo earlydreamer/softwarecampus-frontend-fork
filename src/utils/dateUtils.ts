@@ -31,7 +31,20 @@ export const calculateMonths = (startDate: string, endDate: string): number => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    const months = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30));
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+        return 0;
+    }
+
+    const yearDiff = end.getFullYear() - start.getFullYear();
+    const monthDiff = end.getMonth() - start.getMonth();
+
+    let months = yearDiff * 12 + monthDiff;
+
+    // 종료일의 일(day)이 시작일의 일보다 작으면, 마지막 달을 완전히 채우지 못한 것으로 간주합니다.
+    if (end.getDate() < start.getDate()) {
+        months--;
+    }
+
     return Math.max(1, months); // 최소 1개월
 };
 
@@ -54,7 +67,7 @@ export const formatCourseDuration = (startDate: string, endDate: string): string
  * @param startDate - 시작 날짜
  * @param endDate - 종료 날짜
  */
-export const getCourseDurationInfo = (startDate: string, endDate: string) => {
+export const getCourseDurationInfo = (startDate: string, endDate: string): { duration: string; months: number } => {
     if (!startDate || !endDate) {
         return {
             duration: '기간 미정',
