@@ -39,7 +39,7 @@ export const useMyPage = () => {
         mutationFn: deleteAccount,
         onSuccess: () => {
             logout();
-            navigate('/');
+            navigate('/login');
         }
     });
 
