@@ -24,11 +24,6 @@ export const deleteAccount = async (): Promise<void> => {
     await apiClient.delete('/api/mypage/account');
 };
 
-// 비밀번호 변경 (로그인 상태)
-export const updatePassword = async (newPassword: string): Promise<void> => {
-    await apiClient.patch('/api/mypage/password', { newPassword });
-};
-
 // 파일 업로드
 export const uploadFile = async (file: File, folder: string = 'profile', fileType: string = 'PROFILE'): Promise<string> => {
     const formData = new FormData();

@@ -8,7 +8,7 @@ import Skeleton from '../components/ui/Skeleton';
 
 const AcademyListPage = () => {
     const [keyword, setKeyword] = useState('');
-    const { data: academies, isLoading, isError } = useQuery({
+    const { data: academies, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['academies'],
         queryFn: () => getApprovedAcademies(true),
     });
@@ -62,7 +62,18 @@ const AcademyListPage = () => {
                     </div>
                 ) : isError ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
-                        <p className="text-slate-500 dark:text-slate-400">데이터를 불러오는 데 실패했습니다.</p>
+                        <p className="text-slate-500 dark:text-slate-400 mb-4">
+                            데이터를 불러오는 데 실패했습니다.
+                            {error instanceof Error && (
+                                <span className="block text-sm mt-2">{error.message}</span>
+                            )}
+                        </p>
+                        <button
+                            onClick={() => refetch()}
+                            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                        >
+                            다시 시도
+                        </button>
                     </div>
                 ) : noResult ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">

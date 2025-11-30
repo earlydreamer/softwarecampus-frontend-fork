@@ -689,13 +689,41 @@ const SignupPage = () => {
 
             {/* 회원가입 성공 모달 */}
             {isSuccessModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="success-modal-title"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                            handleSuccessModalClose();
+                        }
+                        // Focus trap: Tab 키로 모달 내부에서만 포커스 순환
+                        if (e.key === 'Tab') {
+                            const modal = e.currentTarget.querySelector('[data-modal-content]');
+                            const focusableElements = modal?.querySelectorAll<HTMLElement>(
+                                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                            );
+                            if (focusableElements && focusableElements.length > 0) {
+                                const firstElement = focusableElements[0];
+                                const lastElement = focusableElements[focusableElements.length - 1];
+                                if (e.shiftKey && document.activeElement === firstElement) {
+                                    e.preventDefault();
+                                    lastElement.focus();
+                                } else if (!e.shiftKey && document.activeElement === lastElement) {
+                                    e.preventDefault();
+                                    firstElement.focus();
+                                }
+                            }
+                        }
+                    }}
+                >
+                    <div data-modal-content className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
                         <div className="p-8 text-center">
                             <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
                             </div>
-                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                            <h2 id="success-modal-title" className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                                 회원가입 완료!
                             </h2>
                             <p className="text-slate-600 dark:text-slate-400 mb-8 whitespace-pre-line">
@@ -705,6 +733,7 @@ const SignupPage = () => {
                             </p>
                             <button
                                 onClick={handleSuccessModalClose}
+                                autoFocus
                                 className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition"
                             >
                                 로그인 페이지로 이동
