@@ -49,12 +49,15 @@ export interface ApiCourseCurriculum {
  * 과정 리뷰 응답 DTO (CourseReviewResponse)
  */
 export interface ApiCourseReviewResponse {
-    id: number;
-    writerName: string;
-    rating: number;
-    text: string;
-    createdAt: string;
+    reviewId: number;
+    writerId: number;
+    courseId: number;
+    comment: string;
+    approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
+    averageScore: number;
     likeCount: number;
+    dislikeCount: number;
+    // sections와 attachments는 프론트엔드에서 현재 미사용
 }
 
 /**

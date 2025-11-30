@@ -180,21 +180,25 @@ export const fetchCourseReviews = async (
         );
 
         const reviews = response.data.map(review => ({
-            id: review.id,
-            courseId: courseId,
+            id: review.reviewId,
+            courseId: review.courseId,
             writer: {
-                id: 0, // 백엔드에서 미제공
-                userName: review.writerName,
+                id: review.writerId,
+                userName: '', // 백엔드에서 미제공
                 avatar: undefined,
             },
-            writerName: review.writerName,
-            rating: review.rating,
-            comment: review.text,
-            createdAt: review.createdAt,
+            writerName: '', // 백엔드에서 미제공 (추후 추가 예정)
+            rating: review.averageScore, // Backend: averageScore -> Frontend: rating
+            comment: review.comment,
+            createdAt: '', // 백엔드에서 미제공 (추후 추가 예정)
             helpfulCount: review.likeCount,
         }));
 
-        return { reviews, totalCount: reviews.length };
+        // 현재 백엔드는 List를 반환하므로 reviews.length 사용
+        // 향후 Page 객체로 변경 시 response.data.totalElements 사용
+        const totalCount = (response.data as any).totalElements ?? reviews.length;
+
+        return { reviews, totalCount };
     } catch (error) {
         console.error(`Failed to fetch reviews for course ${courseId}:`, error);
         return { reviews: [], totalCount: 0 };

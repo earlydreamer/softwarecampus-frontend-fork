@@ -30,7 +30,7 @@ const CommunityDetailPage = () => {
 
     // 게시글 조회
     const { data: post, isLoading: postLoading, error: postError, refetch: refetchPost } = useQuery({
-        queryKey: ['boardPost', postIdNumber, user?.id],
+        queryKey: ['boardPost', postIdNumber],
         queryFn: () => fetchBoardPost(postIdNumber),
         enabled: isValidPostId,
     });
@@ -48,7 +48,7 @@ const CommunityDetailPage = () => {
             return recommendBoardPost(postIdNumber);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
         onError: (error: Error) => {
             alert(error.message);
@@ -60,7 +60,7 @@ const CommunityDetailPage = () => {
         mutationFn: (content: string) => createComment(postIdNumber, content),
         onSuccess: () => {
             // 게시글 데이터를 다시 불러와서 댓글 목록 갱신
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
             setCommentContent('');
         },
         onError: (error: Error) => {
@@ -73,7 +73,7 @@ const CommunityDetailPage = () => {
         mutationFn: ({ commentId, text }: { commentId: number; text: string }) =>
             updateComment(commentId, postIdNumber, text),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
             setEditingCommentId(null);
             setEditingContent('');
         },
@@ -86,7 +86,7 @@ const CommunityDetailPage = () => {
     const deleteCommentMutation = useMutation({
         mutationFn: (commentId: number) => deleteComment(commentId, postIdNumber),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
     });
 
