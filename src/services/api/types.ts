@@ -46,6 +46,21 @@ export interface ApiCourseCurriculum {
 }
 
 /**
+ * 과정 리뷰 응답 DTO (CourseReviewResponse)
+ */
+export interface ApiCourseReviewResponse {
+    reviewId: number;
+    writerId: number;
+    courseId: number;
+    comment: string;
+    approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
+    averageScore: number;
+    likeCount: number;
+    dislikeCount: number;
+    // sections와 attachments는 프론트엔드에서 현재 미사용
+}
+
+/**
  * 기관 응답 DTO (AcademyResponse)
  */
 export interface ApiAcademyResponse {
@@ -54,7 +69,7 @@ export interface ApiAcademyResponse {
     address: string;
     businessNumber: string;
     email: string;
-    isApproved: 'PENDING' | 'APPROVED' | 'REJECTED';
+    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
     approvedAt?: string;
     createdAt: string;
     updatedAt: string;
@@ -115,7 +130,7 @@ export interface ApiBoardListResponse {
     secret: boolean;
     userNickName: string;
     accountId: number;
-    commentsCount: number;
+    commentCount: number;
     createdAt: string;
 }
 

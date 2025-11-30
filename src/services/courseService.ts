@@ -1,11 +1,10 @@
 import apiClient from './api/client';
-import type { Course, CategoryType, CourseCategory, Academy, ApprovalStatus, CourseQna } from '../types/index';
-import type { ApiCourseResponse, ApiCourseDetailResponse, ApiCourseQnaResponse } from './api/types';
+import type { Course, CategoryType, CourseCategory, Academy, ApprovalStatus, CourseQna, CourseReview } from '../types/index';
+import type { ApiCourseResponse, ApiCourseDetailResponse, ApiCourseQnaResponse, ApiCourseReviewResponse } from './api/types';
 import { formatCourseDuration } from '../utils/dateUtils';
 
 const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60';
 
-// Helper to map DTO to Course (Frontend Type)
 // Helper to map DTO to Course (Frontend Type)
 const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
     return {
@@ -17,7 +16,7 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
             address: '',
             businessNumber: '',
             email: '',
-            isApproved: 'APPROVED',
+            approvalStatus: 'APPROVED',
         } as Academy,
         category: {
             id: dto.categoryId,
@@ -32,11 +31,11 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         cost: dto.cost,
         classDay: dto.classDay,
         location: dto.location,
-        isKdt: dto.kdt,
-        isNailbaeum: dto.nailbaeum,
-        isOffline: dto.offline,
+        kdt: dto.kdt,
+        nailbaeum: dto.nailbaeum,
+        offline: dto.offline,
         requirement: dto.requirement,
-        isApproved: dto.approvalStatus as ApprovalStatus,
+        approvalStatus: dto.approvalStatus as ApprovalStatus,
         approvedAt: dto.approvedAt,
 
         // UI fields (Default values or mapped)
@@ -168,5 +167,40 @@ export const fetchCourseQnAs = async (
     }
 };
 
-// Re-export other mock functions for now until implemented
-export { fetchCourseReviews } from './mockData';
+/**
+ * 과정 리뷰 조회 (백엔드 API)
+ */
+export const fetchCourseReviews = async (
+    courseId: number,
+    categoryType: CategoryType = 'EMPLOYEE'
+): Promise<{ reviews: CourseReview[], totalCount: number }> => {
+    try {
+        const response = await apiClient.get<ApiCourseReviewResponse[]>(
+            `/api/${categoryType}/course/${courseId}/reviews`
+        );
+
+        const reviews = response.data.map(review => ({
+            id: review.reviewId,
+            courseId: review.courseId,
+            writer: {
+                id: review.writerId,
+                userName: '', // 백엔드에서 미제공
+                avatar: undefined,
+            },
+            writerName: '', // 백엔드에서 미제공 (추후 추가 예정)
+            rating: review.averageScore, // Backend: averageScore -> Frontend: rating
+            comment: review.comment,
+            createdAt: '', // 백엔드에서 미제공 (추후 추가 예정)
+            helpfulCount: review.likeCount,
+        }));
+
+        // 현재 백엔드는 List를 반환하므로 reviews.length 사용
+        // 향후 Page 객체로 변경 시 response.data.totalElements 사용
+        const totalCount = (response.data as any).totalElements ?? reviews.length;
+
+        return { reviews, totalCount };
+    } catch (error) {
+        console.error(`Failed to fetch reviews for course ${courseId}:`, error);
+        return { reviews: [], totalCount: 0 };
+    }
+};

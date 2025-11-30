@@ -11,7 +11,7 @@ const mapDtoToAcademy = (dto: ApiAcademyResponse): Academy => {
         address: dto.address,
         businessNumber: dto.businessNumber,
         email: dto.email,
-        isApproved: dto.isApproved as ApprovalStatus,
+        approvalStatus: dto.approvalStatus as ApprovalStatus,
         approvedAt: dto.approvedAt,
 
         // UI fields (Default or mapped)

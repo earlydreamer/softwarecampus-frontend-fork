@@ -243,7 +243,7 @@ const CourseDetailPage = () => {
                                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
-                                        수강 후기 {reviews && `(${reviews.length})`}
+                                        수강 후기 {reviews && `(${reviews.totalCount})`}
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('qna')}
@@ -342,7 +342,7 @@ const CourseDetailPage = () => {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <CourseReviews reviews={reviews || []} isLoading={isReviewsLoading} />
+                                            <CourseReviews reviews={reviews?.reviews || []} isLoading={isReviewsLoading} />
                                         )}
                                     </>
                                 )}

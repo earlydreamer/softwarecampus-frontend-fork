@@ -118,7 +118,7 @@ const AcademyDetailPage = () => {
                         <div className="flex-grow">
                             <div className="flex flex-wrap items-center gap-3 mb-2">
                                 <h1 className="text-3xl lg:text-4xl font-bold leading-tight">{academy.name}</h1>
-                                {academy.isApproved === 'APPROVED' && (
+                                {academy.approvalStatus === 'APPROVED' && (
                                     <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold border border-blue-500/30 flex items-center gap-1">
                                         <Award className="w-3 h-3" />
                                         인증기관

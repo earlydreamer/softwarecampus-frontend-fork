@@ -1,8 +1,9 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef, useId } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
-import { mockAcademies } from '../../services/mockAcademyData';
+import { fetchAcademies } from '../../services/academyService';
 
 interface AcademySelectModalProps {
     isOpen: boolean;
@@ -25,6 +26,13 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
     const [filePreviewUrls, setFilePreviewUrls] = useState<{ [key: string]: string }>({});
     const [isDragging, setIsDragging] = useState(false);
+
+    // 기관 목록 조회 (백엔드 API)
+    const { data: academies = [], isLoading, error } = useQuery({
+        queryKey: ['academies', searchTerm],
+        queryFn: () => fetchAcademies(searchTerm ? { keyword: searchTerm } : undefined),
+        enabled: isOpen, // 모달이 열렸을 때만 조회
+    });
 
     // 모달 열릴 때 body 스크롤 방지 및 포커스 관리
     useEffect(() => {
@@ -87,12 +95,6 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
     }, [isOpen, onClose]);
 
     if (!isOpen) return null;
-
-    const filteredAcademies = mockAcademies.filter((academy) =>
-        academy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (academy.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
-        academy.address.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
     const handleSelect = (academy: Academy) => {
         onSelect(academy);
@@ -396,7 +398,20 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
                         {/* 기관 목록 */}
                         <div className="flex-1 overflow-y-auto p-6">
-                            {filteredAcademies.length === 0 ? (
+                            {isLoading ? (
+                                <div className="text-center py-12">
+                                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                                    <p className="mt-2 text-slate-500 dark:text-slate-400">로딩 중...</p>
+                                </div>
+                            ) : error ? (
+                                <div className="text-center py-12">
+                                    <Building2 className="w-16 h-16 mx-auto text-red-300 dark:text-red-600 mb-4" />
+                                    <p className="text-red-600 dark:text-red-400 mb-2">기관 목록을 불러오는데 실패했습니다</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-500">
+                                        잠시 후 다시 시도해주세요
+                                    </p>
+                                </div>
+                            ) : academies.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Building2 className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                                     <p className="text-slate-600 dark:text-slate-400 mb-2">검색 결과가 없습니다</p>
@@ -406,7 +421,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                 </div>
                             ) : (
                                 <div className="grid gap-4">
-                                    {filteredAcademies.map((academy) => (
+                                    {academies.map((academy) => (
                                         <button
                                             key={academy.id}
                                             onClick={() => handleSelect(academy)}
