@@ -6,11 +6,12 @@ interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
     title: string;
+    titleIcon?: React.ReactNode;
     children: React.ReactNode;
     maxWidth?: string;
 }
 
-const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }: ModalProps) => {
+const Modal = ({ isOpen, onClose, title, titleIcon, children, maxWidth = 'max-w-md' }: ModalProps) => {
     const modalRef = useRef<HTMLDivElement>(null);
     const previousActiveElement = useRef<HTMLElement | null>(null);
     const titleId = useId();
@@ -84,7 +85,10 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }: Moda
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10">
-                    <h2 id={titleId} className="text-xl font-bold text-slate-900 dark:text-white">{title}</h2>
+                    <h2 id={titleId} className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        {titleIcon}
+                        {title}
+                    </h2>
                     <button
                         onClick={onClose}
                         aria-label="모달 닫기"

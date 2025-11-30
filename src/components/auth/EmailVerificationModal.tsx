@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Mail, Timer, AlertCircle, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Mail, Timer, AlertCircle, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 import { AxiosError } from 'axios';
 import { sendEmailVerification, verifyEmail, sendPasswordResetCode, verifyPasswordResetCode } from '../../services/authService';
+import Modal from '../ui/Modal';
 
 interface EmailVerificationModalProps {
     isOpen: boolean;
@@ -124,141 +125,127 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                {/* 헤더 */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <Mail className="w-5 h-5 text-primary-600" />
-                        이메일 인증
-                    </h2>
+        <Modal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="이메일 인증"
+            titleIcon={<Mail className="w-5 h-5 text-primary-600" />}
+        >
+            {step === 'SEND' ? (
+                <div className="text-center space-y-6">
+                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto">
+                        <Mail className="w-8 h-8 text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <div>
+                        <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                            인증 코드를 발송합니다
+                        </p>
+                        <p className="text-slate-600 dark:text-slate-400">
+                            <span className="font-bold text-slate-900 dark:text-white">{email}</span>
+                            <br />
+                            위 이메일 주소로 6자리 인증 코드가 발송됩니다.
+                        </p>
+                    </div>
+
+                    {/* 주의사항 박스 */}
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-left">
+                        <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                            <div className="text-base text-amber-800 dark:text-amber-300 space-y-1">
+                                <p className="font-semibold">주의사항</p>
+                                <ul className="list-disc list-inside space-y-1 text-sm opacity-90">
+                                    <li>인증 코드는 3분간 유효합니다.</li>
+                                    <li>최대 5회까지 시도 가능합니다.</li>
+                                    <li>5회 초과 실패 시 30분간 인증이 차단됩니다.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
                     <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+                        onClick={handleSendCode}
+                        disabled={isLoading}
+                        className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
                     >
-                        <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+                        {isLoading ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                발송 중...
+                            </>
+                        ) : (
+                            '인증 코드 발송'
+                        )}
                     </button>
                 </div>
-
-                {/* 컨텐츠 */}
-                <div className="p-6">
-                    {step === 'SEND' ? (
-                        <div className="text-center space-y-6">
-                            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto">
-                                <Mail className="w-8 h-8 text-primary-600 dark:text-primary-400" />
-                            </div>
-                            <div>
-                                <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                                    인증 코드를 발송합니다
-                                </p>
-                                <p className="text-slate-600 dark:text-slate-400">
-                                    <span className="font-bold text-slate-900 dark:text-white">{email}</span>
-                                    <br />
-                                    위 이메일 주소로 6자리 인증 코드가 발송됩니다.
-                                </p>
-                            </div>
-
-                            {/* 주의사항 박스 */}
-                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-left">
-                                <div className="flex items-start gap-2">
-                                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                                    <div className="text-base text-amber-800 dark:text-amber-300 space-y-1">
-                                        <p className="font-semibold">주의사항</p>
-                                        <ul className="list-disc list-inside space-y-1 text-sm opacity-90">
-                                            <li>인증 코드는 3분간 유효합니다.</li>
-                                            <li>최대 5회까지 시도 가능합니다.</li>
-                                            <li>5회 초과 실패 시 30분간 인증이 차단됩니다.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleSendCode}
-                                disabled={isLoading}
-                                className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        발송 중...
-                                    </>
-                                ) : (
-                                    '인증 코드 발송'
-                                )}
-                            </button>
+            ) : (
+                <div className="space-y-6">
+                    <div className="text-center">
+                        <p className="text-slate-600 dark:text-slate-400 mb-1">
+                            이메일로 전송된 인증 코드를 입력해주세요
+                        </p>
+                        <div className="flex items-center justify-center gap-2 text-lg font-medium">
+                            <Timer className="w-5 h-5 text-slate-400" />
+                            <span className={timeLeft < 60 ? 'text-red-500' : 'text-primary-600'}>
+                                남은 시간: {formatTime(timeLeft)}
+                            </span>
                         </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="text-center">
-                                <p className="text-slate-600 dark:text-slate-400 mb-1">
-                                    이메일로 전송된 인증 코드를 입력해주세요
-                                </p>
-                                <div className="flex items-center justify-center gap-2 text-lg font-medium">
-                                    <Timer className="w-5 h-5 text-slate-400" />
-                                    <span className={timeLeft < 60 ? 'text-red-500' : 'text-primary-600'}>
-                                        남은 시간: {formatTime(timeLeft)}
-                                    </span>
-                                </div>
-                            </div>
+                    </div>
 
-                            <div className="relative">
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={code}
-                                    onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                                    className="w-full px-4 py-4 text-center text-2xl tracking-[0.5em] font-bold border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
-                                    placeholder="000000"
-                                    disabled={isLoading || timeLeft === 0}
-                                />
-                            </div>
+                    <div className="relative">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                            className="w-full px-4 py-4 text-center text-2xl tracking-[0.5em] font-bold border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none"
+                            placeholder="000000"
+                            disabled={isLoading || timeLeft === 0}
+                        />
+                    </div>
 
-                            {error && (
-                                <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                                    <AlertCircle className="w-4 h-4" />
-                                    {error}
-                                </div>
-                            )}
-
-                            <button
-                                onClick={handleVerify}
-                                disabled={isLoading || code.length !== 6 || timeLeft === 0}
-                                className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        확인 중...
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle className="w-5 h-5" />
-                                        인증 확인
-                                    </>
-                                )}
-                            </button>
-
-                            <div className="text-center">
-                                <p className="text-base text-slate-500 dark:text-slate-400 mb-2">
-                                    인증 코드를 받지 못하셨나요?
-                                </p>
-                                <button
-                                    onClick={handleSendCode}
-                                    disabled={resendCooldown > 0 || isLoading}
-                                    className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50 disabled:no-underline flex items-center justify-center gap-1 mx-auto"
-                                >
-                                    <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
-                                    {resendCooldown > 0 
-                                        ? `${resendCooldown}초 후 재발송 가능` 
-                                        : '인증 코드 재발송'}
-                                </button>
-                            </div>
+                    {error && (
+                        <div className="flex items-center justify-center gap-2 text-red-600 dark:text-red-400 text-sm">
+                            <AlertCircle className="w-4 h-4" />
+                            {error}
                         </div>
                     )}
+
+                    <button
+                        onClick={handleVerify}
+                        disabled={isLoading || code.length !== 6 || timeLeft === 0}
+                        className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                확인 중...
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle className="w-5 h-5" />
+                                인증 확인
+                            </>
+                        )}
+                    </button>
+
+                    <div className="text-center">
+                        <p className="text-base text-slate-500 dark:text-slate-400 mb-2">
+                            인증 코드를 받지 못하셨나요?
+                        </p>
+                        <button
+                            onClick={handleSendCode}
+                            disabled={resendCooldown > 0 || isLoading}
+                            className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline disabled:opacity-50 disabled:no-underline flex items-center justify-center gap-1 mx-auto"
+                        >
+                            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+                            {resendCooldown > 0 
+                                ? `${resendCooldown}초 후 재발송 가능` 
+                                : '인증 코드 재발송'}
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
+            )}
+        </Modal>
     );
 };
 
