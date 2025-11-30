@@ -50,50 +50,35 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
 
 export interface CourseFilterParams {
     keyword?: string;
-    category?: string;
+    categoryId?: number; // 세부 카테고리 ID (예: 33=백엔드)
     categoryType?: CategoryType | 'ALL';
     isOffline?: boolean;
 }
 
 export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course[]> => {
-    const { categoryType, keyword, isOffline } = filters || {};
+    const { categoryType, categoryId, keyword, isOffline } = filters || {};
 
     let courses: ApiCourseResponse[] = [];
 
     try {
-        const pathSuffix = keyword ? '/search' : '';
-        // 백엔드 필터링 파라미터 전달
+        // 백엔드 리팩토링: /api/courses with query params
         const params: any = {};
         if (keyword) params.keyword = keyword;
+        if (categoryId) params.categoryId = categoryId;
+        if (categoryType && categoryType !== 'ALL') params.categoryType = categoryType;
         if (isOffline !== undefined) params.isOffline = isOffline;
 
-        console.log(`[fetchCourses] Requesting with params:`, params);
+        console.log(`[fetchCourses] Requesting /api/courses with params:`, params);
 
-        if (!categoryType || categoryType === 'ALL') {
-            const [employeeRes, jobSeekerRes] = await Promise.all([
-                apiClient.get<ApiCourseResponse[]>(`/api/EMPLOYEE/course${pathSuffix}`, { params }),
-                apiClient.get<ApiCourseResponse[]>(`/api/JOB_SEEKER/course${pathSuffix}`, { params })
-            ]);
-            courses = [...employeeRes.data, ...jobSeekerRes.data];
-        } else {
-            const response = await apiClient.get<ApiCourseResponse[]>(`/api/${categoryType}/course${pathSuffix}`, { params });
-            courses = response.data;
-        }
+        const response = await apiClient.get<ApiCourseResponse[]>(`/api/courses`, { params });
+        courses = response.data;
     } catch (error) {
         console.error('Failed to fetch courses:', error);
         throw error;
     }
 
     // Map DTO to Frontend Model
-    let mappedCourses = courses.map(mapDtoToCourse);
-
-    // Filter by categoryName if provided (e.g. '웹개발', '백엔드')
-    // 상세 카테고리 필터링은 아직 백엔드 API가 없으므로 클라이언트에서 유지
-    if (filters?.category) {
-        mappedCourses = mappedCourses.filter(c => c.category.categoryName === filters.category);
-    }
-
-    return mappedCourses;
+    return courses.map(mapDtoToCourse);
 };
 
 // Helper to map Detail DTO to Course
@@ -125,8 +110,7 @@ export const fetchCourseQnAs = async (
     courseId: number,
     page: number = 1,
     limit: number = 5,
-    keyword?: string,
-    categoryType: CategoryType = 'EMPLOYEE'
+    keyword?: string
 ): Promise<{ qnas: CourseQna[], totalCount: number }> => {
     try {
         // 백엔드 API 파라미터 준비
@@ -138,8 +122,8 @@ export const fetchCourseQnAs = async (
             params.keyword = keyword;
         }
 
-        // 백엔드 API: /api/{type}/course/{courseId}/qna (Page<QnaResponse> 반환)
-        const response = await apiClient.get<any>(`/api/${categoryType}/course/${courseId}/qna`, { params });
+        // 백엔드 리팩토링: /api/courses/{courseId}/qna
+        const response = await apiClient.get<any>(`/api/courses/${courseId}/qna`, { params });
 
         const content = response.data.content as ApiCourseQnaResponse[];
         const totalElements = response.data.totalElements;
@@ -168,39 +152,64 @@ export const fetchCourseQnAs = async (
 };
 
 /**
- * 과정 리뷰 조회 (백엔드 API)
+ * 과정 리뷰 조회 (백엔드 API - Page 객체)
+ * @param courseId - 과정 ID
+ * @param page - 페이지 번호 (1부터 시작, 백엔드로 전달 시 0-based로 변환)
+ * @param size - 페이지 크기
  */
 export const fetchCourseReviews = async (
     courseId: number,
-    categoryType: CategoryType = 'EMPLOYEE'
+    page: number = 1,
+    size: number = 10
 ): Promise<{ reviews: CourseReview[], totalCount: number }> => {
     try {
-        const response = await apiClient.get<ApiCourseReviewResponse[]>(
-            `/api/${categoryType}/course/${courseId}/reviews`
+        // 백엔드: GET /api/courses/{courseId}/reviews?page=0&size=10&sort=createdAt
+        // 1-based 페이지를 0-based로 변환하여 전달
+        const response = await apiClient.get<{ content: ApiCourseReviewResponse[], totalElements: number }>(
+            `/api/courses/${courseId}/reviews`,
+            { params: { page: page - 1, size, sort: 'createdAt,desc' } }
         );
 
-        const reviews = response.data.map(review => ({
+        const reviews = response.data.content.map(review => ({
             id: review.reviewId,
             courseId: review.courseId,
-            writer: {
-                id: review.writerId,
-                userName: '', // 백엔드에서 미제공
-                avatar: undefined,
-            },
-            writerName: '', // 백엔드에서 미제공 (추후 추가 예정)
-            rating: review.averageScore, // Backend: averageScore -> Frontend: rating
+            writerId: review.writerId,
+            writerName: review.writerName, // 백엔드에서 제공
+            averageScore: review.averageScore,
+            sections: review.sections || [],
             comment: review.comment,
-            createdAt: '', // 백엔드에서 미제공 (추후 추가 예정)
-            helpfulCount: review.likeCount,
+            attachments: review.attachments || [],
+            likeCount: review.likeCount,
+            dislikeCount: review.dislikeCount,
+            approvalStatus: review.approvalStatus as ApprovalStatus,
+            createdAt: review.createdAt, // 백엔드에서 제공 (ISO 8601)
         }));
 
-        // 현재 백엔드는 List를 반환하므로 reviews.length 사용
-        // 향후 Page 객체로 변경 시 response.data.totalElements 사용
-        const totalCount = (response.data as any).totalElements ?? reviews.length;
+        const totalCount = response.data.totalElements;
 
         return { reviews, totalCount };
     } catch (error) {
         console.error(`Failed to fetch reviews for course ${courseId}:`, error);
         return { reviews: [], totalCount: 0 };
+    }
+};
+
+/**
+ * 리뷰 좋아요 토글
+ */
+export const toggleReviewLike = async (
+    courseId: number,
+    reviewId: number,
+    likeType: 'LIKE' | 'DISLIKE'
+): Promise<{ type: string; likeCount: number; dislikeCount: number }> => {
+    try {
+        const response = await apiClient.post(
+            `/api/courses/${courseId}/reviews/${reviewId}/likes`,
+            { type: likeType }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to toggle like for review ${reviewId}:`, error);
+        throw error;
     }
 };

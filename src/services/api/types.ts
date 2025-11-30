@@ -46,18 +46,47 @@ export interface ApiCourseCurriculum {
 }
 
 /**
+ * 과정 리뷰 섹션 타입
+ */
+export type ReviewSectionType = 'CURRICULUM' | 'COURSEWARE' | 'INSTRUCTOR' | 'EQUIPMENT' | 'OTHER';
+
+/**
+ * 리뷰 섹션 응답 DTO (ReviewSectionResponse)
+ */
+export interface ApiReviewSectionResponse {
+    sectionType: ReviewSectionType;
+    score: number;
+    comment?: string;
+}
+
+/**
+ * 리뷰 첨부파일 응답 DTO (ReviewAttachmentResponse)
+ */
+export interface ApiReviewAttachmentResponse {
+    id: number;
+    originalFileName: string;
+    downloadUrl: string;
+    fileSize: number;
+    contentType: string;
+    uploadedAt: string;
+}
+
+/**
  * 과정 리뷰 응답 DTO (CourseReviewResponse)
  */
 export interface ApiCourseReviewResponse {
     reviewId: number;
     writerId: number;
+    writerName: string; // 백엔드에서 제공
     courseId: number;
     comment: string;
     approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
     averageScore: number;
+    sections: ApiReviewSectionResponse[];
+    attachments: ApiReviewAttachmentResponse[];
     likeCount: number;
     dislikeCount: number;
-    // sections와 attachments는 프론트엔드에서 현재 미사용
+    createdAt: string; // 백엔드에서 제공 (ISO 8601)
 }
 
 /**

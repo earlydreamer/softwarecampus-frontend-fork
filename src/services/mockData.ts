@@ -1,4 +1,4 @@
-import type { Banner, Course, CommunityPost, Board, BoardCategory, Academy, CourseReview, CourseQna, AcademyQA } from '../types';
+import type { Banner, Course, CommunityPost, Board, BoardCategory, Academy, CourseQna, AcademyQA } from '../types';
 
 // ===== Mock Banners =====
 export const mockBanners: Banner[] = [
@@ -478,27 +478,8 @@ export const mockBoardPosts: Board[] = Array.from({ length: 20 }).map((_, i) => 
     hasAttachment: i % 4 === 0
 }));
 
-// ===== Mock Course Reviews =====
-export const mockCourseReviews: CourseReview[] = Array.from({ length: 20 }).map((_, i) => ({
-    id: i + 1,
-    courseId: (i % 12) + 1,
-    writerName: `수강생${i + 1}`,
-    writer: {
-        id: i + 100,
-        userName: `수강생${i + 1}`,
-        avatar: `https://i.pravatar.cc/150?u=${i + 100}`
-    },
-    rating: 4 + (i % 2),
-    title: i % 3 === 0 ? "정말 도움이 많이 되었습니다!" : i % 3 === 1 ? "강의 내용이 알차요" : "취업에 성공했어요!",
-    comment: i % 3 === 0
-        ? "실무 중심의 프로젝트 수업이 정말 좋았습니다. 강사님께서 현업에서 사용하는 기술들을 자세히 알려주셔서 취업 준비하는 데 큰 도움이 되었습니다."
-        : i % 3 === 1
-            ? "기초부터 탄탄하게 배울 수 있어서 비전공자인 저도 쉽게 따라갈 수 있었습니다. 멘토링 시스템도 훌륭했어요!"
-            : "과정 수료 후 2개월 만에 IT 기업에 취업했습니다. 포트폴리오 준비와 면접 연습까지 세심하게 지도해주셔서 감사합니다.",
-    createdAt: new Date(Date.now() - i * 172800000).toISOString(),
-    isVerified: i % 2 === 0,
-    helpfulCount: 5 + i % 15
-}));
+// mockCourseReviews는 타입 변경으로 인해 제거되었습니다.
+// 실제 API를 사용하세요: courseService.fetchCourseReviews()
 
 // ===== Mock Course Q&A =====
 export const mockCourseQnAs: CourseQna[] = Array.from({ length: 15 }).map((_, i) => ({
@@ -700,10 +681,8 @@ export const fetchBoardPosts = async (
     };
 };
 
-export const fetchCourseReviews = async (courseId: number): Promise<CourseReview[]> => {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    return mockCourseReviews.filter(r => r.courseId === courseId);
-};
+// fetchCourseReviews는 제거되었습니다.
+// courseService.ts의 실제 API를 사용하세요.
 
 export const fetchCourseQnAs = async (
     courseId: number,
