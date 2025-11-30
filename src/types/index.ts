@@ -15,6 +15,7 @@ export interface Account {
     affiliation: string | null;
     position: string | null;
     academyId?: number | null; // 기관 회원일 경우 기관 ID, 일반 회원은 null
+    profileImage?: string | null; // 프로필 이미지 URL
 }
 
 // ===== 회원가입 폼 데이터 (백엔드 SignupRequest DTO와 완전 일치) =====

@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Mail, Timer, AlertCircle, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
-import { sendEmailVerification, verifyEmail } from '../../services/authService';
+import { sendEmailVerification, verifyEmail, sendPasswordResetCode, verifyPasswordResetCode } from '../../services/authService';
 
 interface EmailVerificationModalProps {
     isOpen: boolean;
     onClose: () => void;
     email: string;
     onVerified: () => void;
+    type?: 'SIGNUP' | 'PASSWORD_RESET';
 }
 
 type Step = 'SEND' | 'VERIFY';
 
-const EmailVerificationModal = ({ isOpen, onClose, email, onVerified }: EmailVerificationModalProps) => {
+const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SIGNUP' }: EmailVerificationModalProps) => {
     const [step, setStep] = useState<Step>('SEND');
     const [code, setCode] = useState('');
     const [timeLeft, setTimeLeft] = useState(180); // 3분
@@ -74,13 +75,11 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified }: EmailVer
         setError('');
 
         try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            console.log(`[Mock] Verification code sent to ${email}`);
-            
-            /* Real API call
-            await sendEmailVerification(email);
-            */
+            if (type === 'SIGNUP') {
+                await sendEmailVerification(email);
+            } else {
+                await sendPasswordResetCode(email);
+            }
             
             setStep('VERIFY');
             setTimeLeft(180);
@@ -104,19 +103,11 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified }: EmailVer
         setError('');
 
         try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // For testing: code '000000' fails, others succeed
-            if (code === '000000') {
-                throw { response: { data: { detail: '잘못된 인증 코드입니다.' } } };
+            if (type === 'SIGNUP') {
+                await verifyEmail(email, code);
+            } else {
+                await verifyPasswordResetCode(email, code);
             }
-            
-            console.log(`[Mock] Email verified: ${email}, code: ${code}`);
-            
-            /* Real API call
-            await verifyEmail(email, code);
-            */
             
             onVerified();
             onClose();

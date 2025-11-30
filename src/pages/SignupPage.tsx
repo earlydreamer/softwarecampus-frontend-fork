@@ -216,13 +216,7 @@ const SignupPage = () => {
         setErrors(prev => ({ ...prev, submit: undefined }));
 
         try {
-            // Mock implementation
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            console.log('[Mock] Signup Data:', formData);
-            
-            /* Real API call
             await signup(formData);
-            */
             
             setIsSuccessModalOpen(true);
         } catch (error: any) {
@@ -682,6 +676,7 @@ const SignupPage = () => {
                     setIsEmailVerified(true);
                     setErrors(prev => ({ ...prev, email: undefined }));
                 }}
+                type="SIGNUP"
             />
 
             {/* 약관 모달 */}

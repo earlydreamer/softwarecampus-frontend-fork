@@ -1,9 +1,9 @@
 import { useForm } from 'react-hook-form';
-import { Lock } from 'lucide-react';
+import { Lock, Camera } from 'lucide-react';
 import Modal from '../../../../components/ui/Modal';
-import type { UpdateProfileData } from '../../../../services/mypageService';
+import { type UpdateProfileData, uploadFile } from '../../../../services/mypageService';
 import type { Account } from '../../../../types';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface EditProfileModalProps {
     isOpen: boolean;
@@ -15,7 +15,10 @@ interface EditProfileModalProps {
 }
 
 const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswordChangeClick }: EditProfileModalProps) => {
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<UpdateProfileData>();
+    const { register, handleSubmit, reset, formState: { errors }, setValue } = useForm<UpdateProfileData>();
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (user && isOpen) {
@@ -24,10 +27,33 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
                 phoneNumber: user.phoneNumber,
                 address: user.address || '',
                 affiliation: user.affiliation || '',
-                position: user.position || ''
+                position: user.position || '',
+                profileImage: user.profileImage
             });
+            setPreviewImage(user.profileImage || null);
         }
     }, [user, isOpen, reset]);
+
+    const handleImageClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setIsUploading(true);
+            const imageUrl = await uploadFile(file, 'profile', 'PROFILE');
+            setPreviewImage(imageUrl);
+            setValue('profileImage', imageUrl);
+        } catch (error) {
+            console.error('Failed to upload image:', error);
+            alert('이미지 업로드에 실패했습니다.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     return (
         <Modal
@@ -36,6 +62,35 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
             title="프로필 수정"
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="flex justify-center mb-6">
+                    <div className="relative group cursor-pointer" onClick={handleImageClick}>
+                        <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center border-2 border-slate-100 dark:border-slate-600">
+                            {previewImage ? (
+                                <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-3xl font-bold text-slate-400">
+                                    {user.userName.charAt(0).toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                        <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="w-8 h-8 text-white" />
+                        </div>
+                        {isUploading && (
+                            <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+                                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        )}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                        />
+                    </div>
+                </div>
+
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">이름</label>
                     <input

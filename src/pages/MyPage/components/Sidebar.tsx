@@ -27,10 +27,17 @@ const Sidebar = ({ user, onEditClick, onDeleteClick, myPostsCount, totalComments
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
                 <div className="flex flex-col items-center text-center mb-6">
                     <div className="relative group mb-4">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-                            {user.userName.charAt(0).toUpperCase()}
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg overflow-hidden">
+                            {user.profileImage ? (
+                                <img src={user.profileImage} alt={user.userName} className="w-full h-full object-cover" />
+                            ) : (
+                                user.userName.charAt(0).toUpperCase()
+                            )}
                         </div>
-                        <button className="absolute bottom-0 right-0 p-2 bg-white dark:bg-slate-700 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                            onClick={onEditClick}
+                            className="absolute bottom-0 right-0 p-2 bg-white dark:bg-slate-700 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
                             <Camera className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                         </button>
                     </div>

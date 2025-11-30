@@ -121,6 +121,7 @@ const MyPage = () => {
                     onClose={() => setIsEmailVerifyModalOpen(false)}
                     email={user.email}
                     onVerified={handleEmailVerified}
+                    type="PASSWORD_RESET"
                 />
 
                 <ChangePasswordModal
