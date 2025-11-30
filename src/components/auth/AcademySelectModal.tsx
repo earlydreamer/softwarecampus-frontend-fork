@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
-import { getApprovedAcademies, createAcademy } from '../../services/academyService';
+import { getApprovedAcademies } from '../../services/academyService';
 
 interface AcademySelectModalProps {
     isOpen: boolean;
@@ -153,7 +153,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
         try {
             // Simulate API call delay
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             console.log('Mock Registration Data:', {
                 name: regName,
                 businessNumber: regBusinessNumber,

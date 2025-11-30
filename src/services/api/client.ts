@@ -1,6 +1,5 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance } from 'axios';
-import { getAccessToken } from '../../utils/tokenManager';
 
 
 /**
