@@ -3,7 +3,7 @@ import type { AcademyQA } from '../../types';
 import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import QnAForm from '../common/QnAForm';
 import { QNA_PER_PAGE } from '../../constants';
-import { sanitizeUrl } from '../../utils/security';
+
 
 interface AcademyQnAsProps {
     qnas: AcademyQA[];
@@ -140,19 +140,13 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
                                 className="p-6 cursor-pointer hover:bg-slate-50 transition-colors outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
                             >
                                 <div className="flex items-start gap-4">
-                                    {/* TODO: 백엔드 미지원 필드 (writer) - 현재는 데이터가 없어 대체 UI 표시 */}
                                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                                        {qna.writer?.avatar ? (
-                                            <img src={sanitizeUrl(qna.writer.avatar)} alt={qna.writer.userName} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="text-slate-400 font-bold text-sm">{qna.writer?.userName?.[0] || 'Q'}</span>
-                                        )}
+                                        <span className="text-slate-400 font-bold text-sm">{qna.writerName?.[0] || 'Q'}</span>
                                     </div>
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
-                                            {/* TODO: 백엔드 미지원 필드 (writer) */}
                                             <span className="font-medium text-slate-900">
-                                                {qna.writer?.userName || '익명'}
+                                                {qna.writerName || '익명'}
                                             </span>
                                             <span className="text-sm text-slate-500">
                                                 {new Date(qna.createdAt).toLocaleDateString()}
@@ -197,18 +191,12 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
                                     {qna.answerText && (
                                         <div className="bg-primary-50/30 p-6 border-t border-slate-100">
                                             <div className="flex items-start gap-4">
-                                                {/* TODO: 백엔드 미지원 필드 (answeredBy) - 현재는 데이터가 없어 대체 UI 표시 */}
                                                 <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden shrink-0 border-2 border-white shadow-sm">
-                                                    {qna.answeredBy?.avatar ? (
-                                                        <img src={sanitizeUrl(qna.answeredBy.avatar)} alt={qna.answeredBy.userName} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <span className="text-primary-600 font-bold text-sm">{qna.answeredBy?.userName?.[0] || 'A'}</span>
-                                                    )}
+                                                    <span className="text-primary-600 font-bold text-sm">{qna.answeredByName?.[0] || 'A'}</span>
                                                 </div>
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        {/* TODO: 백엔드 미지원 필드 (answeredBy) */}
-                                                        <span className="font-bold text-primary-700">{qna.answeredBy?.userName || '담당자'}</span>
+                                                        <span className="font-bold text-primary-700">{qna.answeredByName || '담당자'}</span>
                                                         <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-bold border border-primary-200">
                                                             답변
                                                         </span>

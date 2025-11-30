@@ -503,11 +503,8 @@ export const mockCourseReviews: CourseReview[] = Array.from({ length: 20 }).map(
 export const mockCourseQnAs: CourseQna[] = Array.from({ length: 15 }).map((_, i) => ({
     id: i + 1,
     courseId: (i % 12) + 1,
-    writer: {
-        id: i + 200,
-        userName: `학습자${i + 1}`,
-        avatar: `https://i.pravatar.cc/150?u=${i + 200}`
-    },
+    accountId: i + 200,
+    writerName: `학습자${i + 1}`,
     title: i % 4 === 0
         ? "비전공자도 수강 가능한가요?"
         : i % 4 === 1
@@ -530,11 +527,8 @@ export const mockCourseQnAs: CourseQna[] = Array.from({ length: 15 }).map((_, i)
             : i % 4 === 2
                 ? "이력서/포트폴리오 작성 지원, 모의 면접, 기업 매칭 등의 서비스를 제공합니다."
                 : "개인 노트북 지참을 권장합니다. 최소 RAM 8GB, SSD 256GB 이상을 추천드립니다.") : undefined,
-    answeredBy: i % 3 !== 0 ? {
-        id: 1,
-        userName: "담당자",
-        avatar: "https://i.pravatar.cc/150?u=admin"
-    } : undefined,
+    answeredById: i % 3 !== 0 ? 1 : undefined,
+    answeredByName: i % 3 !== 0 ? "담당자" : undefined,
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
     viewCount: 50 + i * 10
 }));
@@ -559,9 +553,13 @@ export const mockAcademyQnAs: AcademyQA[] = Array.from({ length: 15 }).map((_, i
         : i % 3 === 1
             ? "현재 주말 반은 운영하고 있지 않습니다. 추후 개설 시 공지해 드리겠습니다."
             : "수료 후 6개월간 취업 지원을 해드리며, 협약 기업 매칭 및 면접 컨설팅을 제공합니다.") : undefined,
+    answeredById: i % 2 === 0 ? 1 : undefined,
+    answeredByName: i % 2 === 0 ? "담당자" : undefined,
     approvedAt: i % 2 === 0 ? new Date(Date.now() - i * 86400000 + 3600000).toISOString() : undefined,
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    viewCount: 30 + i * 5
+    viewCount: 30 + i * 5,
+    accountId: i + 100,
+    writerName: `사용자${i + 1}`
 }));
 
 // ===== Service Functions =====

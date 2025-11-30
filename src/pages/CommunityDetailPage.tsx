@@ -6,7 +6,6 @@ import type { Comment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import {
     fetchBoardPost,
-    fetchComments,
     recommendBoardPost,
     createComment,
     updateComment,
@@ -36,12 +35,9 @@ const CommunityDetailPage = () => {
         enabled: isValidPostId,
     });
 
-    // 댓글 조회
-    const { data: comments = [], isLoading: commentsLoading } = useQuery({
-        queryKey: ['comments', postIdNumber],
-        queryFn: () => fetchComments(postIdNumber),
-        enabled: isValidPostId,
-    });
+    // 댓글 데이터는 게시글 데이터에 포함됨
+    const comments = post?.comments || [];
+    const commentsLoading = postLoading;
 
     // 추천 mutation
     const recommendMutation = useMutation({
@@ -63,7 +59,7 @@ const CommunityDetailPage = () => {
     const createCommentMutation = useMutation({
         mutationFn: (content: string) => createComment(postIdNumber, content),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['comments', postIdNumber] });
+            // 게시글 데이터를 다시 불러와서 댓글 목록 갱신
             queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
             setCommentContent('');
         },
@@ -77,7 +73,7 @@ const CommunityDetailPage = () => {
         mutationFn: ({ commentId, text }: { commentId: number; text: string }) =>
             updateComment(commentId, postIdNumber, text),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['comments', postIdNumber] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
             setEditingCommentId(null);
             setEditingContent('');
         },
@@ -90,7 +86,7 @@ const CommunityDetailPage = () => {
     const deleteCommentMutation = useMutation({
         mutationFn: (commentId: number) => deleteComment(commentId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['comments', postIdNumber] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
         },
     });
 
@@ -290,7 +286,7 @@ const CommunityDetailPage = () => {
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <ThumbsUp className="w-4 h-4" />
-                                {post.recommendCount || 0}
+                                {post.likeCount || 0}
                             </span>
                         </div>
                     </div>
@@ -332,7 +328,7 @@ const CommunityDetailPage = () => {
                                 <div className="font-bold text-lg">
                                     {post.isRecommended ? '추천했습니다' : !user ? '로그인 필요' : '추천하기'}
                                 </div>
-                                <div className="text-2xl font-bold mt-1">{post.recommendCount || 0}</div>
+                                <div className="text-2xl font-bold mt-1">{post.likeCount || 0}</div>
                             </div>
                         </button>
                     </div>
@@ -508,4 +504,3 @@ const CommunityDetailPage = () => {
 };
 
 export default CommunityDetailPage;
-

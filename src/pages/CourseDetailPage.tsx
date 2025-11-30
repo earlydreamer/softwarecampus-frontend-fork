@@ -53,9 +53,15 @@ const CourseDetailPage = () => {
         error: qnasError,
         refetch: refetchQnAs
     } = useQuery({
-        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword],
-        queryFn: () => fetchCourseQnAs(id!, qnaPage, QNA_PER_PAGE, qnaSearchKeyword),
-        enabled: isValidId,
+        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword, course?.category.categoryType],
+        queryFn: () => fetchCourseQnAs(
+            id!,
+            qnaPage,
+            QNA_PER_PAGE,
+            qnaSearchKeyword,
+            course?.category.categoryType
+        ),
+        enabled: isValidId && !!course, // course 정보가 로드된 후에 실행
     });
 
     // 유효하지 않은 ID 처리

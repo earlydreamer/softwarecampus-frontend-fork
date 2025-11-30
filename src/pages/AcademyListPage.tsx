@@ -8,16 +8,19 @@ import Skeleton from '../components/ui/Skeleton';
 
 const AcademyListPage = () => {
     const [keyword, setKeyword] = useState('');
-    const { data: academies, isLoading, isError } = useQuery({
-        queryKey: ['academies'],
-        queryFn: fetchAcademies,
+
+    // Debounce 처리를 위해 실제 쿼리에 사용할 키워드 분리 (선택 사항이지만 권장)
+    // 여기서는 간단하게 직접 연결하되, 입력 시마다 요청이 가는 것을 방지하려면 
+    // 별도의 검색 버튼을 두거나 useDebounce 훅을 사용하는 것이 좋음.
+    // 현재는 기존 동작 유지를 위해 바로 연결.
+
+    const { data: academies = [], isLoading, isError } = useQuery({
+        queryKey: ['academies', keyword], // keyword가 바뀌면 쿼리 재실행
+        queryFn: () => fetchAcademies({ keyword }), // API에 keyword 전달
     });
 
-    const filteredAcademies = academies?.filter(academy =>
-        academy.name.toLowerCase().includes(keyword.toLowerCase()) ||
-        academy.address.toLowerCase().includes(keyword.toLowerCase()) ||
-        academy.fields?.some(field => field.toLowerCase().includes(keyword.toLowerCase()))
-    );
+    // 클라이언트 사이드 필터링 제거 -> 백엔드에서 처리된 데이터 사용
+    const filteredAcademies = academies;
 
     const noResult = !isLoading && filteredAcademies?.length === 0;
 
