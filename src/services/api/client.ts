@@ -10,7 +10,7 @@ import { getAccessToken } from '../../utils/tokenManager';
  * - JSON 응답 자동 파싱
  */
 const apiClient: AxiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+    baseURL: import.meta.env.VITE_API_BASE_URL || '', // Proxy 사용 시 빈 문자열 또는 상대 경로
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
@@ -20,14 +20,22 @@ const apiClient: AxiosInstance = axios.create({
 
 /**
  * 요청 인터셉터
- * - 인증 토큰 자동 추가 (SSR 안전, XSS 완화)
+ * - 인증 토큰 추가
  */
 apiClient.interceptors.request.use(
     (config) => {
-        // 안전한 토큰 관리자를 통해 JWT 토큰 가져오기
-        const token = getAccessToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        // auth-storage에서 토큰 가져오기
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+            try {
+                const parsed = JSON.parse(authStorage);
+                const token = parsed?.state?.accessToken;
+                if (token && token !== 'admin-test-token') {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            } catch (e) {
+                console.error('토큰 파싱 오류:', e);
+            }
         }
         return config;
     },
