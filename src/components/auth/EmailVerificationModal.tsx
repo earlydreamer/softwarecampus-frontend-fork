@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Mail, Timer, AlertCircle, CheckCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { AxiosError } from 'axios';
 import { sendEmailVerification, verifyEmail, sendPasswordResetCode, verifyPasswordResetCode } from '../../services/authService';
 
 interface EmailVerificationModalProps {
@@ -28,6 +29,8 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
             setStep('SEND');
             setCode('');
             setError('');
+            setTimeLeft(180);
+            setResendCooldown(0);
         }
     }, [isOpen]);
 
@@ -82,9 +85,10 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
             setStep('VERIFY');
             setTimeLeft(180);
             setResendCooldown(60); // API spec says 60s cooldown
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            setError(err.response?.data?.detail || '인증 코드 발송에 실패했습니다.');
+            const axiosError = err as AxiosError<{ detail?: string }>;
+            setError(axiosError.response?.data?.detail || '인증 코드 발송에 실패했습니다.');
         } finally {
             setIsLoading(false);
         }
@@ -108,9 +112,10 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
             
             onVerified();
             onClose();
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            setError(err.response?.data?.detail || '인증 코드가 일치하지 않습니다.');
+            const axiosError = err as AxiosError<{ detail?: string }>;
+            setError(axiosError.response?.data?.detail || '인증 코드가 일치하지 않습니다.');
         } finally {
             setIsLoading(false);
         }
