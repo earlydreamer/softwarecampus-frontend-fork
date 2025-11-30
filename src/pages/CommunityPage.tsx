@@ -270,13 +270,14 @@ const CommunityPage = () => {
                                             <h3 className="font-medium text-slate-900 dark:text-white hover:text-primary-600 truncate">
                                                 {post.title}
                                             </h3>
-                                            {post.commentCount > 0 && (
+                                            {(post.commentCount ?? 0) > 0 && (
                                                 <span className="flex items-center gap-0.5 text-primary-600 text-xs font-medium bg-primary-50 px-1.5 py-0.5 rounded">
                                                     <MessageSquare className="w-3 h-3" />
                                                     {post.commentCount}
                                                 </span>
                                             )}
                                         </div>
+                                    </div>
                                     <div className="col-span-2 text-center text-sm text-slate-600">
                                         {post.account.userName}
                                     </div>
