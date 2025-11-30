@@ -37,7 +37,7 @@ const AcademyListPage = () => {
                     <div className="flex flex-col md:flex-row gap-4">
                         {/* Search Bar */}
                         <div className="flex flex-col gap-1.5 flex-grow max-w-xl">
-                            <label htmlFor="keyword" className="text-xs font-semibold text-slate-500 ml-1">기관 검색</label>
+                            <label htmlFor="keyword" className="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">기관 검색</label>
                             <div className="relative">
                                 <input
                                     id="keyword"
@@ -45,7 +45,7 @@ const AcademyListPage = () => {
                                     value={keyword}
                                     onChange={(e) => setKeyword(e.target.value)}
                                     placeholder="기관명, 주소, 혹은 분야로 검색..."
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-5 py-2.5 pl-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all shadow-sm"
+                                    className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-5 py-2.5 pl-12 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-600 transition-all shadow-sm"
                                 />
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             </div>
@@ -61,13 +61,13 @@ const AcademyListPage = () => {
                         ))}
                     </div>
                 ) : isError ? (
-                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
-                        <p className="text-slate-500">데이터를 불러오는 데 실패했습니다.</p>
+                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
+                        <p className="text-slate-500 dark:text-slate-400">데이터를 불러오는 데 실패했습니다.</p>
                     </div>
                 ) : noResult ? (
-                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200">
+                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">조건에 맞는 기관이 없습니다</h2>
-                        <p className="text-slate-500">다른 키워드로 검색해 보세요.</p>
+                        <p className="text-slate-500 dark:text-slate-400">다른 키워드로 검색해 보세요.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -75,30 +75,30 @@ const AcademyListPage = () => {
                             <Link
                                 key={academy.id}
                                 to={`/academies/${academy.id}`}
-                                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-primary-300 hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+                                className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-xl transition-all duration-300 flex flex-col h-full"
                             >
                                 {/* Header with Logo */}
-                                <div className="p-6 border-b border-slate-100">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-700">
                                     <div className="flex items-start gap-4">
-                                        <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                                        <div className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
                                             {academy.logoUrl ? (
                                                 <img src={sanitizeUrl(academy.logoUrl)} alt={academy.name} className="w-full h-full object-cover" />
                                             ) : (
-                                                <span className="text-2xl font-bold text-slate-400">{academy.name[0]}</span>
+                                                <span className="text-2xl font-bold text-slate-400 dark:text-slate-500">{academy.name[0]}</span>
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-bold text-slate-900 truncate group-hover:text-primary-600 transition-colors">
+                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                                     {academy.name}
                                                 </h3>
                                                 {academy.approvalStatus === 'APPROVED' && (
                                                     <span className="shrink-0">
-                                                        <Award className="w-4 h-4 text-blue-600" />
+                                                        <Award className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-1 text-sm text-slate-500">
+                                            <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
                                                 <MapPin className="w-4 h-4" />
                                                 <span className="truncate">{academy.address}</span>
                                             </div>
@@ -108,7 +108,7 @@ const AcademyListPage = () => {
 
                                 {/* Content */}
                                 <div className="p-6 flex-grow flex flex-col">
-                                    <p className="text-sm text-slate-600 line-clamp-2 mb-4 leading-relaxed flex-grow">
+                                    <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-4 leading-relaxed flex-grow">
                                         {academy.description}
                                     </p>
 
@@ -116,7 +116,7 @@ const AcademyListPage = () => {
                                     {academy.fields && academy.fields.length > 0 && (
                                         <div className="flex flex-wrap gap-2 mb-4">
                                             {academy.fields.slice(0, 3).map(field => (
-                                                <span key={field} className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs">
+                                                <span key={field} className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-xs">
                                                     {field}
                                                 </span>
                                             ))}
@@ -124,23 +124,23 @@ const AcademyListPage = () => {
                                     )}
 
                                     {/* Stats */}
-                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 mt-auto">
+                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-700 mt-auto">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center">
-                                                <BookOpen className="w-4 h-4 text-primary-600" />
+                                            <div className="w-8 h-8 bg-primary-50 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                                                <BookOpen className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                                             </div>
                                             <div>
-                                                <div className="text-xs text-slate-500">운영 과정</div>
-                                                <div className="text-sm font-bold text-slate-900">{academy.courseCount}개</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">운영 과정</div>
+                                                <div className="text-sm font-bold text-slate-900 dark:text-white">{academy.courseCount}개</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                                                <Star className="w-4 h-4 text-amber-500" />
+                                            <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                                                <Star className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                                             </div>
                                             <div>
-                                                <div className="text-xs text-slate-500">평점</div>
-                                                <div className="text-sm font-bold text-slate-900">{academy.rating}/5.0</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">평점</div>
+                                                <div className="text-sm font-bold text-slate-900 dark:text-white">{academy.rating}/5.0</div>
                                             </div>
                                         </div>
                                     </div>
@@ -149,7 +149,7 @@ const AcademyListPage = () => {
                                 {/* Footer with Status */}
                                 {academy.isRecruiting && (
                                     <div className="px-6 pb-6 pt-0">
-                                        <div className="bg-green-50 text-green-700 text-sm font-medium px-3 py-2 rounded-lg text-center border border-green-100">
+                                        <div className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm font-medium px-3 py-2 rounded-lg text-center border border-green-100 dark:border-green-800">
                                             🎓 모집중
                                         </div>
                                     </div>
