@@ -12,8 +12,8 @@ interface AuthState {
   logout: () => void;
 }
 
-// 관리자 테스트 계정 (백엔드 연동 전 테스트용)
-const ADMIN_TEST_ACCOUNT = {
+// 관리자 테스트 계정 (개발 환경에서만 사용)
+const ADMIN_TEST_ACCOUNT = import.meta.env.DEV ? {
   user: {
     id: 1,
     email: 'admin@test.com',
@@ -27,7 +27,7 @@ const ADMIN_TEST_ACCOUNT = {
     academyId: null
   },
   password: 'test'
-};
+} : null;
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -37,8 +37,8 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       isAuthenticated: false,
       login: async (email: string, password: string) => {
-        // 관리자 테스트 계정은 하드코딩 유지
-        if (email === 'admin@test.com' && password === 'test') {
+        // 관리자 테스트 계정 (개발 환경에서만 작동)
+        if (import.meta.env.DEV && ADMIN_TEST_ACCOUNT && email === ADMIN_TEST_ACCOUNT.user.email && password === ADMIN_TEST_ACCOUNT.password) {
           set({
             user: ADMIN_TEST_ACCOUNT.user,
             accessToken: 'admin-test-token',

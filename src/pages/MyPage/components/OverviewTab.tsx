@@ -1,13 +1,14 @@
 import { FileText, MessageSquare, Bookmark, TrendingUp, Eye, Calendar } from 'lucide-react';
 import { myPosts, myComments, bookmarkedCourses } from '../data';
+import type { TabType } from '../useMyPage';
 
 interface OverviewTabProps {
-    setActiveTab: (tab: 'overview' | 'posts' | 'comments' | 'bookmarks') => void;
+    setActiveTab: (tab: TabType) => void;
 }
 
 const OverviewTab = ({ setActiveTab }: OverviewTabProps) => {
     const totalViews = myPosts.reduce((sum, post) => sum + post.views, 0);
-    const totalComments = myPosts.reduce((sum, post) => sum + post.comments, 0);
+    const totalComments = myComments.length;
 
     return (
         <div className="lg:col-span-2 space-y-6">

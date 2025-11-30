@@ -78,6 +78,13 @@ const ForgotPasswordPage = () => {
             return;
         }
 
+        // 비밀번호 규칙 검증 (영문, 숫자, 특수문자 포함)
+        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
+        if (!passwordRegex.test(newPassword)) {
+            setError('비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.');
+            return;
+        }
+
         setIsLoading(true);
 
         try {

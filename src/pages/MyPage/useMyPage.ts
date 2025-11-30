@@ -50,7 +50,6 @@ export const useMyPage = () => {
     }, [isAuthenticated, navigate]);
 
     const handleEditSubmit = (data: UpdateProfileData) => {
-        console.log('Submitting profile data:', data);
         updateMutation.mutate(data);
     };
 

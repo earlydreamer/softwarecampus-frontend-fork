@@ -1,23 +1,54 @@
+// Types
+export interface Post {
+    id: number;
+    title: string;
+    category: 'CODING_STORY' | 'COURSE_STORY';
+    createdAt: string;
+    views: number;
+    comments: number;
+}
+
+export interface Comment {
+    id: number;
+    postTitle: string;
+    content: string;
+    createdAt: string;
+}
+
+export interface BookmarkedCourse {
+    id: number;
+    title: string;
+    academy: string;
+    category: string;
+    rating: number;
+}
+
+export interface Activity {
+    type: 'post' | 'comment' | 'bookmark';
+    title: string;
+    date: string;
+}
+
 // Mock Data
-export const myPosts = [
+export const myPosts: Post[] = [
     { id: 1, title: 'React 19 새로운 기능 정리', category: 'CODING_STORY', createdAt: '2024-01-15', views: 245, comments: 12 },
     { id: 2, title: 'TypeScript 5.0 마이그레이션 후기', category: 'COURSE_STORY', createdAt: '2024-01-10', views: 189, comments: 8 },
     { id: 3, title: 'Vite vs Webpack 성능 비교', category: 'CODING_STORY', createdAt: '2024-01-05', views: 312, comments: 15 },
 ];
 
-export const myComments = [
+export const myComments: Comment[] = [
     { id: 1, postTitle: 'Next.js 14 App Router 사용기', content: '저도 비슷한 경험이 있어서 공감되네요!', createdAt: '2024-01-14' },
     { id: 2, postTitle: 'TailwindCSS 유용한 팁', content: '이 방법 정말 좋네요. 감사합니다!', createdAt: '2024-01-12' },
     { id: 3, postTitle: 'Docker 입문 가이드', content: '초보자에게 정말 도움이 되는 글이네요', createdAt: '2024-01-08' },
 ];
 
-export const bookmarkedCourses = [
+export const bookmarkedCourses: BookmarkedCourse[] = [
     { id: 1, title: 'React 완벽 마스터', academy: '코딩마스터', category: '프론트엔드', rating: 4.8 },
     { id: 2, title: 'TypeScript 실전 프로젝트', academy: '소프트웨어 아카데미', category: '프론트엔드', rating: 4.9 },
     { id: 3, title: 'Node.js 백엔드 개발', academy: '데이터 인사이트', category: '백엔드', rating: 4.7 },
 ];
 
-export const recentActivity = [
+export const recentActivity: Activity[] = [
     { type: 'post', title: 'React 19 새로운 기능 정리', date: '2024-01-15' },
     { type: 'comment', title: 'Next.js 14 App Router 사용기에 댓글', date: '2024-01-14' },
     { type: 'bookmark', title: 'TypeScript 실전 프로젝트를 찜함', date: '2024-01-13' },

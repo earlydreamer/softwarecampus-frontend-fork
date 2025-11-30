@@ -42,10 +42,23 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // 파일 타입 검증
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('JPG, PNG, GIF, WEBP 형식의 이미지만 업로드 가능합니다.');
+            return;
+        }
+
+        // 파일 크기 검증 (5MB)
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert('이미지 크기는 5MB 이하여야 합니다.');
+            return;
+        }
+
         try {
             setIsUploading(true);
             const imageUrl = await uploadFile(file, 'profile', 'PROFILE');
-            console.log('Uploaded image URL:', imageUrl);
             setPreviewImage(imageUrl);
             setValue('profileImage', imageUrl);
         } catch (error) {
@@ -64,7 +77,19 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
         >
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="flex justify-center mb-6">
-                    <div className="relative group cursor-pointer" onClick={handleImageClick}>
+                    <div 
+                        role="button"
+                        tabIndex={0}
+                        aria-label="프로필 이미지 변경"
+                        className="relative group cursor-pointer" 
+                        onClick={handleImageClick}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                handleImageClick();
+                            }
+                        }}
+                    >
                         <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex items-center justify-center border-2 border-slate-100 dark:border-slate-600">
                             {previewImage ? (
                                 <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
@@ -87,6 +112,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
                             ref={fileInputRef}
                             className="hidden"
                             accept="image/*"
+                            aria-label="프로필 이미지 파일 선택"
                             onChange={handleFileChange}
                         />
                     </div>

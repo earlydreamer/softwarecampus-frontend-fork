@@ -698,7 +698,7 @@ const SignupPage = () => {
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                                 회원가입 완료!
                             </h2>
-                            <p className="text-slate-600 dark:text-slate-400 mb-8">
+                            <p className="text-slate-600 dark:text-slate-400 mb-8 whitespace-pre-line">
                                 {activeTab === 'ACADEMY'
                                     ? '회원가입 요청이 완료되었습니다.\n관리자 승인 후 서비스를 이용하실 수 있습니다.'
                                     : '소프트웨어 캠퍼스의 회원이 되신 것을 환영합니다.\n로그인 후 서비스를 이용해주세요.'}
