@@ -45,6 +45,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
         try {
             setIsUploading(true);
             const imageUrl = await uploadFile(file, 'profile', 'PROFILE');
+            console.log('Uploaded image URL:', imageUrl);
             setPreviewImage(imageUrl);
             setValue('profileImage', imageUrl);
         } catch (error) {
