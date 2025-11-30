@@ -1,5 +1,5 @@
 import { FileText, MessageSquare, Bookmark, TrendingUp, Eye, Calendar } from 'lucide-react';
-import { myPosts, myComments, bookmarkedCourses, recentActivity } from '../data';
+import { myPosts, myComments, bookmarkedCourses } from '../data';
 
 interface OverviewTabProps {
     setActiveTab: (tab: 'overview' | 'posts' | 'comments' | 'bookmarks') => void;

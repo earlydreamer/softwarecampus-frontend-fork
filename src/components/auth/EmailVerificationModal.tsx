@@ -19,7 +19,6 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
     const [resendCooldown, setResendCooldown] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [attempts, setAttempts] = useState(0);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -29,13 +28,12 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
             setStep('SEND');
             setCode('');
             setError('');
-            setAttempts(0);
         }
     }, [isOpen]);
 
     // 타이머 로직
     useEffect(() => {
-        let timer: NodeJS.Timeout;
+        let timer: ReturnType<typeof setInterval>;
         if (isOpen && step === 'VERIFY' && timeLeft > 0) {
             timer = setInterval(() => {
                 setTimeLeft((prev) => prev - 1);
@@ -46,7 +44,7 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
 
     // 재발송 쿨다운 로직
     useEffect(() => {
-        let timer: NodeJS.Timeout;
+        let timer: ReturnType<typeof setInterval>;
         if (isOpen && resendCooldown > 0) {
             timer = setInterval(() => {
                 setResendCooldown((prev) => prev - 1);
@@ -84,7 +82,6 @@ const EmailVerificationModal = ({ isOpen, onClose, email, onVerified, type = 'SI
             setStep('VERIFY');
             setTimeLeft(180);
             setResendCooldown(60); // API spec says 60s cooldown
-            setAttempts(prev => prev + 1);
         } catch (err: any) {
             console.error(err);
             setError(err.response?.data?.detail || '인증 코드 발송에 실패했습니다.');

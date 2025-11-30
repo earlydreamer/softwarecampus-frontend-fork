@@ -1,5 +1,3 @@
-import { FileText, MessageSquare, Bookmark, Activity } from 'lucide-react';
-
 // Mock Data
 export const myPosts = [
     { id: 1, title: 'React 19 새로운 기능 정리', category: 'CODING_STORY', createdAt: '2024-01-15', views: 245, comments: 12 },

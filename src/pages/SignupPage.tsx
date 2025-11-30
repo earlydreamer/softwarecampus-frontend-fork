@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff, CheckCircle, Building2, Mail, X } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, CheckCircle, Building2 } from 'lucide-react';
 import type { SignupFormData, Academy } from '../types';
 import AcademySelectModal from '../components/auth/AcademySelectModal';
 import EmailVerificationModal from '../components/auth/EmailVerificationModal';

@@ -19,15 +19,23 @@ const apiClient: AxiosInstance = axios.create({
 
 /**
  * 요청 인터셉터
- * - 필요 시 인증 토큰 추가
+ * - 인증 토큰 추가
  */
 apiClient.interceptors.request.use(
     (config) => {
-        // TODO: 추후 JWT 토큰 추가
-        // const token = localStorage.getItem('accessToken');
-        // if (token) {
-        //     config.headers.Authorization = `Bearer ${token}`;
-        // }
+        // auth-storage에서 토큰 가져오기
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+            try {
+                const parsed = JSON.parse(authStorage);
+                const token = parsed?.state?.accessToken;
+                if (token && token !== 'admin-test-token') {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            } catch (e) {
+                console.error('토큰 파싱 오류:', e);
+            }
+        }
         return config;
     },
     (error) => {

@@ -64,5 +64,5 @@ export const sendPasswordChangeCode = async (email: string): Promise<{
  * Step 3: 최종 비밀번호 변경 (인증 코드 + 새 비밀번호)
  */
 export const changePassword = async (verificationCode: string, newPassword: string): Promise<void> => {
-    await apiClient.patch('/api/mypage/password', { verificationCode, newPassword });
+    await apiClient.put('/api/mypage/password', { code: verificationCode, newPassword });
 };
