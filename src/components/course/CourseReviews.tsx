@@ -258,7 +258,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                             <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">세부 평가</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {review.sections.map((section, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                                                    <div key={section.sectionType} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
                                                         <span className="text-sm text-slate-600 dark:text-slate-400">
                                                             {REVIEW_SECTION_LABELS[section.sectionType]}
                                                         </span>
