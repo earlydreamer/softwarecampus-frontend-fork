@@ -183,7 +183,8 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
                         </div>
                         <h3 className="text-lg font-semibold text-slate-900 dark:text-white">본인 확인</h3>
                         <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                            비밀번호를 변경하려면 현재 비밀번호를 입력해주세요.
+                            비밀번호를 변경하려면 현재 비밀번호를 입력 후<br />
+                            이메일 인증을 진행해주세요.
                         </p>
                     </div>
 
@@ -220,22 +221,23 @@ const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
                         </div>
                     )}
 
-                    <div className="flex gap-3 pt-2">
-                        <button
-                            type="button"
-                            onClick={handleClose}
-                            className="flex-1 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-                        >
-                            취소
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={isLoading || !step1Form.formState.isValid}
-                            className="flex-1 py-2.5 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 transition"
-                        >
-                            {isLoading ? '확인 중...' : '확인'}
-                        </button>
-                    </div>
+                    {/* 이메일 인증 버튼 */}
+                    <button
+                        type="submit"
+                        disabled={isLoading || !step1Form.formState.isValid}
+                        className="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
+                    >
+                        <Mail className="w-5 h-5" />
+                        {isLoading ? '인증 코드 발송 중...' : '이메일 인증'}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleClose}
+                        className="w-full py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                    >
+                        취소
+                    </button>
                 </form>
             )}
 

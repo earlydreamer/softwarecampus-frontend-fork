@@ -59,7 +59,7 @@ export const useMyPage = () => {
 
     const handlePasswordChangeClick = () => {
         setIsEditModalOpen(false);
-        setIsEmailVerifyModalOpen(true);
+        setIsChangePasswordModalOpen(true);
     };
 
     const handleEmailVerified = () => {
