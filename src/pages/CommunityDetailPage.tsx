@@ -6,7 +6,6 @@ import type { Comment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import {
     fetchBoardPost,
-    fetchComments,
     recommendBoardPost,
     createComment,
     updateComment,
@@ -31,17 +30,14 @@ const CommunityDetailPage = () => {
 
     // 게시글 조회
     const { data: post, isLoading: postLoading, error: postError, refetch: refetchPost } = useQuery({
-        queryKey: ['boardPost', postIdNumber, user?.id],
-        queryFn: () => fetchBoardPost(postIdNumber, user?.id),
+        queryKey: ['boardPost', postIdNumber],
+        queryFn: () => fetchBoardPost(postIdNumber),
         enabled: isValidPostId,
     });
 
-    // 댓글 조회
-    const { data: comments = [], isLoading: commentsLoading } = useQuery({
-        queryKey: ['comments', postIdNumber],
-        queryFn: () => fetchComments(postIdNumber),
-        enabled: isValidPostId,
-    });
+    // 댓글 데이터는 게시글 데이터에 포함됨
+    const comments = post?.comments || [];
+    const commentsLoading = postLoading;
 
     // 추천 mutation
     const recommendMutation = useMutation({
@@ -49,10 +45,10 @@ const CommunityDetailPage = () => {
             if (!user?.id) {
                 throw new Error('로그인이 필요한 서비스입니다.');
             }
-            return recommendBoardPost(postIdNumber, user.id);
+            return recommendBoardPost(postIdNumber);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
         onError: (error: Error) => {
             alert(error.message);
@@ -63,8 +59,8 @@ const CommunityDetailPage = () => {
     const createCommentMutation = useMutation({
         mutationFn: (content: string) => createComment(postIdNumber, content),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['comments', postIdNumber] });
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber, user?.id] });
+            // 게시글 데이터를 다시 불러와서 댓글 목록 갱신
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
             setCommentContent('');
         },
         onError: (error: Error) => {
@@ -77,7 +73,7 @@ const CommunityDetailPage = () => {
         mutationFn: ({ commentId, text }: { commentId: number; text: string }) =>
             updateComment(commentId, postIdNumber, text),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['comments', postIdNumber] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
             setEditingCommentId(null);
             setEditingContent('');
         },
@@ -88,9 +84,9 @@ const CommunityDetailPage = () => {
 
     // 댓글 삭제 mutation
     const deleteCommentMutation = useMutation({
-        mutationFn: (commentId: number) => deleteComment(commentId),
+        mutationFn: (commentId: number) => deleteComment(commentId, postIdNumber),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['comments', postIdNumber] });
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
     });
 
@@ -290,7 +286,7 @@ const CommunityDetailPage = () => {
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <ThumbsUp className="w-4 h-4" />
-                                {post.recommendCount || 0}
+                                {post.likeCount || 0}
                             </span>
                         </div>
                     </div>
@@ -315,24 +311,24 @@ const CommunityDetailPage = () => {
                                     alert('로그인이 필요한 서비스입니다.');
                                     return;
                                 }
-                                if (!post.isRecommended) {
+                                if (!post.like) {
                                     recommendMutation.mutate();
                                 }
                             }}
-                            disabled={post.isRecommended || recommendMutation.isPending || !user}
-                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 ${post.isRecommended
+                            disabled={post.like || recommendMutation.isPending || !user}
+                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 ${post.like
                                 ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50'
                                 : !user
                                     ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400 cursor-not-allowed'
                                     : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
                                 }`}
                         >
-                            <ThumbsUp className={`w-10 h-10 ${!post.isRecommended && 'group-hover:animate-bounce'}`} />
+                            <ThumbsUp className={`w-10 h-10 ${!post.like && 'group-hover:animate-bounce'}`} />
                             <div className="text-center">
                                 <div className="font-bold text-lg">
-                                    {post.isRecommended ? '추천했습니다' : !user ? '로그인 필요' : '추천하기'}
+                                    {post.like ? '추천했습니다' : !user ? '로그인 필요' : '추천하기'}
                                 </div>
-                                <div className="text-2xl font-bold mt-1">{post.recommendCount || 0}</div>
+                                <div className="text-2xl font-bold mt-1">{post.likeCount || 0}</div>
                             </div>
                         </button>
                     </div>
@@ -508,4 +504,3 @@ const CommunityDetailPage = () => {
 };
 
 export default CommunityDetailPage;
-

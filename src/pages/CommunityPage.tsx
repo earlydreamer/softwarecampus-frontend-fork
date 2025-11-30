@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import { fetchBoardPosts } from '../services/communityService';
-import { Paperclip, MessageSquare, ThumbsUp, Eye, PenSquare, Search, SlidersHorizontal, X } from 'lucide-react';
+import { MessageSquare, ThumbsUp, Eye, PenSquare, Search, SlidersHorizontal, X } from 'lucide-react';
 
 type SortType = 'latest' | 'popular' | 'views' | 'comments';
 type SearchType = 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment';
@@ -50,7 +50,7 @@ const CommunityPage = () => {
 
     // 서버에서 이미 정렬/필터/페이징된 데이터 사용
     const posts = data?.posts || [];
-    const totalCount = data?.totalCount || 0;
+    const totalCount = data?.total || 0;
     const totalPages = Math.ceil(totalCount / 20);
     const startIndex = (currentPage - 1) * 20;
     const endIndex = Math.min(startIndex + 20, totalCount);
@@ -270,13 +270,12 @@ const CommunityPage = () => {
                                             <h3 className="font-medium text-slate-900 dark:text-white hover:text-primary-600 truncate">
                                                 {post.title}
                                             </h3>
-                                            {post.hasAttachment && <Paperclip className="w-3.5 h-3.5 text-slate-400" />}
-                                            {post.commentCount ? (
+                                            {(post.commentCount ?? 0) > 0 && (
                                                 <span className="flex items-center gap-0.5 text-primary-600 text-xs font-medium bg-primary-50 px-1.5 py-0.5 rounded">
                                                     <MessageSquare className="w-3 h-3" />
                                                     {post.commentCount}
                                                 </span>
-                                            ) : null}
+                                            )}
                                         </div>
                                     </div>
                                     <div className="col-span-2 text-center text-sm text-slate-600">
@@ -286,7 +285,7 @@ const CommunityPage = () => {
                                         {post.hits}
                                     </div>
                                     <div className="col-span-1 text-center text-sm text-slate-500">
-                                        {post.recommendCount}
+                                        {post.likeCount}
                                     </div>
                                     <div className="col-span-1 text-center text-xs text-slate-400">
                                         {formatDate(post.createdAt)}
@@ -311,7 +310,7 @@ const CommunityPage = () => {
                                         <span>{post.account.userName}</span>
                                         <div className="flex items-center gap-3">
                                             <span className="flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> {post.hits}</span>
-                                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {post.recommendCount}</span>
+                                            <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {post.likeCount}</span>
                                             <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {post.commentCount}</span>
                                         </div>
                                     </div>

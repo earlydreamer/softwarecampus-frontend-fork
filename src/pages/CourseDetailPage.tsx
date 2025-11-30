@@ -53,9 +53,15 @@ const CourseDetailPage = () => {
         error: qnasError,
         refetch: refetchQnAs
     } = useQuery({
-        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword],
-        queryFn: () => fetchCourseQnAs(id!, qnaPage, QNA_PER_PAGE, qnaSearchKeyword),
-        enabled: isValidId,
+        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword, course?.category.categoryType],
+        queryFn: () => fetchCourseQnAs(
+            id!,
+            qnaPage,
+            QNA_PER_PAGE,
+            qnaSearchKeyword,
+            course?.category.categoryType
+        ),
+        enabled: isValidId && !!course, // course 정보가 로드된 후에 실행
     });
 
     // 유효하지 않은 ID 처리
@@ -196,9 +202,9 @@ const CourseDetailPage = () => {
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Overview Card */}
-                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
-                            <h2 className="text-xl font-bold text-slate-900 mb-4">과정 소개</h2>
-                            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-8">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">과정 소개</h2>
+                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                                 {course.description || "과정 상세 설명이 없습니다."}
                             </p>
 
@@ -209,7 +215,7 @@ const CourseDetailPage = () => {
                                         {course.highlights.map((highlight, idx) => (
                                             <div key={idx} className="flex items-start gap-3">
                                                 <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                                                <span className="text-slate-700">{highlight}</span>
+                                                <span className="text-slate-700 dark:text-slate-300">{highlight}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -218,14 +224,14 @@ const CourseDetailPage = () => {
                         </div>
 
                         {/* Tabs Navigation */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-                            <div className="border-b border-slate-200">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
+                            <div className="border-b border-slate-200 dark:border-slate-700">
                                 <div className="flex">
                                     <button
                                         onClick={() => setActiveTab('overview')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'overview'
                                             ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
                                         과정 개요
@@ -234,16 +240,16 @@ const CourseDetailPage = () => {
                                         onClick={() => setActiveTab('reviews')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'reviews'
                                             ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
-                                        수강 후기 {reviews && `(${reviews.length})`}
+                                        수강 후기 {reviews && `(${reviews.totalCount})`}
                                     </button>
                                     <button
                                         onClick={() => setActiveTab('qna')}
                                         className={`flex-1 px-6 py-4 font-semibold transition-colors ${activeTab === 'qna'
                                             ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/30'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
                                         Q&A {qnaData && `(${qnaData.totalCount})`}
@@ -255,7 +261,7 @@ const CourseDetailPage = () => {
                                 {activeTab === 'overview' && (
                                     <div className="space-y-6">
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900 mb-4">커리큘럼</h2>
+                                            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">커리큘럼</h2>
                                             {(() => {
                                                 // 백엔드 필드명: curriculums
                                                 const curriculumData = course?.curriculums;
@@ -336,7 +342,7 @@ const CourseDetailPage = () => {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <CourseReviews reviews={reviews || []} isLoading={isReviewsLoading} />
+                                            <CourseReviews reviews={reviews?.reviews || []} isLoading={isReviewsLoading} />
                                         )}
                                     </>
                                 )}
@@ -388,9 +394,9 @@ const CourseDetailPage = () => {
 
                     {/* Sidebar */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 sticky top-24">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-6 sticky top-24">
                             <div className="flex justify-between items-center mb-6">
-                                <div className="text-slate-500 text-sm">수강료</div>
+                                <div className="text-slate-500 dark:text-slate-400 text-sm">수강료</div>
                                 <div className="text-2xl font-bold text-primary-600">
                                     {course.cost === 0
                                         ? "전액무료"
@@ -402,20 +408,20 @@ const CourseDetailPage = () => {
 
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">모집 기간</span>
-                                    <span className="font-medium text-slate-900">{course.recruitStart} ~ {course.recruitEnd}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">모집 기간</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{course.recruitStart} ~ {course.recruitEnd}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">교육 기간</span>
-                                    <span className="font-medium text-slate-900">{course.duration}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">교육 기간</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{course.duration}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">수업 시간</span>
-                                    <span className="font-medium text-slate-900">{course.classDay || "평일 09:00 ~ 18:00"}</span>
+                                    <span className="text-slate-500 dark:text-slate-400">수업 시간</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">{course.classDay || "평일 09:00 ~ 18:00"}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500">모집 정원</span>
-                                    <span className="font-medium text-slate-900">30명</span>
+                                    <span className="text-slate-500 dark:text-slate-400">모집 정원</span>
+                                    <span className="font-medium text-slate-900 dark:text-white">30명</span>
                                 </div>
                             </div>
 
@@ -439,11 +445,11 @@ const CourseDetailPage = () => {
                                     자세히 보기
                                 </button>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                    <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                         <Heart className="w-5 h-5" />
                                         찜하기
                                     </button>
-                                    <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+                                    <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                                         <Share2 className="w-5 h-5" />
                                         공유
                                     </button>
@@ -452,7 +458,7 @@ const CourseDetailPage = () => {
 
                             <div className="mt-6 pt-6 border-t border-slate-100">
                                 <Link to={`/academies/${course.academy.id}`} className="flex items-center gap-3 group">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs overflow-hidden">
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 font-bold text-xs overflow-hidden">
                                         {course.academy.logoUrl ? (
                                             <img src={sanitizeUrl(course.academy.logoUrl)} alt={course.academy.name} className="w-full h-full object-cover" />
                                         ) : (
@@ -460,8 +466,8 @@ const CourseDetailPage = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <div className="text-sm font-medium text-slate-900 group-hover:text-primary-600 transition-colors">{course.academy.name}</div>
-                                        <div className="text-xs text-slate-500">기관 정보 보기</div>
+                                        <div className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{course.academy.name}</div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">기관 정보 보기</div>
                                     </div>
                                     <div className="ml-auto">
                                         <Clock className="w-4 h-4 text-slate-400 group-hover:text-primary-600 transition-colors" />

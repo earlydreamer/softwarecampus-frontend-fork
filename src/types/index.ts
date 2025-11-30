@@ -115,11 +115,11 @@ export interface Course {
     cost?: number;
     classDay?: string;
     location?: string;
-    isKdt: boolean;
-    isNailbaeum: boolean;
-    isOffline: boolean;
+    kdt: boolean;
+    nailbaeum: boolean;
+    offline: boolean;
     requirement?: string;
-    isApproved: ApprovalStatus;
+    approvalStatus: ApprovalStatus;
     approvedAt?: string;
     // 커리큘럼 정보 (백엔드: List<CourseCurriculum> curriculums)
     curriculums?: CourseCurriculum[];
@@ -146,7 +146,7 @@ export interface Academy {
     address: string;
     businessNumber: string;
     email: string;
-    isApproved: ApprovalStatus;
+    approvalStatus: ApprovalStatus;
     approvedAt?: string;
     // UI 표시용 추가 필드 (백엔드에 없음)
     description?: string;
@@ -179,21 +179,25 @@ export interface Board {
     hits: number; // 백엔드 필드명
     secret: boolean; // 백엔드 필드명 (isSecret)
     createdAt: string;
-    updatedAt: string;
-    // 계산된 필드
-    recommendCount?: number;
+    updatedAt?: string;
+
+    // 백엔드 추가 필드
+    likeCount: number;
+    like?: boolean; // 백엔드 필드명: like
+    owner?: boolean; // 백엔드 필드명: owner
+
+    // 계산된 필드 및 호환성
     commentCount?: number;
     hasAttachment?: boolean;
-    isRecommended?: boolean;
-    // 호환성
-    isSecret?: boolean;
+    isSecret?: boolean; // 호환성
+    comments?: Comment[]; // 상세 조회 시 포함됨
 }
 
 export interface Comment {
     id: number;
-    boardId: number;
+    boardId?: number;
     text: string;
-    account: { // 변경: author -> account
+    account: {
         id: number;
         userName: string;
         avatar?: string;
@@ -201,6 +205,7 @@ export interface Comment {
     createdAt: string;
     updatedAt?: string;
     isDeleted?: boolean;
+    subComments?: Comment[]; // 대댓글 지원
 }
 
 // 커뮤니티 메인 페이지용
@@ -210,10 +215,12 @@ export interface CommunityPost {
     account: {
         userName: string;
     };
-    recommendations: number;
+    likeCount: number; // 변경: recommendations -> likeCount
+    viewCount: number; // 추가
+    commentCount: number; // 추가
     category: BoardCategory;
+    categoryName: string; // 변경: board -> categoryName
     createdAt: string;
-    board?: string; // 호환성
 }
 
 export interface Banner {
@@ -228,71 +235,69 @@ export interface Banner {
 export interface CourseReview {
     id: number;
     courseId: number;
-    writer: { // 변경: author -> writer
+    writerName: string; // Backend: writerName
+    writer?: { // Legacy support, optional
         id: number;
         userName: string;
         avatar?: string;
     };
-    rating: number;
-    title: string; // 백엔드 없음 (BACKEND_MISSING_FEATURES.md)
-    comment: string; // 변경: content -> comment
-    createdAt: string;
+    rating: number; // Backend: averageScore
+    title?: string; // Backend missing
+    comment: string; // Backend: comment
+    createdAt: string; // Backend: createdAt
     isVerified?: boolean;
-    helpfulCount?: number;
+    helpfulCount?: number; // Backend: likeCount
 }
 
 // ===== 과정 Q&A 관련 타입 정의 =====
 export interface CourseQna { // 변경: CourseQnA -> CourseQna
     id: number;
-    courseId: number;
-    writer: { // 변경: author -> writer
-        id: number;
-        userName: string;
-        avatar?: string;
-    };
+    courseId?: number; // 백엔드 응답에 없지만 프론트엔드에서 필요할 수 있음
+
+    // 구조 변경: writer 객체 -> 평탄화
+    accountId: number;
+    writerName: string;
+
     title: string;
     questionText: string; // 변경: content -> questionText
     isAnswered: boolean;
 
     // 구조 변경: answer 객체 제거 및 평탄화
     answerText?: string;
-    answeredBy?: {
-        id: number;
-        userName: string;
-        avatar?: string;
-    };
-    // answeredAt?: string; // 백엔드 없음
+
+    // 구조 변경: answeredBy 객체 -> 평탄화
+    answeredById?: number;
+    answeredByName?: string;
 
     createdAt: string;
-    viewCount: number;
+    updatedAt: string;
+    viewCount?: number;
 }
 
 // ===== 기관 Q&A 관련 타입 정의 =====
 export interface AcademyQA { // 변경: AcademyQnA -> AcademyQA
     id: number;
     academyId: number;
-    // TODO: 백엔드 미지원 필드 (보완 예정)
-    writer?: {
-        id: number;
-        userName: string;
-        avatar?: string;
-    };
+
+    // 구조 변경: writer 객체 -> 평탄화
+    accountId: number;
+    writerName: string;
+
     title: string;
     questionText: string; // 변경: content -> questionText
 
     // 구조 변경
     answerText?: string;
+    isAnswered: boolean; // 추가: 답변 완료 여부
 
-    // TODO: 백엔드 미지원 필드 (보완 예정)
-    answeredBy?: {
-        id: number;
-        userName: string;
-        avatar?: string;
-    };
+    // 구조 변경: answeredBy 객체 -> 평탄화
+    answeredById?: number;
+    answeredByName?: string;
 
-    isApproved: ApprovalStatus; // 추가
-    approvedAt?: string; // 추가
+    isApproved?: ApprovalStatus; // 백엔드 DTO에는 없으나 컨트롤러 로직 확인 필요 (일단 선택적)
+    approvedAt?: string;
 
     createdAt: string;
-    viewCount: number;
+    updatedAt: string;
+    viewCount?: number;
 }

@@ -34,7 +34,7 @@ export const mockAcademies: Academy[] = [
         address: "서울시 강남구 테헤란로 123",
         businessNumber: "123-45-67890",
         email: "info@softwarecampus.com",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         approvedAt: "2015-03-15T10:00:00",
         // 프론트엔드 전용 필드 (백엔드에 없음)
         description: "소프트웨어캠퍼스는 실무 중심의 IT 인재를 양성하는 전문 교육기관입니다.",
@@ -57,7 +57,7 @@ export const mockAcademies: Academy[] = [
         address: "서울시 구로구 디지털로 456",
         businessNumber: "987-65-43210",
         email: "contact@codingmaster.com",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         approvedAt: "2018-07-20T14:30:00",
         description: "코딩마스터 아카데미는 기초부터 심화까지 체계적인 코딩 교육을 제공합니다.",
         logoUrl: "https://ui-avatars.com/api/?name=Coding+Master&background=6366f1&color=fff",
@@ -79,7 +79,7 @@ export const mockAcademies: Academy[] = [
         address: "서울시 종로구 종로 789",
         businessNumber: "456-78-90123",
         email: "support@datainsight.com",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         approvedAt: "2020-01-25T09:00:00",
         description: "데이터 분석 및 AI 전문가 양성을 위한 전문 교육 기관입니다.",
         logoUrl: "https://ui-avatars.com/api/?name=Data+Insight&background=10b981&color=fff",
@@ -113,11 +113,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "평일 19:00~22:00",
         location: mockAcademies[0].address,
-        isKdt: false,
-        isNailbaeum: true,
-        isOffline: true,
+        kdt: false,
+        nailbaeum: true,
+        offline: true,
         requirement: "Java 기초 지식",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         // 프론트엔드 전용 필드
         title: "Spring Boot 실무 프로젝트",
         institution: mockAcademies[0].name,
@@ -142,11 +142,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "평일 19:00~22:00",
         location: mockAcademies[1].address,
-        isKdt: false,
-        isNailbaeum: true,
-        isOffline: true,
+        kdt: false,
+        nailbaeum: true,
+        offline: true,
         requirement: "React 기초",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "React 심화 과정",
         institution: mockAcademies[1].name,
         duration: "3개월",
@@ -170,11 +170,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "평일 19:30~22:30",
         location: mockAcademies[2].address,
-        isKdt: false,
-        isNailbaeum: false,
-        isOffline: true,
+        kdt: false,
+        nailbaeum: false,
+        offline: true,
         requirement: "Python 기초",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "데이터 엔지니어링 실무",
         institution: mockAcademies[2].name,
         duration: "4개월",
@@ -199,11 +199,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "화목 20:00~22:00",
         location: "온라인",
-        isKdt: false,
-        isNailbaeum: true,
-        isOffline: false,
+        kdt: false,
+        nailbaeum: true,
+        offline: false,
         requirement: "리눅스 기초",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "클라우드 아키텍처 설계",
         institution: mockAcademies[0].name,
         duration: "3개월",
@@ -227,11 +227,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "수금 20:00~22:30",
         location: "온라인",
-        isKdt: false,
-        isNailbaeum: false,
-        isOffline: false,
+        kdt: false,
+        nailbaeum: false,
+        offline: false,
         requirement: "없음",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "DevOps 엔지니어 양성",
         institution: mockAcademies[1].name,
         duration: "3개월",
@@ -255,11 +255,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "월수금 19:30~22:00",
         location: "온라인",
-        isKdt: false,
-        isNailbaeum: true,
-        isOffline: false,
+        kdt: false,
+        nailbaeum: true,
+        offline: false,
         requirement: "Python 중급",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "AI/ML 실무 적용",
         institution: mockAcademies[2].name,
         duration: "4개월",
@@ -284,11 +284,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "월~금 09:00~18:00",
         location: mockAcademies[0].address,
-        isKdt: true,
-        isNailbaeum: true,
-        isOffline: true,
+        kdt: true,
+        nailbaeum: true,
+        offline: true,
         requirement: "없음",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "풀스택 개발자 부트캠프",
         institution: mockAcademies[0].name,
         duration: "6개월",
@@ -312,11 +312,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "월~금 09:00~18:00",
         location: mockAcademies[1].address,
-        isKdt: true,
-        isNailbaeum: true,
-        isOffline: true,
+        kdt: true,
+        nailbaeum: true,
+        offline: true,
         requirement: "없음",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "프론트엔드 개발자 양성",
         institution: mockAcademies[1].name,
         duration: "6개월",
@@ -340,11 +340,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "월~금 09:00~18:00",
         location: mockAcademies[2].address,
-        isKdt: true,
-        isNailbaeum: false,
-        isOffline: true,
+        kdt: true,
+        nailbaeum: false,
+        offline: true,
         requirement: "없음",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "백엔드 개발자 취업 과정",
         institution: mockAcademies[2].name,
         duration: "6개월",
@@ -369,11 +369,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "매일 19:00~21:00",
         location: "온라인",
-        isKdt: true,
-        isNailbaeum: true,
-        isOffline: false,
+        kdt: true,
+        nailbaeum: true,
+        offline: false,
         requirement: "없음",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "코딩 기초 입문 과정",
         institution: mockAcademies[0].name,
         duration: "3개월",
@@ -397,11 +397,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "월수금 19:00~22:00",
         location: "온라인",
-        isKdt: true,
-        isNailbaeum: true,
-        isOffline: false,
+        kdt: true,
+        nailbaeum: true,
+        offline: false,
         requirement: "없음",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "웹 개발 종합 과정",
         institution: mockAcademies[1].name,
         duration: "6개월",
@@ -425,11 +425,11 @@ export const mockCourses: Course[] = [
         cost: 0,
         classDay: "화목 19:00~22:00",
         location: "온라인",
-        isKdt: true,
-        isNailbaeum: false,
-        isOffline: false,
+        kdt: true,
+        nailbaeum: false,
+        offline: false,
         requirement: "없음",
-        isApproved: "APPROVED",
+        approvalStatus: "APPROVED",
         title: "데이터 분석가 양성 과정",
         institution: mockAcademies[2].name,
         duration: "6개월",
@@ -446,14 +446,16 @@ export const mockCourses: Course[] = [
 // ===== Mock Community Posts =====
 export const mockCommunityPosts: CommunityPost[] = Array.from({ length: 6 }).map((_, i) => ({
     id: i + 1,
-    title: `커뮤니티 게시글 제목입니다 ${i + 1}`,
+    title: `커뮤니티 게시글 제목 ${i + 1}`,
     account: {
-        userName: `User${i + 1}`
+        userName: `사용자${i + 1}`,
     },
-    recommendations: 5 + i,
+    likeCount: Math.floor(Math.random() * 50),
+    viewCount: Math.floor(Math.random() * 500),
+    commentCount: Math.floor(Math.random() * 20),
     category: i % 4 === 0 ? 'NOTICE' : i % 4 === 1 ? 'QUESTION' : i % 4 === 2 ? 'COURSE_STORY' : 'CODING_STORY',
-    board: i % 4 === 0 ? '공지사항' : i % 4 === 1 ? '문의사항' : i % 4 === 2 ? '진로이야기' : '코딩이야기',
-    createdAt: "2025-11-20"
+    categoryName: i % 4 === 0 ? '공지사항' : i % 4 === 1 ? '문의사항' : i % 4 === 2 ? '진로이야기' : '코딩이야기',
+    createdAt: '2024-03-15',
 }));
 
 // ===== Mock Board Posts =====
@@ -471,7 +473,7 @@ export const mockBoardPosts: Board[] = Array.from({ length: 20 }).map((_, i) => 
     secret: false,
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - i * 86400000).toISOString(),
-    recommendCount: 10 + i,
+    likeCount: 10 + i,
     commentCount: i % 5,
     hasAttachment: i % 4 === 0
 }));
@@ -480,6 +482,7 @@ export const mockBoardPosts: Board[] = Array.from({ length: 20 }).map((_, i) => 
 export const mockCourseReviews: CourseReview[] = Array.from({ length: 20 }).map((_, i) => ({
     id: i + 1,
     courseId: (i % 12) + 1,
+    writerName: `수강생${i + 1}`,
     writer: {
         id: i + 100,
         userName: `수강생${i + 1}`,
@@ -501,11 +504,8 @@ export const mockCourseReviews: CourseReview[] = Array.from({ length: 20 }).map(
 export const mockCourseQnAs: CourseQna[] = Array.from({ length: 15 }).map((_, i) => ({
     id: i + 1,
     courseId: (i % 12) + 1,
-    writer: {
-        id: i + 200,
-        userName: `학습자${i + 1}`,
-        avatar: `https://i.pravatar.cc/150?u=${i + 200}`
-    },
+    accountId: i + 200,
+    writerName: `학습자${i + 1}`,
     title: i % 4 === 0
         ? "비전공자도 수강 가능한가요?"
         : i % 4 === 1
@@ -528,12 +528,10 @@ export const mockCourseQnAs: CourseQna[] = Array.from({ length: 15 }).map((_, i)
             : i % 4 === 2
                 ? "이력서/포트폴리오 작성 지원, 모의 면접, 기업 매칭 등의 서비스를 제공합니다."
                 : "개인 노트북 지참을 권장합니다. 최소 RAM 8GB, SSD 256GB 이상을 추천드립니다.") : undefined,
-    answeredBy: i % 3 !== 0 ? {
-        id: 1,
-        userName: "담당자",
-        avatar: "https://i.pravatar.cc/150?u=admin"
-    } : undefined,
+    answeredById: i % 3 !== 0 ? 1 : undefined,
+    answeredByName: i % 3 !== 0 ? "담당자" : undefined,
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - i * 86400000).toISOString(),
     viewCount: 50 + i * 10
 }));
 
@@ -557,9 +555,15 @@ export const mockAcademyQnAs: AcademyQA[] = Array.from({ length: 15 }).map((_, i
         : i % 3 === 1
             ? "현재 주말 반은 운영하고 있지 않습니다. 추후 개설 시 공지해 드리겠습니다."
             : "수료 후 6개월간 취업 지원을 해드리며, 협약 기업 매칭 및 면접 컨설팅을 제공합니다.") : undefined,
+    answeredById: i % 2 === 0 ? 1 : undefined,
+    answeredByName: i % 2 === 0 ? "담당자" : undefined,
     approvedAt: i % 2 === 0 ? new Date(Date.now() - i * 86400000 + 3600000).toISOString() : undefined,
     createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    viewCount: 30 + i * 5
+    updatedAt: new Date(Date.now() - i * 86400000).toISOString(),
+    viewCount: 30 + i * 5,
+    accountId: i + 100,
+    writerName: `사용자${i + 1}`,
+    isAnswered: i % 2 === 0
 }));
 
 // ===== Service Functions =====
@@ -599,8 +603,8 @@ export const fetchCourses = async (filters: any): Promise<Course[]> => {
         filtered = filtered.filter(c => c.category.categoryName === filters.category);
     }
 
-    if (filters.isOffline !== undefined) {
-        filtered = filtered.filter(c => c.isOffline === filters.isOffline);
+    if (filters.offline !== undefined) {
+        filtered = filtered.filter(c => c.offline === filters.offline);
     }
 
     return filtered;
@@ -675,7 +679,7 @@ export const fetchBoardPosts = async (
             filtered.sort((a, b) => b.id - a.id);
             break;
         case 'popular':
-            filtered.sort((a, b) => (b.recommendCount || 0) - (a.recommendCount || 0));
+            filtered.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
             break;
         case 'views':
             filtered.sort((a, b) => b.hits - a.hits);

@@ -1,6 +1,7 @@
 import apiClient from './client';
-import type { ApiCourseResponse, ApiBoardListResponse, CommunityPost } from './types';
+import type { ApiCourseResponse, ApiHomeCommunityResponse, CommunityPost } from './types';
 import type { Course } from '../../types';
+import { formatCourseDuration } from '../../utils/dateUtils';
 
 /**
  * 과정 목록 조회
@@ -26,7 +27,7 @@ export const fetchCoursesByType = async (
                 address: '',
                 businessNumber: '',
                 email: '',
-                isApproved: 'APPROVED',
+                approvalStatus: 'APPROVED',
                 approvedAt: '',
             },
             category: {
@@ -43,17 +44,15 @@ export const fetchCoursesByType = async (
             cost: apiCourse.cost,
             classDay: apiCourse.classDay,
             location: apiCourse.location,
-            isKdt: apiCourse.isKdt,
-            isNailbaeum: apiCourse.isNailbaeum,
-            isOffline: apiCourse.isOffline,
+            kdt: apiCourse.kdt,
+            nailbaeum: apiCourse.nailbaeum,
+            offline: apiCourse.offline,
             requirement: apiCourse.requirement,
-            isApproved: apiCourse.approvalStatus,
+            approvalStatus: apiCourse.approvalStatus,
 
             // 프론트엔드 전용 필드 (기본값 설정)
-            title: apiCourse.name,
-            institution: apiCourse.academyName,
-            duration: calculateDuration(apiCourse.courseStart, apiCourse.courseEnd),
-            format: apiCourse.isOffline ? '오프라인' : '온라인',
+            duration: formatCourseDuration(apiCourse.courseStart, apiCourse.courseEnd),
+            format: apiCourse.offline ? '오프라인' : '온라인',
             rating: 0, // TODO: 리뷰 API 연동 필요
             reviewCount: 0,
             tags: [], // TODO: 태그 정보 필요
@@ -114,44 +113,31 @@ export const fetchClosingSoonCourses = async (limit: number = 4): Promise<Course
  */
 export const fetchCommunityHighlights = async (limit: number = 6): Promise<CommunityPost[]> => {
     try {
-        const response = await apiClient.get<ApiBoardListResponse[]>('/boards', {
-            params: {
-                pageNo: 1,
-                category: 'NOTICE', // 임시: 백엔드 에러 방지 (전체 조회 미지원)
-            }
+        const response = await apiClient.get<ApiHomeCommunityResponse[]>('/api/home/community', {
+            params: { limit }
         });
 
         // API 응답을 CommunityPost 타입으로 변환
-        const posts: CommunityPost[] = response.data.slice(0, limit).map(apiBoard => ({
-            id: apiBoard.id,
-            title: apiBoard.title,
+        const posts: CommunityPost[] = response.data.map(apiPost => ({
+            id: apiPost.id,
+            title: apiPost.title,
             account: {
-                userName: apiBoard.userNickName
+                userName: apiPost.writerName
             },
-            recommendations: apiBoard.like ? 1 : 0, // TODO: 추천 수 API 필요
-            category: mapBoardCategory(apiBoard.category),
-            board: getCategoryDisplayName(apiBoard.category),
-            createdAt: apiBoard.createdAt,
+            likeCount: apiPost.likeCount,
+            viewCount: apiPost.viewCount,
+            commentCount: apiPost.commentCount,
+            category: mapBoardCategory(apiPost.category),
+            categoryName: apiPost.categoryName,
+            createdAt: apiPost.createdAt,
         }));
 
         return posts;
     } catch (error) {
-        console.warn('커뮤니티 하이라이트 조회 실패 (임시 처리):', error);
+        console.error('커뮤니티 하이라이트 조회 실패:', error);
         return [];
     }
-
 };
-
-/**
- * 과정 기간 계산 (개월 수)
- */
-function calculateDuration(startDate: string, endDate: string): string {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    const months = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30));
-    return `${months}개월`;
-}
 
 /**
  * 게시판 카테고리 매핑
@@ -171,20 +157,4 @@ function mapBoardCategory(category: string): 'NOTICE' | 'QUESTION' | 'COURSE_STO
     return categoryMap[category] || 'CODING_STORY';
 }
 
-/**
- * 카테고리 표시 이름
- */
-function getCategoryDisplayName(category: string): string {
-    const displayNames: Record<string, string> = {
-        'NOTICE': '공지사항',
-        'QUESTION': '문의사항',
-        'COURSE_STORY': '진로이야기',
-        'CODING_STORY': '코딩이야기',
-        '공지사항': '공지사항',
-        '문의사항': '문의사항',
-        '진로이야기': '진로이야기',
-        '코딩이야기': '코딩이야기',
-    };
 
-    return displayNames[category] || category;
-}

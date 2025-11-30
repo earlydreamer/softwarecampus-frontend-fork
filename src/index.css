@@ -6,13 +6,13 @@
 
 @layer base {
   body {
-    @apply font-sans antialiased text-gray-900 bg-white;
+    @apply font-sans antialiased text-gray-900 bg-white dark:bg-slate-900 dark:text-white;
   }
 }
 
 @layer components {
   .glass-panel {
-    @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
+    @apply bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg border border-white/20 dark:border-slate-700/30 shadow-xl;
   }
   
   .btn-primary {

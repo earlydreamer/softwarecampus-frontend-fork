@@ -1,4 +1,51 @@
+import apiClient from './api/client';
 import type { Board, Comment, BoardCategory } from '../types';
+import type { ApiBoardListResponse, ApiBoardResponseDTO, ApiCommentDTO } from './api/types';
+
+// DTO -> Board 매핑
+const mapDtoToBoard = (dto: ApiBoardResponseDTO): Board => {
+    return {
+        id: dto.id,
+        title: dto.title,
+        text: dto.text,
+        category: dto.category as BoardCategory,
+        account: {
+            id: dto.accountId,
+            userName: dto.userNickName,
+            avatar: undefined, // 백엔드 미제공
+        },
+        hits: dto.hits,
+        secret: dto.secret,
+        createdAt: dto.createdAt,
+        updatedAt: undefined, // 백엔드 미제공
+
+        likeCount: dto.likeCount,
+        like: dto.like,
+        owner: dto.owner,
+
+        commentCount: dto.boardComments.length,
+        hasAttachment: dto.boardAttachs.length > 0,
+        isSecret: dto.secret,
+
+        // 상세 조회 시 댓글 포함
+        comments: dto.boardComments.map(mapDtoToComment),
+    };
+};
+
+// DTO -> Comment 매핑
+const mapDtoToComment = (dto: ApiCommentDTO): Comment => {
+    return {
+        id: dto.id,
+        boardId: undefined, // 문맥상 알 수 있음
+        text: dto.text,
+        account: {
+            id: dto.accountId,
+            userName: dto.userNickName,
+        },
+        createdAt: dto.createdAt,
+        subComments: dto.subComments ? dto.subComments.map(mapDtoToComment) : [],
+    };
+};
 
 /**
  * 게시글 목록 조회
@@ -8,130 +55,96 @@ export const fetchBoardPosts = async (
     page: number = 1,
     limit: number = 20,
     searchKeyword?: string,
-    sortType?: 'latest' | 'popular' | 'views' | 'comments',
+    _sortType?: 'latest' | 'popular' | 'views' | 'comments',
     searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment'
-) => {
-    const { fetchBoardPosts: mockFetch } = await import('./mockData');
-    return mockFetch(category, page, limit, searchKeyword, sortType, searchType);
+): Promise<{ posts: Board[], total: number }> => {
+    try {
+        const params: any = { page, limit };
+        if (category) params.category = category;
+        if (searchKeyword) params.keyword = searchKeyword;
+        if (searchType) params.searchType = searchType;
+        // sortType은 백엔드 지원 여부 확인 필요 (일단 생략)
+
+        const response = await apiClient.get<ApiBoardListResponse[]>('/api/boards', { params });
+
+        // 목록 응답 매핑
+        const posts = response.data.map(dto => ({
+            id: dto.id,
+            title: dto.title,
+            text: '', // 목록에는 본문 없음
+            category: dto.category as BoardCategory,
+            account: {
+                id: 0, // 목록에는 작성자 ID 없음
+                userName: dto.userNickName,
+            },
+            hits: 0, // 목록에는 조회수 없음? (DTO 확인 필요)
+            secret: dto.secret,
+            createdAt: dto.createdAt,
+            likeCount: 0, // DTO에 likeCount 없음? (ApiBoardListResponse 확인 필요)
+            like: false, // 목록 API에서는 제공하지 않음
+            commentCount: dto.commentCount,
+        } as Board));
+
+        return { posts, total: posts.length }; // 페이징 정보가 헤더나 별도 필드에 있는지 확인 필요
+    } catch (error) {
+        console.error('Failed to fetch board posts:', error);
+        return { posts: [], total: 0 };
+    }
 };
 
 /**
  * 게시글 상세 조회
  */
-export const fetchBoardPost = async (postId: number, userId?: number): Promise<Board> => {
-    // 시뮬레이션: 네트워크 지연
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    const { mockBoardPosts } = await import('./mockData');
-    const post = mockBoardPosts.find(p => p.id === postId);
-
-    if (!post) {
-        throw new Error('게시글을 찾을 수 없습니다.');
+export const fetchBoardPost = async (postId: number): Promise<Board> => {
+    try {
+        const response = await apiClient.get<ApiBoardResponseDTO>(`/api/boards/${postId}`);
+        return mapDtoToBoard(response.data);
+    } catch (error) {
+        console.error(`Failed to fetch board post ${postId}:`, error);
+        throw error;
     }
-
-    // 조회수 증가 시뮬레이션
-    return {
-        ...post,
-        hits: post.hits + 1,
-        isRecommended: userId ? Math.random() > 0.7 : false, // 30% 확률로 이미 추천했다고 가정
-    };
 };
 
 /**
- * 댓글 목록 조회
+ * 댓글 목록 조회 (상세 조회에 포함되어 있으므로 별도 호출 불필요할 수 있으나, 호환성 유지)
  */
 export const fetchComments = async (postId: number): Promise<Comment[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    // Mock 댓글 데이터
-    const mockComments: Comment[] = Array.from({ length: Math.floor(Math.random() * 10) + 3 }).map((_, i) => ({
-        id: i + 1,
-        boardId: postId,
-        account: {
-            id: i + 100,
-            userName: `사용자${i + 1}`,
-        },
-        text: i === 0 ? '좋은 정보 감사합니다!' :
-            i === 1 ? '저도 궁금했던 내용이에요. 덕분에 많이 배워갑니다.' :
-                i === 2 ? '정말 유익한 글이네요 👍' :
-                    `댓글 내용 ${i + 1}입니다. 이 글에 대한 제 생각을 공유합니다.`,
-        createdAt: new Date(Date.now() - (i * 3600000)).toISOString(),
-        isDeleted: false,
-    }));
-
-    return mockComments;
+    try {
+        const post = await fetchBoardPost(postId);
+        return post.comments || [];
+    } catch (error) {
+        return [];
+    }
 };
 
 /**
  * 게시글 추천
  */
-export const recommendBoardPost = async (postId: number, userId: number): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    console.log(`게시글 ${postId}을(를) 사용자 ${userId}이(가) 추천했습니다.`);
+export const recommendBoardPost = async (postId: number): Promise<void> => {
+    await apiClient.post(`/api/boards/${postId}/recommends`);
 };
 
 /**
  * 댓글 작성
  */
 export const createComment = async (postId: number, text: string): Promise<Comment> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-
-    if (text.length > 500) {
-        throw new Error('댓글은 500자를 초과할 수 없습니다.');
-    }
-
-    const newComment: Comment = {
-        id: Date.now(),
-        boardId: postId,
-        account: {
-            id: 1,
-            userName: '현재사용자',
-        },
-        text,
-        createdAt: new Date().toISOString(),
-        isDeleted: false,
-    };
-
-    return newComment;
+    const response = await apiClient.post<ApiCommentDTO>(`/api/boards/${postId}/comments`, { text });
+    return mapDtoToComment(response.data);
 };
 
 /**
  * 댓글 수정
  */
 export const updateComment = async (commentId: number, postId: number, text: string): Promise<Comment> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    // createComment와 동일한 validation 적용
-    if (!text.trim()) {
-        throw new Error('댓글 내용을 입력해주세요.');
-    }
-
-    if (text.length > 500) {
-        throw new Error('댓글은 500자를 초과할 수 없습니다.');
-    }
-
-    const updatedComment: Comment = {
-        id: commentId,
-        boardId: postId,  // 전달받은 postId 사용
-        account: {
-            id: 1,
-            userName: '현재사용자',
-        },
-        text,
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        isDeleted: false,
-    };
-
-    return updatedComment;
+    const response = await apiClient.patch<ApiCommentDTO>(`/api/boards/${postId}/comments/${commentId}`, { text });
+    return mapDtoToComment(response.data);
 };
 
 /**
  * 댓글 삭제
  */
-export const deleteComment = async (commentId: number): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    console.log(`댓글 ${commentId}이(가) 삭제되었습니다.`);
+export const deleteComment = async (commentId: number, postId: number): Promise<void> => {
+    await apiClient.delete(`/api/boards/${postId}/comments/${commentId}`);
 };
 
 /**
@@ -141,39 +154,17 @@ export const createBoardPost = async (data: {
     title: string;
     text: string;
     category: BoardCategory;
-    account: {
-        id: number;
-        userName: string;
-    };
+    account: { id: number; userName: string; }; // 사용 안함 (토큰 사용)
     isSecret: boolean;
-    hasAttachment: boolean;
+    hasAttachment: boolean; // 파일 업로드 별도 처리 필요
 }): Promise<Board> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    if (data.title.length > 255) {
-        throw new Error('제목은 255자를 초과할 수 없습니다.');
-    }
-
-    if (!data.text.trim() || data.text === '<p></p>') {
-        throw new Error('내용을 입력해주세요.');
-    }
-
-    const newPost: Board = {
-        id: Date.now(),
+    // 파일 업로드는 별도 API (/api/boards/upload) 사용 필요
+    // 여기서는 텍스트 데이터만 전송
+    const response = await apiClient.post<ApiBoardResponseDTO>('/api/boards', {
         title: data.title,
         text: data.text,
-        category: data.category as BoardCategory,
-        account: data.account,
-        hits: 0,
-        secret: data.isSecret,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        recommendCount: 0,
-        commentCount: 0,
-        hasAttachment: data.hasAttachment,
-        isRecommended: false,
-    };
-
-    console.log('새 게시글 작성:', newPost);
-    return newPost;
+        category: data.category,
+        isSecret: data.isSecret,
+    });
+    return mapDtoToBoard(response.data);
 };

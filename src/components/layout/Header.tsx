@@ -56,13 +56,13 @@ const Header = () => {
     }, [isMobileMenuOpen]);
 
     const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
-        `text-sm font-medium transition-colors ${isActive ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'
+        `text-sm font-medium transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400'
         }`;
 
     return (
         <>
             <header
-                className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm py-3' : 'bg-white/50 backdrop-blur-sm py-5'
+                className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm py-3' : 'bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm py-5'
                     }`}
             >
                 <div className="container mx-auto px-4 flex items-center justify-between">
@@ -78,14 +78,15 @@ const Header = () => {
                                 {node.isClickable ? (
                                     <Link
                                         to={buildPath('/lectures', node.query)}
-                                        className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-primary-600 py-2"
+                                        className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 py-2"
+                                        onClick={(e) => e.currentTarget.blur()}
                                     >
                                         {node.label}
                                         <ChevronDown className="w-4 h-4" />
                                     </Link>
                                 ) : (
                                     <button
-                                        className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-primary-600 py-2 focus:outline-none focus:text-primary-600"
+                                        className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 py-2 focus:outline-none focus:text-primary-600 dark:focus:text-primary-400"
                                         aria-haspopup="true"
                                         aria-expanded="false"
                                     >
@@ -96,19 +97,19 @@ const Header = () => {
 
                                 {/* Dropdown */}
                                 <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus-within:translate-y-0">
-                                    <div className="w-64 bg-white rounded-xl shadow-xl border border-slate-100 p-2 relative before:absolute before:-top-1.5 before:left-6 before:w-3 before:h-3 before:bg-white before:border-t before:border-l before:border-slate-100 before:rotate-45 before:z-0">
+                                    <div className="w-64 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-2 relative before:absolute before:-top-1.5 before:left-6 before:w-3 before:h-3 before:bg-white dark:before:bg-slate-800 before:border-t before:border-l before:border-slate-100 dark:before:border-slate-700 before:rotate-45 before:z-0">
                                         {node.children?.map((child) => (
                                             <div key={child.label} className="relative group/sub">
                                                 {child.isClickable ? (
                                                     <Link
                                                         to={buildPath('/lectures', { ...node.query, ...child.query })}
-                                                        className="flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-slate-50 text-sm text-slate-700 hover:text-primary-600"
+                                                        className="flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:text-primary-600 dark:hover:text-primary-400"
                                                     >
                                                         {child.label}
                                                         <ChevronRight className="w-4 h-4 text-slate-400" />
                                                     </Link>
                                                 ) : (
-                                                    <div className="flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-slate-50 text-sm text-slate-700 hover:text-primary-600">
+                                                    <div className="flex items-center justify-between px-4 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:text-primary-600 dark:hover:text-primary-400">
                                                         {child.label}
                                                         <ChevronRight className="w-4 h-4 text-slate-400" />
                                                     </div>
@@ -117,12 +118,12 @@ const Header = () => {
                                                 {/* Sub Dropdown */}
                                                 {child.children && (
                                                     <div className="absolute left-full top-0 pl-2 opacity-0 invisible group-hover/sub:opacity-100 group-hover/sub:visible group-focus-within/sub:opacity-100 group-focus-within/sub:visible transition-all duration-200 transform translate-x-2 group-hover/sub:translate-x-0 group-focus-within/sub:translate-x-0">
-                                                        <div className="w-56 bg-white rounded-xl shadow-xl border border-slate-100 p-2 max-h-[80vh] overflow-y-auto relative before:absolute before:-left-1.5 before:top-4 before:w-3 before:h-3 before:bg-white before:border-b before:border-l before:border-slate-100 before:rotate-45 before:z-0">
+                                                        <div className="w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-2 max-h-[80vh] overflow-y-auto relative before:absolute before:-left-1.5 before:top-4 before:w-3 before:h-3 before:bg-white dark:before:bg-slate-800 before:border-b before:border-l before:border-slate-100 dark:before:border-slate-700 before:rotate-45 before:z-0">
                                                             {child.children.map((subChild) => (
                                                                 <Link
                                                                     key={subChild.label}
                                                                     to={buildPath('/lectures', { ...node.query, ...child.query, ...subChild.query })}
-                                                                    className="block px-4 py-2 rounded-lg hover:bg-slate-50 text-sm text-slate-600 hover:text-primary-600"
+                                                                    className="block px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400"
                                                                 >
                                                                     {subChild.label}
                                                                 </Link>
@@ -143,19 +144,21 @@ const Header = () => {
 
                         {/* Community Dropdown */}
                         <div className="relative group">
-                            <NavLink to="/community" className={navLinkClasses}>
-                                <span className="flex items-center gap-1">
-                                    커뮤니티
-                                    <ChevronDown className="w-4 h-4" />
-                                </span>
-                            </NavLink>
+                            <Link
+                                to="/community"
+                                className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 py-2"
+                                onClick={(e) => e.currentTarget.blur()}
+                            >
+                                커뮤니티
+                                <ChevronDown className="w-4 h-4" />
+                            </Link>
                             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 group-focus-within:translate-y-0">
-                                <div className="w-40 bg-white rounded-xl shadow-xl border border-slate-100 p-2 relative before:absolute before:-top-1.5 before:left-1/2 before:-translate-x-1/2 before:w-3 before:h-3 before:bg-white before:border-t before:border-l before:border-slate-100 before:rotate-45 before:z-0">
+                                <div className="w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 p-2 relative before:absolute before:-top-1.5 before:left-1/2 before:-translate-x-1/2 before:w-3 before:h-3 before:bg-white dark:before:bg-slate-800 before:border-t before:border-l before:border-slate-100 dark:before:border-slate-700 before:rotate-45 before:z-0">
                                     {rawCommunityNav.children?.map((child) => (
                                         <Link
                                             key={child.label}
                                             to={buildPath('/community', child.query)}
-                                            className="block px-4 py-2 rounded-lg hover:bg-slate-50 text-sm text-slate-600 hover:text-primary-600"
+                                            className="block px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400"
                                         >
                                             {child.label}
                                         </Link>
@@ -203,7 +206,7 @@ const Header = () => {
 
                     {/* Mobile Menu Button */}
                     <button
-                        className="lg:hidden p-2 text-slate-600 z-50 relative"
+                        className="lg:hidden p-2 text-slate-600 dark:text-slate-300 z-50 relative"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         aria-label={isMobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
                         aria-expanded={isMobileMenuOpen}
@@ -215,7 +218,7 @@ const Header = () => {
 
             {/* Mobile Menu Overlay */}
             <div
-                className={`fixed inset-0 bg-white z-40 pt-24 px-6 overflow-y-auto lg:hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen
+                className={`fixed inset-0 bg-white dark:bg-slate-900 z-40 pt-24 px-6 overflow-y-auto lg:hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen
                     ? 'opacity-100 visible translate-y-0'
                     : 'opacity-0 invisible -translate-y-4'
                     }`}
@@ -224,7 +227,7 @@ const Header = () => {
                     {rawCourseNav.map((node) => (
                         <div key={node.label}>
                             <button
-                                className="flex items-center justify-between w-full text-lg font-semibold text-slate-900 mb-2"
+                                className="flex items-center justify-between w-full text-lg font-semibold text-slate-900 dark:text-white mb-2"
                                 onClick={() => setActiveDropdown(activeDropdown === node.label ? null : node.label)}
                             >
                                 {node.label}
@@ -232,18 +235,18 @@ const Header = () => {
                             </button>
 
                             <div
-                                className={`pl-4 space-y-4 border-l-2 border-slate-100 overflow-hidden transition-all duration-300 ease-in-out ${activeDropdown === node.label ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'
+                                className={`pl-4 space-y-4 border-l-2 border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 ease-in-out ${activeDropdown === node.label ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'
                                     }`}
                             >
                                 {node.children?.map((child) => (
                                     <div key={child.label}>
-                                        <div className="font-medium text-slate-700 mb-2">{child.label}</div>
+                                        <div className="font-medium text-slate-700 dark:text-slate-300 mb-2">{child.label}</div>
                                         <div className="grid grid-cols-2 gap-2">
                                             {child.children?.map((subChild) => (
                                                 <Link
                                                     key={subChild.label}
                                                     to={buildPath('/lectures', { ...node.query, ...child.query, ...subChild.query })}
-                                                    className="text-sm text-slate-500 py-1"
+                                                    className="text-sm text-slate-500 dark:text-slate-400 py-1"
                                                 >
                                                     {subChild.label}
                                                 </Link>
@@ -255,16 +258,16 @@ const Header = () => {
                         </div>
                     ))}
 
-                    <Link to="/academies" className="text-lg font-semibold text-slate-900">훈련기관</Link>
+                    <Link to="/academies" className="text-lg font-semibold text-slate-900 dark:text-white">훈련기관</Link>
 
                     <div>
-                        <div className="text-lg font-semibold text-slate-900 mb-2">커뮤니티</div>
-                        <div className="pl-4 space-y-2 border-l-2 border-slate-100">
+                        <div className="text-lg font-semibold text-slate-900 dark:text-white mb-2">커뮤니티</div>
+                        <div className="pl-4 space-y-2 border-l-2 border-slate-100 dark:border-slate-800">
                             {rawCommunityNav.children?.map((child) => (
                                 <Link
                                     key={child.label}
                                     to={buildPath('/community', child.query)}
-                                    className="block text-slate-600 py-1"
+                                    className="block text-slate-600 dark:text-slate-400 py-1"
                                 >
                                     {child.label}
                                 </Link>
