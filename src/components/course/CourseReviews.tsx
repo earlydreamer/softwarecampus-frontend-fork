@@ -70,7 +70,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
             // 롤백용 컨텍스트 반환
             return { previousLikeCounts, previousLikingReviews };
         },
-        onError: (error: any, _variables, context) => {
+        onError: (error: import('axios').AxiosError, _variables, context) => {
             console.error('Failed to like review:', error);
             
             // 롤백: 이전 상태로 복원
