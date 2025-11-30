@@ -12,7 +12,10 @@ const BookmarksTab = () => {
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">평균 평점</p>
                     <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                        {(bookmarkedCourses.reduce((sum, c) => sum + c.rating, 0) / bookmarkedCourses.length).toFixed(1)}
+                        {bookmarkedCourses.length > 0 
+                            ? (bookmarkedCourses.reduce((sum, c) => sum + c.rating, 0) / bookmarkedCourses.length).toFixed(1)
+                            : '0.0'
+                        }
                     </p>
                 </div>
             </div>
