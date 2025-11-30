@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Mail, KeyRound, CheckCircle, ArrowLeft } from 'lucide-react';
 import { sendPasswordResetCode, verifyPasswordResetCode } from '../services/authService';
 import apiClient from '../services/api/client';
+import { validatePassword, PASSWORD_MIN_LENGTH } from '../utils/validation';
 
 type Step = 'email' | 'verify' | 'newPassword' | 'complete';
 
@@ -66,22 +67,10 @@ const ForgotPasswordPage = () => {
         e.preventDefault();
         setError('');
 
-        // 비밀번호 확인
-        if (newPassword !== confirmPassword) {
-            setError('비밀번호가 일치하지 않습니다.');
-            return;
-        }
-
-        // 비밀번호 강도 확인
-        if (newPassword.length < 8) {
-            setError('비밀번호는 8자 이상이어야 합니다.');
-            return;
-        }
-
-        // 비밀번호 규칙 검증 (영문, 숫자, 특수문자 포함)
-        const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
-        if (!passwordRegex.test(newPassword)) {
-            setError('비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.');
+        // 비밀번호 유효성 검사 (유틸리티 함수 사용)
+        const validation = validatePassword(newPassword, confirmPassword);
+        if (!validation.isValid) {
+            setError(validation.error!);
             return;
         }
 
@@ -291,7 +280,7 @@ const ForgotPasswordPage = () => {
                         </div>
                         <button
                             type="submit"
-                            disabled={isLoading || newPassword.length < 8 || newPassword !== confirmPassword}
+                            disabled={isLoading || newPassword.length < PASSWORD_MIN_LENGTH || newPassword !== confirmPassword}
                             className="w-full btn-primary py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? '변경 중...' : '비밀번호 변경'}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { verifyCurrentPassword, sendPasswordChangeCode, changePassword } from '../../../services/authService';
 import { useAuthStore } from '../../../store/authStore';
+import { getPasswordStrengthChecks, type PasswordStrengthChecks } from '../../../utils/validation';
 
 export type Step = 1 | 2 | 3;
 
@@ -132,13 +133,8 @@ export const useChangePassword = (onClose: () => void) => {
         }
     }, [verificationCode, handleClose]);
 
-    // 비밀번호 강도 체크
-    const passwordChecks = {
-        length: (newPassword?.length || 0) >= 8,
-        letter: /[A-Za-z]/.test(newPassword || ''),
-        number: /\d/.test(newPassword || ''),
-        special: /[!@#$%^&*()\-_=+[\]{}|;:'",.<>/?~]/.test(newPassword || ''),
-    };
+    // 비밀번호 강도 체크 (유틸리티 함수 사용)
+    const passwordChecks: PasswordStrengthChecks = getPasswordStrengthChecks(newPassword || '');
 
     return {
         // 상태

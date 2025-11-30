@@ -2,18 +2,12 @@ import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import type { Step3FormData } from './useChangePassword';
-
-interface PasswordChecks {
-    length: boolean;
-    letter: boolean;
-    number: boolean;
-    special: boolean;
-}
+import type { PasswordStrengthChecks } from '../../../utils/validation';
 
 interface StepNewPasswordProps {
     form: UseFormReturn<Step3FormData>;
     newPassword: string;
-    passwordChecks: PasswordChecks;
+    passwordChecks: PasswordStrengthChecks;
     isLoading: boolean;
     error: string | null;
     onSubmit: (data: Step3FormData) => Promise<void>;
