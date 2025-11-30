@@ -25,6 +25,7 @@ const DeleteAccountModal = ({ isOpen, onClose, onConfirm, isPending }: DeleteAcc
                 <div className="flex justify-end gap-3 pt-4">
                     <button
                         onClick={onClose}
+                        aria-label="회원 탈퇴 취소"
                         className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
                     >
                         취소
@@ -32,6 +33,7 @@ const DeleteAccountModal = ({ isOpen, onClose, onConfirm, isPending }: DeleteAcc
                     <button
                         onClick={onConfirm}
                         disabled={isPending}
+                        aria-label={isPending ? '회원 탈퇴 처리 중' : '회원 탈퇴 확인'}
                         className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
                     >
                         {isPending ? '처리 중...' : '탈퇴하기'}
