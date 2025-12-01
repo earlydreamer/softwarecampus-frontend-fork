@@ -23,6 +23,8 @@ interface ApiCourseListResponse {
     isNailbaeum: boolean;
     isOffline: boolean;
     imageUrl?: string;
+    rating?: number;
+    reviewCount?: number;
 }
 
 interface HomeCoursesResponse {
@@ -80,8 +82,8 @@ export const fetchHomeCourseSections = async () => {
             // 프론트엔드 전용 필드
             duration: calculateDuration(apiCourse.courseStart, apiCourse.courseEnd),
             format: apiCourse.isOffline ? '오프라인' : '온라인',
-            rating: 0,
-            reviewCount: 0,
+            rating: apiCourse.rating || 0,
+            reviewCount: apiCourse.reviewCount || 0,
             tags: [],
             imageUrl: apiCourse.imageUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
             description: `${apiCourse.name} 과정입니다.`,
