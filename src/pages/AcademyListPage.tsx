@@ -151,7 +151,9 @@ const AcademyListPage = () => {
                                             </div>
                                             <div>
                                                 <div className="text-xs text-slate-500 dark:text-slate-400">평점</div>
-                                                <div className="text-sm font-bold text-slate-900 dark:text-white">{academy.rating}/5.0</div>
+                                                <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                                    {(academy.reviewCount || 0) > 0 ? `${academy.rating}/5.0` : '없음'}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

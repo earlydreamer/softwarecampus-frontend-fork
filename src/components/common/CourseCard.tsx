@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Course } from '../../types';
 import { Star, MessageSquare } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
-import { getCourseDurationInfo, getCourseStatus } from '../../utils/dateUtils';
+import { getCourseDurationInfo, getCourseStatus, type CourseStatus } from '../../utils/dateUtils';
 
 interface CourseCardProps {
     course: Course;
@@ -24,28 +24,24 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
     );
 
     const getStatusBadge = () => {
-        switch (status) {
-            case 'RECRUITING':
-                return (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/90 text-white backdrop-blur-sm shadow-sm">
-                        모집중
-                    </span>
-                );
-            case 'IN_PROGRESS':
-                return (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/90 text-white backdrop-blur-sm shadow-sm">
-                        진행중
-                    </span>
-                );
-            case 'ENDED':
-                return (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/90 text-white backdrop-blur-sm shadow-sm">
-                        종료
-                    </span>
-                );
-            default:
-                return null;
+        const statusConfig: Partial<Record<CourseStatus, { label: string; color: string }>> = {
+            RECRUITING: { label: '모집중', color: 'bg-blue-500/90' },
+            IN_PROGRESS: { label: '진행중', color: 'bg-green-500/90' },
+            ENDED: { label: '종료', color: 'bg-slate-500/90' },
+        };
+
+        const config = statusConfig[status];
+        if (!config) {
+            return null;
         }
+
+        const baseClasses = 'px-2.5 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm shadow-sm';
+
+        return (
+            <span className={`${baseClasses} ${config.color}`}>
+                {config.label}
+            </span>
+        );
     };
 
     return (

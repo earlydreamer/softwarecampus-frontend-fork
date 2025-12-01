@@ -95,16 +95,21 @@ export const getCourseStatus = (
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 시간 제거
 
-    const rStart = new Date(recruitStart);
-    const rEnd = new Date(recruitEnd);
-    const cStart = new Date(courseStart);
-    const cEnd = new Date(courseEnd);
+    // Appending 'T00:00:00' ensures dates are parsed in the local timezone,
+    // preventing bugs related to UTC conversion of 'YYYY-MM-DD' strings.
+    const parseDate = (dateStr: string) => (dateStr ? new Date(`${dateStr}T00:00:00`) : null);
 
-    if (today >= rStart && today <= rEnd) {
+    const rStart = parseDate(recruitStart);
+    const rEnd = parseDate(recruitEnd);
+    const cStart = parseDate(courseStart);
+    const cEnd = parseDate(courseEnd);
+
+    if (rStart && rEnd && today >= rStart && today <= rEnd) {
         return 'RECRUITING';
-    } else if (today >= cStart && today <= cEnd) {
+    } else if (cStart && today >= cStart && (!cEnd || today <= cEnd)) {
+        // A course is in progress if it has started and has not ended (or has no end date).
         return 'IN_PROGRESS';
-    } else if (today > cEnd) {
+    } else if (cEnd && today > cEnd) {
         return 'ENDED';
     } else {
         return 'UPCOMING'; // 모집 전이거나 모집 종료 후 교육 시작 전

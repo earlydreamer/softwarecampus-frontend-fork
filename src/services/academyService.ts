@@ -22,9 +22,9 @@ const mapDtoToAcademy = (dto: ApiAcademyResponse): Academy => {
         phone: undefined,
         website: undefined,
         establishedDate: dto.createdAt,
-        courseCount: 0, // 실제 과정 수는 별도 API로 가져올 수 있음
-        rating: 4.5,
-        reviewCount: 0,
+        courseCount: dto.courseCount ?? 0,
+        rating: dto.rating ?? 0.0,
+        reviewCount: dto.reviewCount ?? 0,
         isRecruiting: false,
         fields: [],
     };

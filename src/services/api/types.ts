@@ -32,6 +32,8 @@ export interface ApiCourseResponse {
 
     approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
     approvedAt?: string; // LocalDateTime -> ISO string
+    rating?: number;
+    reviewCount?: number;
 }
 
 export interface ApiCourseDetailResponse extends ApiCourseResponse {
@@ -105,6 +107,9 @@ export interface ApiAcademyResponse {
     createdAt: string;
     updatedAt: string;
     attachedFiles: ApiAcademyFileInfo[];
+    courseCount?: number;
+    rating?: number;
+    reviewCount?: number;
 }
 
 export interface ApiAcademyFileInfo {
