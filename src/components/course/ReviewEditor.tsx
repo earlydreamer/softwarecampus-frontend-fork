@@ -132,6 +132,7 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
                                         key={star}
                                         type="button"
                                         onClick={() => handleScoreChange(index, star)}
+                                        aria-label={`${SECTION_LABELS[section.sectionType]} ${star}점`}
                                         className={`p-1 transition-colors ${star <= section.score ? 'text-yellow-400' : 'text-gray-300'
                                             }`}
                                     >
@@ -179,6 +180,7 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
                             type="button"
                             className="absolute top-1 right-1 h-6 w-6 bg-white/80 hover:bg-white rounded-full z-10 flex items-center justify-center transition-colors"
                             onClick={removeFile}
+                            aria-label="첨부 파일 삭제"
                         >
                             <X className="h-4 w-4" />
                         </button>
