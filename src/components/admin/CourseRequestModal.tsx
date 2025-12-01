@@ -40,6 +40,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         courseStart: '',
         courseEnd: '',
         cost: 0,
+        classDay: '평일', // 기본값: 평일
         isKdt: false,
         isNailbaeum: false,
         isOffline: false,
@@ -53,10 +54,12 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     // 카테고리 목록 상태
     const [categories, setCategories] = useState<CourseCategoryResponse[]>([]);
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [categoryLoadError, setCategoryLoadError] = useState<string | null>(null);
     
     // 기관 목록 상태 (관리자용)
     const [academies, setAcademies] = useState<AdminAcademy[]>([]);
     const [isLoadingAcademies, setIsLoadingAcademies] = useState(false);
+    const [academyLoadError, setAcademyLoadError] = useState<string | null>(null);
 
     // blob URL을 추적하기 위한 ref
     const blobUrlRef = useRef<string | null>(null);
@@ -66,15 +69,17 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         if (isOpen && isAdmin) {
             const loadAcademies = async () => {
                 setIsLoadingAcademies(true);
+                setAcademyLoadError(null);
                 try {
                     const { academies } = await getAdminAcademies('APPROVED');
                     setAcademies(academies);
-                    // 첫 번째 기관을 기본값으로 설정
-                    if (academies.length > 0 && !form.selectedAcademyId) {
-                        setForm(prev => ({ ...prev, selectedAcademyId: academies[0].id }));
+                    // 첫 번째 기관을 기본값으로 설정 (함수형 업데이트로 stale closure 방지)
+                    if (academies.length > 0) {
+                        setForm(prev => prev.selectedAcademyId ? prev : { ...prev, selectedAcademyId: academies[0].id });
                     }
                 } catch (err) {
                     console.error('기관 목록 로드 실패:', err);
+                    setAcademyLoadError('기관 목록을 불러오는데 실패했습니다.');
                 } finally {
                     setIsLoadingAcademies(false);
                 }
@@ -88,6 +93,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         if (isOpen) {
             const loadCategories = async () => {
                 setIsLoadingCategories(true);
+                setCategoryLoadError(null);
                 try {
                     // 대상(target)에 따라 카테고리 타입 결정
                     const categoryType: CategoryType = form.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
@@ -99,6 +105,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     }
                 } catch (err) {
                     console.error('카테고리 로드 실패:', err);
+                    setCategoryLoadError('카테고리 목록을 불러오는데 실패했습니다.');
                 } finally {
                     setIsLoadingCategories(false);
                 }
@@ -131,6 +138,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     courseStart: '',
                     courseEnd: '',
                     cost: 0,
+                    classDay: '평일', // 기본값
                     isKdt: false,
                     isNailbaeum: false,
                     isOffline: false,
@@ -180,7 +188,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                 previousFocusRef.current?.focus();
             };
         }
-    }, [isOpen, initialData, onClose]);
+    }, [isOpen, initialData, onClose, defaultAcademyId]);
 
     // Cleanup blob URL on unmount only
     useEffect(() => {
@@ -306,10 +314,12 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                 value={form.selectedAcademyId || ''}
                                 onChange={e => setForm({ ...form, selectedAcademyId: Number(e.target.value) })}
                                 disabled={isLoadingAcademies}
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none disabled:opacity-50"
+                                className={`w-full px-4 py-2 rounded-lg border ${academyLoadError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none disabled:opacity-50`}
                             >
                                 {isLoadingAcademies ? (
                                     <option value="">로딩 중...</option>
+                                ) : academyLoadError ? (
+                                    <option value="">기관 목록 로드 실패</option>
                                 ) : academies.length === 0 ? (
                                     <option value="">승인된 기관이 없습니다</option>
                                 ) : (
@@ -320,6 +330,9 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                     ))
                                 )}
                             </select>
+                            {academyLoadError && (
+                                <p className="mt-1 text-sm text-red-500">{academyLoadError}</p>
+                            )}
                         </div>
                     )}
 
@@ -371,10 +384,12 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                 value={form.category || ''}
                                 onChange={e => setForm({ ...form, category: e.target.value })}
                                 disabled={isLoadingCategories}
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none disabled:opacity-50"
+                                className={`w-full px-4 py-2 rounded-lg border ${categoryLoadError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none disabled:opacity-50`}
                             >
                                 {isLoadingCategories ? (
                                     <option value="">로딩 중...</option>
+                                ) : categoryLoadError ? (
+                                    <option value="">카테고리 로드 실패</option>
                                 ) : categories.length === 0 ? (
                                     <option value="">카테고리 없음</option>
                                 ) : (
@@ -385,6 +400,9 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                     ))
                                 )}
                             </select>
+                            {categoryLoadError && (
+                                <p className="mt-1 text-sm text-red-500">{categoryLoadError}</p>
+                            )}
                         </div>
                     </div>
 
@@ -449,7 +467,26 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
                             />
                         </div>
-                        <div className="flex flex-col gap-2 justify-center">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                수업 요일
+                            </label>
+                            <select
+                                value={form.classDay || '평일'}
+                                onChange={e => setForm({ ...form, classDay: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
+                            >
+                                <option value="평일">평일</option>
+                                <option value="주말">주말</option>
+                                <option value="평일+주말">평일+주말</option>
+                                <option value="월수금">월수금</option>
+                                <option value="화목">화목</option>
+                                <option value="자유 선택">자유 선택</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2 flex flex-col gap-2">
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
                                     type="checkbox"
