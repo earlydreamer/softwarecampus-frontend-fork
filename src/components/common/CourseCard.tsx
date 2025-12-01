@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Course } from '../../types';
 import { Star, MessageSquare } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
-import { getCourseDurationInfo } from '../../utils/dateUtils';
+import { getCourseDurationInfo, getCourseStatus } from '../../utils/dateUtils';
 
 interface CourseCardProps {
     course: Course;
@@ -15,6 +15,38 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
         course.courseStart || '',
         course.courseEnd || ''
     );
+
+    const status = getCourseStatus(
+        course.recruitStart || '',
+        course.recruitEnd || '',
+        course.courseStart || '',
+        course.courseEnd || ''
+    );
+
+    const getStatusBadge = () => {
+        switch (status) {
+            case 'RECRUITING':
+                return (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/90 text-white backdrop-blur-sm shadow-sm">
+                        모집중
+                    </span>
+                );
+            case 'IN_PROGRESS':
+                return (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/90 text-white backdrop-blur-sm shadow-sm">
+                        진행중
+                    </span>
+                );
+            case 'ENDED':
+                return (
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/90 text-white backdrop-blur-sm shadow-sm">
+                        종료
+                    </span>
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
         <div className="glass-panel rounded-xl overflow-hidden hover:scale-[1.02] transition-transform duration-300 group">
@@ -34,6 +66,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800/80 text-white backdrop-blur-sm shadow-sm">
                             {course.format}
                         </span>
+                    </div>
+
+                    <div className="absolute top-3 right-3 flex gap-2">
+                        {getStatusBadge()}
                     </div>
                 </div>
 

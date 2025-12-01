@@ -39,8 +39,8 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         approvedAt: dto.approvedAt,
 
         // UI fields (Default values or mapped)
-        rating: 0, // Backend does not provide rating yet
-        reviewCount: 0, // Backend does not provide review count yet
+        rating: dto.rating ?? 0,
+        reviewCount: dto.reviewCount ?? 0,
         imageUrl: DEFAULT_COURSE_IMAGE, // Placeholder image
         description: dto.requirement,
         format: dto.offline ? '오프라인' : '온라인',
@@ -53,10 +53,11 @@ export interface CourseFilterParams {
     categoryId?: number; // 세부 카테고리 ID (예: 33=백엔드)
     categoryType?: CategoryType | 'ALL';
     isOffline?: boolean;
+    status?: 'RECRUITING' | 'IN_PROGRESS' | 'ENDED';
 }
 
 export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course[]> => {
-    const { categoryType, categoryId, keyword, isOffline } = filters || {};
+    const { categoryType, categoryId, keyword, isOffline, status } = filters || {};
 
     let courses: ApiCourseResponse[] = [];
 
@@ -67,6 +68,7 @@ export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course
         if (categoryId) params.categoryId = categoryId;
         if (categoryType && categoryType !== 'ALL') params.categoryType = categoryType;
         if (isOffline !== undefined) params.isOffline = isOffline;
+        if (status) params.status = status;
 
         console.log(`[fetchCourses] Requesting /api/courses with params:`, params);
 

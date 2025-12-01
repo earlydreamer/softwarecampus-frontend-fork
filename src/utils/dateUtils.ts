@@ -80,3 +80,33 @@ export const getCourseDurationInfo = (startDate: string, endDate: string): { dur
         months: calculateMonths(startDate, endDate),
     };
 };
+
+export type CourseStatus = 'RECRUITING' | 'IN_PROGRESS' | 'ENDED' | 'UPCOMING';
+
+/**
+ * 현재 날짜 기준으로 과정 상태 반환
+ */
+export const getCourseStatus = (
+    recruitStart: string,
+    recruitEnd: string,
+    courseStart: string,
+    courseEnd: string
+): CourseStatus => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // 시간 제거
+
+    const rStart = new Date(recruitStart);
+    const rEnd = new Date(recruitEnd);
+    const cStart = new Date(courseStart);
+    const cEnd = new Date(courseEnd);
+
+    if (today >= rStart && today <= rEnd) {
+        return 'RECRUITING';
+    } else if (today >= cStart && today <= cEnd) {
+        return 'IN_PROGRESS';
+    } else if (today > cEnd) {
+        return 'ENDED';
+    } else {
+        return 'UPCOMING'; // 모집 전이거나 모집 종료 후 교육 시작 전
+    }
+};
