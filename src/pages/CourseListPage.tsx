@@ -212,7 +212,7 @@ const CourseListPage: React.FC = () => {
         [currentFilters]
     );
 
-    const { data: courses = [], isLoading, isError } = useQuery({
+    const { data: courses = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['courses', queryFilters],
         queryFn: () => fetchCourses(queryFilters)
     });
@@ -275,6 +275,17 @@ const CourseListPage: React.FC = () => {
                 </section>
 
                 {isError ? (
+                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
+                        <p className="text-slate-500 dark:text-slate-400 mb-4">데이터를 불러오는 데 실패했습니다.</p>
+                        <button
+                            type="button"
+                            onClick={() => refetch()}
+                            className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
+                        >
+                            다시 시도
+                        </button>
+                    </div>
+                ) : noResult ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
                         <p className="text-slate-500 dark:text-slate-400">데이터를 불러오는 데 실패했습니다.</p>
                     </div>
