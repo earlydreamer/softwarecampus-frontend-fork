@@ -8,6 +8,7 @@ import { BOARD_CATEGORY_LABELS } from '../types';
 import {
     fetchBoardPost,
     recommendBoardPost,
+    cancelRecommendBoardPost,
     createComment,
     updateComment,
     deleteComment,
@@ -62,6 +63,22 @@ const CommunityDetailPage = () => {
         },
         onError: (error: Error) => {
             alert(error.message);
+        },
+    });
+
+    // 추천 취소 mutation
+    const cancelRecommendMutation = useMutation({
+        mutationFn: () => {
+            if (!isAuthenticated) {
+                throw new Error('로그인이 필요한 서비스입니다.');
+            }
+            return cancelRecommendBoardPost(postIdNumber);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
+        },
+        onError: (error: Error) => {
+            alert(error.message || '추천 취소에 실패했습니다.');
         },
     });
 
@@ -418,20 +435,22 @@ const CommunityDetailPage = () => {
                                     navigate('/login', { state: { from: `/community/${postIdNumber}` } });
                                     return;
                                 }
-                                if (!post.like) {
+                                if (post.like) {
+                                    cancelRecommendMutation.mutate();
+                                } else {
                                     recommendMutation.mutate();
                                 }
                             }}
-                            disabled={post.like || recommendMutation.isPending}
-                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 ${post.like
-                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50'
+                            disabled={recommendMutation.isPending || cancelRecommendMutation.isPending}
+                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 cursor-pointer ${post.like
+                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50 hover:from-blue-600 hover:to-indigo-700'
                                 : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
                                 }`}
                         >
                             <ThumbsUp className={`w-10 h-10 ${!post.like && 'group-hover:animate-bounce'}`} />
                             <div className="text-center">
                                 <div className="font-bold text-lg">
-                                    {post.like ? '추천했습니다' : '추천하기'}
+                                    {post.like ? '추천 취소' : '추천하기'}
                                 </div>
                                 <div className="text-2xl font-bold mt-1">{post.likeCount || 0}</div>
                             </div>
