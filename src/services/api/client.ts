@@ -71,9 +71,9 @@ apiClient.interceptors.request.use(
                     return config;
                 }
 
-                // 토큰 갱신이 필요한지 확인 (만료 1분 전)
+                // 토큰 갱신이 필요한지 확인 (만료 2분 전)
                 const now = Date.now();
-                const isExpiringSoon = expiresAt && (expiresAt - now < 60 * 1000);
+                const isExpiringSoon = expiresAt && (expiresAt - now < 120 * 1000);
 
                 // 갱신 요청이 아니고, 리프레시 토큰이 있고, 만료가 임박했으면 갱신 시도
                 if (

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 import type { Comment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import {
@@ -20,9 +21,7 @@ const CommunityDetailPage = () => {
 
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-
-    // Mock user (TODO: 실제 인증 시스템으로 대체)
-    const user = { id: 1, userName: '현재사용자' };
+    const { user, isAuthenticated } = useAuthStore();
 
     const [commentContent, setCommentContent] = useState('');
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
@@ -42,7 +41,7 @@ const CommunityDetailPage = () => {
     // 추천 mutation
     const recommendMutation = useMutation({
         mutationFn: () => {
-            if (!user?.id) {
+            if (!isAuthenticated) {
                 throw new Error('로그인이 필요한 서비스입니다.');
             }
             return recommendBoardPost(postIdNumber);
@@ -307,26 +306,25 @@ const CommunityDetailPage = () => {
                     <div className="flex justify-center">
                         <button
                             onClick={() => {
-                                if (!user) {
+                                if (!isAuthenticated) {
                                     alert('로그인이 필요한 서비스입니다.');
+                                    navigate('/login', { state: { from: `/community/${postIdNumber}` } });
                                     return;
                                 }
                                 if (!post.like) {
                                     recommendMutation.mutate();
                                 }
                             }}
-                            disabled={post.like || recommendMutation.isPending || !user}
+                            disabled={post.like || recommendMutation.isPending}
                             className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 ${post.like
                                 ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50'
-                                : !user
-                                    ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400 cursor-not-allowed'
-                                    : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
+                                : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
                                 }`}
                         >
                             <ThumbsUp className={`w-10 h-10 ${!post.like && 'group-hover:animate-bounce'}`} />
                             <div className="text-center">
                                 <div className="font-bold text-lg">
-                                    {post.like ? '추천했습니다' : !user ? '로그인 필요' : '추천하기'}
+                                    {post.like ? '추천했습니다' : '추천하기'}
                                 </div>
                                 <div className="text-2xl font-bold mt-1">{post.likeCount || 0}</div>
                             </div>
@@ -342,36 +340,51 @@ const CommunityDetailPage = () => {
                     </h2>
 
                     {/* 댓글 작성 폼 */}
-                    <form onSubmit={handleCommentSubmit} className="mb-8">
-                        <div className="mb-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    댓글 작성
-                                </label>
-                                <span className="text-xs text-slate-500">
-                                    {commentContent.length}/500
-                                </span>
+                    {isAuthenticated ? (
+                        <form onSubmit={handleCommentSubmit} className="mb-8">
+                            <div className="mb-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        댓글 작성
+                                    </label>
+                                    <span className="text-xs text-slate-500">
+                                        {commentContent.length}/500
+                                    </span>
+                                </div>
+                                <textarea
+                                    value={commentContent}
+                                    onChange={(e) => setCommentContent(e.target.value)}
+                                    placeholder="댓글을 입력하세요..."
+                                    maxLength={500}
+                                    className="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:text-white resize-none transition-all"
+                                    rows={4}
+                                />
                             </div>
-                            <textarea
-                                value={commentContent}
-                                onChange={(e) => setCommentContent(e.target.value)}
-                                placeholder="댓글을 입력하세요..."
-                                maxLength={500}
-                                className="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:text-white resize-none transition-all"
-                                rows={4}
-                            />
-                        </div>
-                        <div className="flex justify-end">
-                            <button
-                                type="submit"
-                                disabled={!commentContent.trim() || createCommentMutation.isPending}
-                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl"
+                            <div className="flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={!commentContent.trim() || createCommentMutation.isPending}
+                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl"
+                                >
+                                    <Send className="w-4 h-4" />
+                                    댓글 작성
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="mb-8 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-center">
+                            <p className="text-slate-600 dark:text-slate-400 mb-3">
+                                댓글을 작성하려면 로그인이 필요합니다.
+                            </p>
+                            <Link
+                                to="/login"
+                                state={{ from: `/community/${postIdNumber}` }}
+                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
                             >
-                                <Send className="w-4 h-4" />
-                                댓글 작성
-                            </button>
+                                로그인하기
+                            </Link>
                         </div>
-                    </form>
+                    )}
 
                     {/* 댓글 목록 */}
                     {commentsLoading && (

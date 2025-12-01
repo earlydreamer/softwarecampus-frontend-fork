@@ -1,6 +1,6 @@
 import apiClient from './api/client';
 import type { Board, Comment, BoardCategory } from '../types';
-import type { ApiBoardListResponse, ApiBoardResponseDTO, ApiCommentDTO } from './api/types';
+import type { ApiBoardListResponse, ApiBoardResponseDTO, ApiCommentDTO, SpringPage } from './api/types';
 
 // DTO -> Board 매핑
 const mapDtoToBoard = (dto: ApiBoardResponseDTO): Board => {
@@ -49,46 +49,52 @@ const mapDtoToComment = (dto: ApiCommentDTO): Comment => {
 
 /**
  * 게시글 목록 조회
+ * 백엔드 파라미터: pageNo, searchText (page, keyword 아님!)
  */
 export const fetchBoardPosts = async (
     category?: BoardCategory,
     page: number = 1,
-    limit: number = 20,
+    _limit: number = 20,  // 백엔드 미지원, 무시됨
     searchKeyword?: string,
-    _sortType?: 'latest' | 'popular' | 'views' | 'comments',
+    _sortType?: 'latest' | 'popular' | 'views' | 'comments',  // 백엔드 미지원
     searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment'
-): Promise<{ posts: Board[], total: number }> => {
+): Promise<{ posts: Board[], total: number, totalPages: number }> => {
     try {
-        const params: any = { page, limit };
+        // 백엔드 파라미터명에 맞춤: pageNo, searchText
+        const params: Record<string, any> = { pageNo: page };
         if (category) params.category = category;
-        if (searchKeyword) params.keyword = searchKeyword;
+        if (searchKeyword) params.searchText = searchKeyword;  // keyword → searchText
         if (searchType) params.searchType = searchType;
-        // sortType은 백엔드 지원 여부 확인 필요 (일단 생략)
 
-        const response = await apiClient.get<ApiBoardListResponse[]>('/api/boards', { params });
+        // 백엔드는 Spring Page 객체 반환
+        const response = await apiClient.get<SpringPage<ApiBoardListResponse>>('/api/boards', { params });
 
         // 목록 응답 매핑
-        const posts = response.data.map(dto => ({
+        const posts = response.data.content.map(dto => ({
             id: dto.id,
             title: dto.title,
             text: '', // 목록에는 본문 없음
             category: dto.category as BoardCategory,
             account: {
-                id: 0, // 목록에는 작성자 ID 없음
+                id: dto.accountId,
                 userName: dto.userNickName,
             },
-            hits: 0, // 목록에는 조회수 없음? (DTO 확인 필요)
+            hits: 0, // 목록에서 미제공
             secret: dto.secret,
             createdAt: dto.createdAt,
-            likeCount: 0, // DTO에 likeCount 없음? (ApiBoardListResponse 확인 필요)
-            like: false, // 목록 API에서는 제공하지 않음
-            commentCount: dto.commentCount,
+            likeCount: 0, // 목록에서 미제공
+            like: false, // 목록에서 미제공
+            commentCount: dto.commentsCount,  // commentsCount로 변경
         } as Board));
 
-        return { posts, total: posts.length }; // 페이징 정보가 헤더나 별도 필드에 있는지 확인 필요
+        return { 
+            posts, 
+            total: response.data.totalElements,
+            totalPages: response.data.totalPages 
+        };
     } catch (error) {
         console.error('Failed to fetch board posts:', error);
-        return { posts: [], total: 0 };
+        return { posts: [], total: 0, totalPages: 0 };
     }
 };
 
@@ -126,17 +132,25 @@ export const recommendBoardPost = async (postId: number): Promise<void> => {
 
 /**
  * 댓글 작성
+ * 백엔드 DTO에서 boardId가 @NotNull이므로 요청 본문에 포함 필요
  */
 export const createComment = async (postId: number, text: string): Promise<Comment> => {
-    const response = await apiClient.post<ApiCommentDTO>(`/api/boards/${postId}/comments`, { text });
+    const response = await apiClient.post<ApiCommentDTO>(`/api/boards/${postId}/comments`, { 
+        boardId: postId,  // 백엔드 @NotNull 필드
+        text 
+    });
     return mapDtoToComment(response.data);
 };
 
 /**
  * 댓글 수정
+ * 백엔드 DTO에서 id가 @NotNull이므로 요청 본문에 포함 필요
  */
 export const updateComment = async (commentId: number, postId: number, text: string): Promise<Comment> => {
-    const response = await apiClient.patch<ApiCommentDTO>(`/api/boards/${postId}/comments/${commentId}`, { text });
+    const response = await apiClient.patch<ApiCommentDTO>(`/api/boards/${postId}/comments/${commentId}`, { 
+        id: commentId,  // 백엔드 @NotNull 필드
+        text 
+    });
     return mapDtoToComment(response.data);
 };
 
@@ -149,22 +163,130 @@ export const deleteComment = async (commentId: number, postId: number): Promise<
 
 /**
  * 게시글 작성
+ * 백엔드는 multipart/form-data 형식 요구 (JSON 아님!)
+ * 필드명: secret (isSecret 아님!)
  */
 export const createBoardPost = async (data: {
     title: string;
     text: string;
     category: BoardCategory;
-    account: { id: number; userName: string; }; // 사용 안함 (토큰 사용)
+    account?: { id: number; userName: string; }; // 사용 안함 (토큰 사용)
     isSecret: boolean;
-    hasAttachment: boolean; // 파일 업로드 별도 처리 필요
-}): Promise<Board> => {
-    // 파일 업로드는 별도 API (/api/boards/upload) 사용 필요
-    // 여기서는 텍스트 데이터만 전송
-    const response = await apiClient.post<ApiBoardResponseDTO>('/api/boards', {
+    hasAttachment?: boolean;
+}, files?: File[]): Promise<Board> => {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('text', data.text);
+    formData.append('category', data.category);
+    formData.append('secret', String(data.isSecret));  // isSecret → secret
+    
+    // 첨부파일 추가
+    if (files && files.length > 0) {
+        files.forEach(file => formData.append('files', file));
+    }
+
+    const response = await apiClient.post('/api/boards', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    
+    // 백엔드는 201 Created + Location 헤더만 반환 (본문 없음)
+    // Location 헤더에서 생성된 게시글 ID 추출
+    const locationHeader = response.headers['location'] || response.headers['Location'];
+    if (locationHeader) {
+        const match = locationHeader.match(/\/api\/boards\/(\d+)/);
+        if (match) {
+            const newPostId = parseInt(match[1], 10);
+            return fetchBoardPost(newPostId);
+        }
+    }
+    
+    // Location 헤더가 없으면 기본 Board 객체 반환
+    return {
+        id: 0,
         title: data.title,
         text: data.text,
         category: data.category,
-        isSecret: data.isSecret,
+        account: { id: 0, userName: '' },
+        hits: 0,
+        secret: data.isSecret,
+        createdAt: new Date().toISOString(),
+        likeCount: 0,
+    };
+};
+
+/**
+ * 게시글 수정
+ * 백엔드는 204 No Content 반환 (본문 없음)
+ */
+export const updateBoardPost = async (
+    postId: number,
+    data: {
+        title?: string;
+        text?: string;
+        secret?: boolean;
+    },
+    files?: File[]
+): Promise<Board> => {
+    const formData = new FormData();
+    formData.append('id', String(postId));  // 백엔드 @NotNull 필드
+    if (data.title) formData.append('title', data.title);
+    if (data.text) formData.append('text', data.text);
+    formData.append('secret', String(data.secret ?? false));
+    
+    if (files && files.length > 0) {
+        files.forEach(file => formData.append('files', file));
+    }
+
+    await apiClient.patch(`/api/boards/${postId}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
     });
-    return mapDtoToBoard(response.data);
+    
+    // 백엔드가 204 No Content 반환하므로 수정된 게시글 다시 조회
+    return fetchBoardPost(postId);
+};
+
+/**
+ * 게시글 삭제
+ */
+export const deleteBoardPost = async (postId: number): Promise<void> => {
+    await apiClient.delete(`/api/boards/${postId}`);
+};
+
+/**
+ * 게시글 추천 취소
+ */
+export const cancelRecommendBoardPost = async (postId: number): Promise<void> => {
+    await apiClient.delete(`/api/boards/${postId}/recommends`);
+};
+
+/**
+ * 첨부파일 다운로드
+ */
+export const downloadBoardAttachment = async (
+    boardId: number,
+    attachId: number
+): Promise<Blob> => {
+    const response = await apiClient.get(
+        `/api/boards/${boardId}/boardAttachs/${attachId}/download`,
+        { responseType: 'blob' }
+    );
+    return response.data;
+};
+
+/**
+ * 댓글 추천
+ */
+export const recommendComment = async (boardId: number, commentId: number): Promise<void> => {
+    await apiClient.post(`/api/boards/${boardId}/comments/${commentId}/recommends`);
+};
+
+/**
+ * 댓글 추천 취소
+ */
+export const cancelRecommendComment = async (boardId: number, commentId: number): Promise<void> => {
+    await apiClient.delete(`/api/boards/${boardId}/comments/${commentId}/recommends`);
 };

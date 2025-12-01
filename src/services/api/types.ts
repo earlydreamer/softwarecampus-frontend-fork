@@ -158,6 +158,7 @@ export interface ApiCourseQnaResponse {
 
 /**
  * 게시글 목록 응답 DTO (BoardListResponseDTO)
+ * 백엔드 필드명: commentsCount (commentCount 아님!)
  */
 export interface ApiBoardListResponse {
     id: number;
@@ -166,8 +167,22 @@ export interface ApiBoardListResponse {
     secret: boolean;
     userNickName: string;
     accountId: number;
-    commentCount: number;
+    commentsCount: number;  // 백엔드 필드명
     createdAt: string;
+}
+
+/**
+ * Spring Data Page 응답 구조
+ */
+export interface SpringPage<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number;  // 0-indexed 현재 페이지
+    size: number;
+    first: boolean;
+    last: boolean;
+    empty: boolean;
 }
 
 /**

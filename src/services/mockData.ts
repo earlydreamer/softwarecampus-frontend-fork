@@ -1,4 +1,4 @@
-import type { Banner, Course, CommunityPost, Board, BoardCategory, Academy, CourseQna, AcademyQA } from '../types';
+import type { Banner, Course, CommunityPost, Academy, CourseQna, AcademyQA } from '../types';
 
 // ===== Mock Banners =====
 export const mockBanners: Banner[] = [
@@ -443,43 +443,7 @@ export const mockCourses: Course[] = [
     }
 ];
 
-// ===== Mock Community Posts =====
-export const mockCommunityPosts: CommunityPost[] = Array.from({ length: 6 }).map((_, i) => ({
-    id: i + 1,
-    title: `커뮤니티 게시글 제목 ${i + 1}`,
-    account: {
-        userName: `사용자${i + 1}`,
-    },
-    likeCount: Math.floor(Math.random() * 50),
-    viewCount: Math.floor(Math.random() * 500),
-    commentCount: Math.floor(Math.random() * 20),
-    category: i % 4 === 0 ? 'NOTICE' : i % 4 === 1 ? 'QUESTION' : i % 4 === 2 ? 'COURSE_STORY' : 'CODING_STORY',
-    categoryName: i % 4 === 0 ? '공지사항' : i % 4 === 1 ? '문의사항' : i % 4 === 2 ? '진로이야기' : '코딩이야기',
-    createdAt: '2024-03-15',
-}));
-
-// ===== Mock Board Posts =====
-export const mockBoardPosts: Board[] = Array.from({ length: 20 }).map((_, i) => ({
-    id: i + 1,
-    title: `게시글 제목 ${i + 1}`,
-    text: `게시글 내용입니다. ${i + 1}`,
-    category: i % 4 === 0 ? 'NOTICE' : i % 4 === 1 ? 'QUESTION' : i % 4 === 2 ? 'COURSE_STORY' : 'CODING_STORY',
-    account: {
-        id: i + 1,
-        userName: `User${i + 1}`,
-        avatar: `https://i.pravatar.cc/150?u=${i}`
-    },
-    hits: 100 + i * 10,
-    secret: false,
-    createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - i * 86400000).toISOString(),
-    likeCount: 10 + i,
-    commentCount: i % 5,
-    hasAttachment: i % 4 === 0
-}));
-
-// mockCourseReviews는 타입 변경으로 인해 제거되었습니다.
-// 실제 API를 사용하세요: courseService.fetchCourseReviews()
+// mockCommunityPosts, mockBoardPosts는 communityService.ts의 실제 API로 대체되었습니다.
 
 // ===== Mock Course Q&A =====
 export const mockCourseQnAs: CourseQna[] = Array.from({ length: 15 }).map((_, i) => ({
@@ -562,10 +526,7 @@ export const fetchHomeCourseSections = async () => {
     };
 };
 
-export const fetchCommunityHighlights = async (): Promise<CommunityPost[]> => {
-    await new Promise(resolve => setTimeout(resolve, 600));
-    return mockCommunityPosts;
-};
+// fetchCommunityHighlights는 homeApi.ts의 실제 API로 대체되었습니다.
 
 export const fetchCourses = async (filters: any): Promise<Course[]> => {
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -611,78 +572,7 @@ export const fetchCoursesByAcademyId = async (academyId: number): Promise<Course
     return mockCourses.filter(c => c.academy.id === academyId);
 };
 
-export const fetchBoardPosts = async (
-    category?: BoardCategory,
-    page: number = 1,
-    limit: number = 20,
-    searchKeyword?: string,
-    sortType?: 'latest' | 'popular' | 'views' | 'comments',
-    searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment'
-) => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    let filtered = [...mockBoardPosts];
-
-    // 카테고리 필터
-    if (category) {
-        filtered = filtered.filter(p => p.category === category);
-    }
-
-    // 검색 필터 (검색 기준에 따라)
-    if (searchKeyword && searchKeyword.trim()) {
-        const keyword = searchKeyword.toLowerCase();
-        filtered = filtered.filter(post => {
-            switch (searchType) {
-                case 'title':
-                    return post.title.toLowerCase().includes(keyword);
-                case 'content':
-                    return post.text.toLowerCase().includes(keyword);
-                case 'title_content':
-                    return post.title.toLowerCase().includes(keyword) ||
-                        post.text.toLowerCase().includes(keyword);
-                case 'author':
-                    return post.account.userName.toLowerCase().includes(keyword);
-                case 'comment':
-                    // 댓글 검색은 실제 댓글 데이터가 필요하므로 현재는 제목에서 검색
-                    // TODO: 실제 API 연동 시 댓글 데이터 조인 필요
-                    return post.title.toLowerCase().includes(keyword);
-                case 'all':
-                default:
-                    return post.title.toLowerCase().includes(keyword) ||
-                        post.text.toLowerCase().includes(keyword) ||
-                        post.account.userName.toLowerCase().includes(keyword);
-            }
-        });
-    }
-
-    // 정렬
-    switch (sortType) {
-        case 'latest':
-            filtered.sort((a, b) => b.id - a.id);
-            break;
-        case 'popular':
-            filtered.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-            break;
-        case 'views':
-            filtered.sort((a, b) => b.hits - a.hits);
-            break;
-        case 'comments':
-            filtered.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
-            break;
-        default:
-            filtered.sort((a, b) => b.id - a.id);
-    }
-
-    const start = (page - 1) * limit;
-    const end = start + limit;
-
-    return {
-        posts: filtered.slice(start, end),
-        totalCount: filtered.length
-    };
-};
-
-// fetchCourseReviews는 제거되었습니다.
-// courseService.ts의 실제 API를 사용하세요.
+// fetchBoardPosts, fetchCommunityHighlights는 communityService.ts와 homeApi.ts의 실제 API로 대체되었습니다.
 
 export const fetchCourseQnAs = async (
     courseId: number,

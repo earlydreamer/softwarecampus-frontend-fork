@@ -51,7 +51,7 @@ const CommunityPage = () => {
     // 서버에서 이미 정렬/필터/페이징된 데이터 사용
     const posts = data?.posts || [];
     const totalCount = data?.total || 0;
-    const totalPages = Math.ceil(totalCount / 20);
+    const totalPages = data?.totalPages || Math.ceil(totalCount / 20);
     const startIndex = (currentPage - 1) * 20;
     const endIndex = Math.min(startIndex + 20, totalCount);
 

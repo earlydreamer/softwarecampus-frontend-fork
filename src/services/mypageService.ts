@@ -31,6 +31,10 @@ export const uploadFile = async (file: File, folder: string = 'profile', fileTyp
     formData.append('folder', folder);
     formData.append('fileType', fileType);
 
-    const response = await apiClient.post<{ fileUrl: string; message: string }>('/api/files/upload', formData);
+    const response = await apiClient.post<{ fileUrl: string; message: string }>('/api/files/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
     return response.data.fileUrl;
 };

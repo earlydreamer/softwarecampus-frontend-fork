@@ -6,6 +6,7 @@ import { createBoardPost } from '../services/communityService';
 import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
+import { useAuthStore } from '../store/authStore';
 
 // Tiptap 에디터를 lazy load
 const TiptapEditor = lazy(() => import('../components/editor/TiptapEditor'));
@@ -13,9 +14,15 @@ const TiptapEditor = lazy(() => import('../components/editor/TiptapEditor'));
 const CommunityWritePage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const { user, isAuthenticated } = useAuthStore();
 
-    // Mock user (TODO: 실제 인증 시스템으로 대체)
-    const user = { id: 1, userName: '현재사용자' };
+    // 비로그인 시 로그인 페이지로 리다이렉트
+    useEffect(() => {
+        if (!isAuthenticated) {
+            alert('로그인이 필요한 서비스입니다.');
+            navigate('/login', { state: { from: '/community/write' } });
+        }
+    }, [isAuthenticated, navigate]);
 
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
@@ -71,9 +78,9 @@ const CommunityWritePage = () => {
         setTitleError(null);
         setContentError(null);
 
-        if (!user) {
+        if (!isAuthenticated || !user) {
             setContentError('로그인이 필요한 서비스입니다.');
-            setTimeout(() => navigate('/login'), 1500);
+            setTimeout(() => navigate('/login', { state: { from: '/community/write' } }), 1500);
             return;
         }
 
