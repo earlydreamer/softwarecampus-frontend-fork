@@ -61,7 +61,7 @@ export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course
     let courses: ApiCourseResponse[] = [];
 
     try {
-        // 백엔드 리팩토링: /api/courses with query params
+        // 백엔드 리팩토링: /api/courses with query params (Page 응답)
         const params: any = {};
         if (keyword) params.keyword = keyword;
         if (categoryId) params.categoryId = categoryId;
@@ -70,8 +70,9 @@ export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course
 
         console.log(`[fetchCourses] Requesting /api/courses with params:`, params);
 
-        const response = await apiClient.get<ApiCourseResponse[]>(`/api/courses`, { params });
-        courses = response.data;
+        // 백엔드가 Page<CourseResponseDTO>를 반환하므로 content 배열 추출
+        const response = await apiClient.get<{ content: ApiCourseResponse[] }>(`/api/courses`, { params });
+        courses = response.data.content;
     } catch (error) {
         console.error('Failed to fetch courses:', error);
         throw error;
