@@ -1,9 +1,9 @@
 import apiClient from './api/client';
 
-export type FavoriteCheckResult = 
-    | { favorited: true }
-    | { favorited: false }
-    | { favorited: false; error: string };
+export interface FavoriteCheckResult {
+    favorited: boolean;
+    error?: string;
+}
 
 /**
  * 강의 찜하기 추가
@@ -44,34 +44,36 @@ export const removeCourseFavorite = async (
  * 인증 토큰을 통해 사용자 식별
  * 
  * @returns favorited: true - 찜한 상태
- *          favorited: false - 찜하지 않음 (404)
+ *          favorited: false - 찜하지 않음
  *          favorited: false + error - 서버/네트워크 오류
  */
 export const checkCourseFavorite = async (
     courseId: number
 ): Promise<FavoriteCheckResult> => {
     try {
-        await apiClient.get(
+        const response = await apiClient.get<{ courseId: number; favorited: boolean }>(
             `/api/courses/${courseId}/favorites`
         );
-        return { favorited: true }; // 204 응답 = 찜한 상태
+        // 백엔드 응답 데이터의 favorited 필드 사용
+        return { favorited: response.data.favorited };
     } catch (error: any) {
-        if (error.response?.status === 404) {
-            return { favorited: false }; // 404 응답 = 찜하지 않음
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            // 인증 오류 - 로그인 필요
+            return { favorited: false, error: '로그인이 필요합니다.' };
         }
-        
+
         // 서버/네트워크 오류는 로그 후 에러 정보 반환
-        const errorMessage = error.response?.data?.message 
-            || error.message 
+        const errorMessage = error.response?.data?.message
+            || error.message
             || 'Unknown error occurred';
         console.error(`Failed to check favorite status for course ${courseId}:`, {
             status: error.response?.status,
             message: errorMessage,
             error
         });
-        
-        return { 
-            favorited: false, 
+
+        return {
+            favorited: false,
             error: errorMessage
         };
     }
