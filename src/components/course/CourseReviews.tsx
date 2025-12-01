@@ -4,7 +4,17 @@ import type { CourseReview } from '../../types';
 import { Star, ThumbsUp, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
 import { REVIEW_SECTION_LABELS } from '../../types';
 import { toggleReviewLike } from '../../services/courseService';
+import { sanitizeUrl } from '../../utils/security';
 import AlertModal from '../ui/AlertModal';
+
+type ApiErrorResponse = {
+    response?: {
+        status?: number;
+        data?: {
+            detail?: string;
+        };
+    };
+};
 
 interface CourseReviewsProps {
     reviews: CourseReview[];
@@ -92,7 +102,8 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
             // 롤백용 컨텍스트 반환
             return { previousLikeCounts, previousLikeTypes, previousLikingReviews };
         },
-        onError: (error: any, _variables, context) => {
+        onError: (error: unknown, _variables, context) => {
+            const apiError = error as ApiErrorResponse;
             console.error('Failed to like review:', error);
 
             // 롤백: 이전 상태로 복원
@@ -103,10 +114,10 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
             }
 
             // 401 Unauthorized 체크
-            if (error?.response?.status === 401) {
+            if (apiError.response?.status === 401) {
                 showAlert('로그인 필요', '로그인이 필요합니다.', 'warning');
             } else {
-                const errorMessage = error?.response?.data?.detail || '좋아요 처리 중 오류가 발생했습니다.';
+                const errorMessage = apiError.response?.data?.detail || '좋아요 처리 중 오류가 발생했습니다.';
                 showAlert('오류 발생', errorMessage, 'error');
             }
         },
@@ -326,7 +337,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                                 {review.attachments.map((file) => (
                                                     <a
                                                         key={file.id}
-                                                        href={file.downloadUrl}
+                                                        href={sanitizeUrl(file.downloadUrl || '')}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm text-slate-700 dark:text-slate-300 transition-colors"
