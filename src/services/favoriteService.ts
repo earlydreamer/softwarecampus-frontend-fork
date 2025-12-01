@@ -51,11 +51,12 @@ export const checkCourseFavorite = async (
     courseId: number
 ): Promise<FavoriteCheckResult> => {
     try {
-        const response = await apiClient.get<{ courseId: number; favorited: boolean }>(
+        const response = await apiClient.get<any>(
             `/api/courses/${courseId}/favorites`
         );
-        // 백엔드 응답 데이터의 favorited 필드 사용
-        return { favorited: response.data.favorited };
+        // 백엔드 DTO 필드명은 isFavorite (또는 favorite)일 수 있음
+        const isFav = response.data.isFavorite ?? response.data.favorite ?? response.data.favorited ?? false;
+        return { favorited: isFav };
     } catch (error: any) {
         if (error.response?.status === 401 || error.response?.status === 403) {
             // 인증 오류 - 로그인 필요
