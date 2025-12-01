@@ -42,6 +42,8 @@ interface ApiCourseResponse {
     name: string;
     academyId: number;
     academyName: string;
+    requesterId?: number;    // 등록자 ID (기관 담당자)
+    requesterName?: string;  // 등록자 이름 (기관 담당자)
     categoryId: number;
     categoryName: string;
     categoryType: string;
@@ -67,19 +69,48 @@ interface ApiReviewResponse {
     writerId: number;
     writerName: string;
     courseId: number;
+    courseName: string; // 백엔드에서 제공하는 과정 이름
     comment: string;
     approvalStatus: string;
     averageScore: number;
     likeCount: number;
     dislikeCount: number;
     createdAt: string;
-    // courseName은 백엔드 응답에 포함되지 않을 수 있음 (확인 필요) -> 현재 DTO에는 없음. 
-    // 목록 조회 시 course 정보도 함께 오는지 확인 필요. 
-    // CourseReviewRepository.searchAdminReviews는 EntityGraph에 course를 포함하므로, 
-    // DTO 변환 시 courseName을 추가하는 것이 좋음. 
-    // 하지만 현재 백엔드 DTO에는 courseName이 없음. 
-    // 일단 courseId로 처리하거나 백엔드 DTO 수정 필요.
-    // 여기서는 일단 courseName을 빈 문자열로 처리하거나 추가 요청.
+}
+
+// 페이지네이션 파라미터 타입
+interface PaginationParams {
+    page: number;
+    size: number;
+    sort: string;
+    status?: string;
+    keyword?: string;
+    categoryType?: CategoryType;
+}
+
+// API 사용자 응답 타입
+interface ApiUserResponse {
+    id: number;
+    userName: string;
+    email: string;
+    accountType: string;
+    createdAt: string;
+    lastLoginAt?: string;
+    accountApproved: string;
+    deletedAt?: string;
+}
+
+// API 기관 응답 타입
+interface ApiAcademyResponse {
+    id: number;
+    name: string;
+    businessNumber: string;
+    phoneNumber?: string;
+    email: string;
+    address: string;
+    isApproved: string;
+    createdAt: string;
+    courseCount?: number;
 }
 
 /**
@@ -89,7 +120,7 @@ interface ApiReviewResponse {
 export const getCourseCategories = async (
     categoryType?: CategoryType
 ): Promise<CourseCategoryResponse[]> => {
-    const params: any = {};
+    const params: Partial<Pick<PaginationParams, 'categoryType'>> = {};
     if (categoryType) params.categoryType = categoryType;
 
     const response = await apiClient.get<CourseCategoryResponse[]>(
@@ -116,7 +147,7 @@ export const getCourseApprovalRequests = async (
     page: number = 1,
     size: number = 20
 ): Promise<{ requests: CourseApprovalRequest[]; totalCount: number }> => {
-    const params: any = {
+    const params: Partial<PaginationParams> = {
         page: page - 1,
         size,
         sort: 'createdAt,desc'
@@ -134,14 +165,14 @@ export const getCourseApprovalRequests = async (
         courseName: course.name,
         academyId: course.academyId,
         academyName: course.academyName,
+        requesterId: course.requesterId,
+        requesterName: course.requesterName,
         category: course.categoryName,
         target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
         format: course.offline ? '오프라인' : '온라인',
         requestType: '등록', // 현재는 등록 요청만 처리 (수정/삭제 요청 구분 없음)
         requestDate: course.createdAt,
         status: mapStatus(course.approvalStatus),
-        requesterId: course.academyId, // 임시: 요청자 ID를 알 수 없으므로 기관 ID 사용
-        requesterName: course.academyName, // 임시
         recruitStart: course.recruitStart,
         recruitEnd: course.recruitEnd,
         courseStart: course.courseStart,
@@ -180,7 +211,7 @@ export const getReviewApprovalRequests = async (
     page: number = 1,
     size: number = 20
 ): Promise<{ requests: ReviewApprovalRequest[]; totalCount: number }> => {
-    const params: any = {
+    const params: Partial<PaginationParams> = {
         page: page - 1,
         size,
         sort: 'createdAt,desc'
@@ -194,10 +225,10 @@ export const getReviewApprovalRequests = async (
     );
 
     const requests = response.data.content.map(review => ({
-        id: review.reviewId, // 요청 ID (여기서는 리뷰 ID와 동일하게 사용)
+        id: review.reviewId,
         reviewId: review.reviewId,
-        courseName: `Course ${review.courseId}`, // 백엔드 DTO에 courseName이 없어서 임시 처리
-        academyId: 0, // 백엔드 DTO에 없음
+        courseName: review.courseName,
+        academyId: 0, // TODO: 백엔드 DTO에 academyId 추가 필요
         writerName: review.writerName,
         rating: review.averageScore,
         comment: review.comment,
@@ -279,14 +310,14 @@ export const getAdminUsers = async (
     page: number = 1,
     size: number = 20
 ): Promise<{ users: AdminUser[]; totalCount: number }> => {
-    const params: any = {
+    const params: Partial<PaginationParams> = {
         page: page - 1,
         size,
         sort: 'createdAt,desc'
     };
     if (keyword) params.keyword = keyword;
 
-    const response = await apiClient.get<{ content: any[]; totalElements: number }>(
+    const response = await apiClient.get<{ content: ApiUserResponse[]; totalElements: number }>(
         '/admin/accounts',
         { params }
     );
@@ -315,7 +346,7 @@ export const getAdminAcademies = async (
     page: number = 1,
     size: number = 20
 ): Promise<{ academies: AdminAcademy[]; totalCount: number }> => {
-    const params: any = {
+    const params: Partial<PaginationParams> = {
         page: page - 1,
         size,
         sort: 'createdAt,desc'
@@ -323,7 +354,7 @@ export const getAdminAcademies = async (
     if (status) params.status = status;
     if (keyword) params.keyword = keyword;
 
-    const response = await apiClient.get<{ content: any[]; totalElements: number }>(
+    const response = await apiClient.get<{ content: ApiAcademyResponse[]; totalElements: number }>(
         '/admin/academies',
         { params }
     );
@@ -374,7 +405,7 @@ export const getInstitutionCourses = async (
     page: number = 1,
     size: number = 20
 ): Promise<{ requests: CourseApprovalRequest[]; totalCount: number }> => {
-    const params: any = {
+    const params: Partial<PaginationParams> = {
         page: page - 1,
         size,
         sort: 'createdAt,desc'
@@ -392,14 +423,14 @@ export const getInstitutionCourses = async (
         courseName: course.name,
         academyId: course.academyId,
         academyName: course.academyName,
+        requesterId: course.requesterId,
+        requesterName: course.requesterName,
         category: course.categoryName,
         target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
         format: course.offline ? '오프라인' : '온라인',
         requestType: '등록',
         requestDate: course.createdAt,
         status: mapStatus(course.approvalStatus),
-        requesterId: course.academyId,
-        requesterName: course.academyName,
         recruitStart: course.recruitStart,
         recruitEnd: course.recruitEnd,
         courseStart: course.courseStart,
@@ -424,7 +455,7 @@ export const getInstitutionReviews = async (
     page: number = 1,
     size: number = 20
 ): Promise<{ requests: ReviewApprovalRequest[]; totalCount: number }> => {
-    const params: any = {
+    const params: Partial<PaginationParams> = {
         page: page - 1,
         size,
         sort: 'createdAt,desc'
@@ -440,8 +471,8 @@ export const getInstitutionReviews = async (
     const requests = response.data.content.map(review => ({
         id: review.reviewId,
         reviewId: review.reviewId,
-        courseName: `Course ${review.courseId}`,
-        academyId: 0,
+        courseName: review.courseName,
+        academyId: 0, // TODO: 백엔드 DTO에 academyId 추가 필요
         writerName: review.writerName,
         rating: review.averageScore,
         comment: review.comment,
@@ -489,6 +520,7 @@ export const convertFormToRequest = (
         courseStart?: string;
         courseEnd?: string;
         cost?: number;
+        classDay?: string;
         isKdt?: boolean;
         isNailbaeum?: boolean;
         isOffline?: boolean;
@@ -513,7 +545,7 @@ export const convertFormToRequest = (
         courseStart: formData.courseStart,
         courseEnd: formData.courseEnd,
         cost: formData.cost,
-        classDay: '평일', // 기본값
+        classDay: formData.classDay, // 수업 요일 (백엔드 기본값: 평일)
         location: formData.location,
         isKdt: formData.isKdt,
         isNailbaeum: formData.isNailbaeum,
@@ -535,14 +567,14 @@ export const requestCourseRegistration = async (courseData: CourseRegistrationRe
         courseName: course.name,
         academyId: course.academyId,
         academyName: course.academyName,
+        requesterId: course.requesterId,
+        requesterName: course.requesterName,
         category: course.categoryName,
         target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
         format: course.offline ? '오프라인' : '온라인',
         requestType: '등록',
         requestDate: course.createdAt,
         status: mapStatus(course.approvalStatus),
-        requesterId: course.academyId,
-        requesterName: course.academyName,
         recruitStart: course.recruitStart,
         recruitEnd: course.recruitEnd,
         courseStart: course.courseStart,
@@ -568,14 +600,14 @@ export const createCourseByAdmin = async (courseData: CourseRegistrationRequest)
         courseName: course.name,
         academyId: course.academyId,
         academyName: course.academyName,
+        requesterId: course.requesterId,
+        requesterName: course.requesterName,
         category: course.categoryName,
         target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
         format: course.offline ? '오프라인' : '온라인',
         requestType: '등록',
         requestDate: course.createdAt,
         status: '승인', // 관리자가 생성하면 즉시 승인
-        requesterId: course.academyId,
-        requesterName: course.academyName,
         recruitStart: course.recruitStart,
         recruitEnd: course.recruitEnd,
         courseStart: course.courseStart,
@@ -604,14 +636,14 @@ export const updateCourseRequest = async (
         courseName: course.name,
         academyId: course.academyId,
         academyName: course.academyName,
+        requesterId: course.requesterId,
+        requesterName: course.requesterName,
         category: course.categoryName,
         target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
         format: course.offline ? '오프라인' : '온라인',
         requestType: '수정',
         requestDate: course.createdAt,
         status: mapStatus(course.approvalStatus),
-        requesterId: course.academyId,
-        requesterName: course.academyName,
         recruitStart: course.recruitStart,
         recruitEnd: course.recruitEnd,
         courseStart: course.courseStart,

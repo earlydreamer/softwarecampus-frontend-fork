@@ -332,21 +332,22 @@ export type CourseTarget = '취업예정자' | '재직자';
 export interface CourseApprovalRequest {
     id: number;
     courseName: string;
-    academyId: number;
-    academyName: string;
+    academyId: number;      // 요청 기관 ID
+    academyName: string;    // 요청 기관명
+    requesterId?: number;   // 등록자 ID (기관 담당자)
+    requesterName?: string; // 등록자 이름 (기관 담당자)
     category: string;
     target: CourseTarget;
     format: CourseFormat;
     requestType: '등록' | '삭제' | '수정';
     requestDate: string;
     status: '대기' | '승인' | '거부';
-    requesterId: number;
-    requesterName: string;
     recruitStart?: string;
     recruitEnd?: string;
     courseStart?: string;
     courseEnd?: string;
     cost?: number;
+    classDay?: string;      // 수업 요일
     isKdt?: boolean;
     isNailbaeum?: boolean;
     isOffline?: boolean;
