@@ -106,7 +106,8 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
             if (error?.response?.status === 401) {
                 showAlert('로그인 필요', '로그인이 필요합니다.', 'warning');
             } else {
-                showAlert('오류 발생', '좋아요 처리 중 오류가 발생했습니다.', 'error');
+                const errorMessage = error?.response?.data?.detail || '좋아요 처리 중 오류가 발생했습니다.';
+                showAlert('오류 발생', errorMessage, 'error');
             }
         },
         onSuccess: (data, variables) => {
