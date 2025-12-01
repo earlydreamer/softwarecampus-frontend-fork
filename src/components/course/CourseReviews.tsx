@@ -24,7 +24,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
         message: '',
         type: 'info'
     });
-    
+
     const queryClient = useQueryClient();
 
     const toggleReview = (reviewId: number) => {
@@ -48,37 +48,37 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
     };
 
     const likeMutation = useMutation({
-        mutationFn: ({ reviewId }: { reviewId: number }) => 
+        mutationFn: ({ reviewId }: { reviewId: number }) =>
             toggleReviewLike(courseId, reviewId, 'LIKE'),
         onMutate: async ({ reviewId }) => {
             // 진행 중인 리뷰 쿼리 취소 (경쟁 조건 방지)
             await queryClient.cancelQueries({ queryKey: ['course-reviews', courseId] });
-            
+
             // 현재 상태 스냅샷
             const previousLikeCounts = new Map(localLikeCounts);
             const previousLikingReviews = new Set(likingReviews);
-            
+
             // Optimistic 업데이트: 즉시 UI 반영
             setLikingReviews(prev => new Set(prev).add(reviewId));
-            
+
             const currentReview = reviews.find(r => r.id === reviewId);
             if (currentReview) {
                 const currentCount = localLikeCounts.get(reviewId) ?? currentReview.likeCount;
                 setLocalLikeCounts(prev => new Map(prev).set(reviewId, currentCount + 1));
             }
-            
+
             // 롤백용 컨텍스트 반환
             return { previousLikeCounts, previousLikingReviews };
         },
         onError: (error: import('axios').AxiosError, _variables, context) => {
             console.error('Failed to like review:', error);
-            
+
             // 롤백: 이전 상태로 복원
             if (context) {
                 setLocalLikeCounts(context.previousLikeCounts);
                 setLikingReviews(context.previousLikingReviews);
             }
-            
+
             // 401 Unauthorized 체크
             if (error?.response?.status === 401) {
                 showAlert('로그인 필요', '로그인이 필요합니다.', 'warning');
@@ -97,7 +97,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                 newSet.delete(variables.reviewId);
                 return newSet;
             });
-            
+
             // 리뷰 데이터 재조회 (최신 상태 동기화)
             queryClient.invalidateQueries({ queryKey: ['course-reviews', courseId] });
             onReviewsUpdate?.();
@@ -106,7 +106,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
 
     const handleLike = (reviewId: number) => {
         if (likingReviews.has(reviewId)) return;
-        
+
         likeMutation.mutate({ reviewId });
     };
 
@@ -196,10 +196,10 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
             <div className="space-y-4">
                 {sortedReviews.map(review => {
                     const isExpanded = expandedReviews.has(review.id);
-                    
+
                     return (
-                        <div 
-                            key={review.id} 
+                        <div
+                            key={review.id}
                             className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-700 transition-all overflow-hidden"
                         >
                             {/* 헤더 (항상 표시) */}
@@ -213,7 +213,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                         <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center overflow-hidden shrink-0">
                                             <User className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                                         </div>
-                                        
+
                                         {/* 작성자 정보 및 평점 */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-2">
@@ -237,7 +237,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     {/* 펼치기/접기 아이콘 */}
                                     <div className="flex items-center gap-2">
                                         {isExpanded ? (
@@ -257,7 +257,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                         <div className="mb-6">
                                             <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">세부 평가</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {review.sections.map((section, idx) => (
+                                                {review.sections.map((section) => (
                                                     <div key={section.sectionType} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
                                                         <span className="text-sm text-slate-600 dark:text-slate-400">
                                                             {REVIEW_SECTION_LABELS[section.sectionType]}
@@ -266,11 +266,10 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                                             {[1, 2, 3, 4, 5].map(star => (
                                                                 <Star
                                                                     key={star}
-                                                                    className={`w-4 h-4 ${
-                                                                        star <= section.score 
-                                                                            ? 'fill-amber-400 text-amber-400' 
+                                                                    className={`w-4 h-4 ${star <= section.score
+                                                                            ? 'fill-amber-400 text-amber-400'
                                                                             : 'text-slate-300 dark:text-slate-600'
-                                                                    }`}
+                                                                        }`}
                                                                 />
                                                             ))}
                                                             <span className="ml-2 text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -318,7 +317,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
 
                                     {/* 도움이 돼요 버튼 */}
                                     <div className="flex items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                                        <button 
+                                        <button
                                             onClick={() => handleLike(review.id)}
                                             disabled={likingReviews.has(review.id)}
                                             className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
