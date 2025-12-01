@@ -2,88 +2,19 @@
  * 관리자 페이지 목업 데이터
  */
 
-// 과정 대상 타입
-export type CourseTarget = '취업예정자' | '재직자';
+import type {
+    CourseApprovalRequest,
+    ReviewApprovalRequest,
+    AdminUser,
+    AdminAcademy,
+    BannerData
+} from '../types';
 
-// 과정 형식 타입
-export type CourseFormat = '온라인' | '오프라인';
+// 과정 대상 타입 (types/index.ts에서 가져옴)
+// export type CourseTarget = '취업예정자' | '재직자';
 
-export interface CourseApprovalRequest {
-    id: number;
-    courseName: string; // courseTitle -> courseName
-    academyId: number;
-    academyName: string;
-    category: string;
-    target: CourseTarget;
-    format: CourseFormat;
-    requestType: '등록' | '삭제' | '수정';
-    requestDate: string;
-    status: '대기' | '승인' | '거부';
-    requesterId: number;
-    requesterName: string;
-    // 상세 필드 추가
-    recruitStart?: string;
-    recruitEnd?: string;
-    courseStart?: string;
-    courseEnd?: string;
-    cost?: number;
-    isKdt?: boolean;
-    isNailbaeum?: boolean;
-    isOffline?: boolean;
-    location?: string;
-    description?: string;
-    imageUrl?: string;
-}
-
-export interface ReviewApprovalRequest {
-    id: number;
-    reviewId: number;
-    courseName: string; // courseTitle -> courseName
-    academyId: number;
-    writerName: string; // authorName -> writerName
-    rating: number;
-    comment: string; // content -> comment
-    requestType: '등록' | '삭제';
-    requestDate: string;
-    status: '대기' | '승인' | '거부';
-}
-
-export interface AdminUser {
-    id: number;
-    userName: string; // username -> userName
-    email: string;
-    accountType: 'ADMIN' | 'USER' | 'ACADEMY';
-    registeredDate: string;
-    lastLogin: string;
-    status: '활성' | '정지' | '탈퇴';
-    postCount: number;
-    commentCount: number;
-}
-
-export interface AdminAcademy {
-    id: number;
-    name: string;
-    businessNumber: string;
-    address: string;
-    phone: string;
-    email: string;
-    registeredDate: string;
-    courseCount: number;
-    status: '활성' | '정지';
-}
-
-export interface BannerData {
-    id: number;
-    title: string;
-    description?: string;
-    imageUrl: string;
-    linkUrl: string;
-    displayOrder: number;
-    isActive: boolean;
-    startDate?: string;
-    endDate?: string;
-    createdDate: string;
-}
+// 과정 형식 타입 (types/index.ts에서 가져옴)
+// export type CourseFormat = '온라인' | '오프라인';
 
 // 과정 승인 요청 목업 데이터
 export const mockCourseApprovalRequests: CourseApprovalRequest[] = [
