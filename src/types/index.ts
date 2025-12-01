@@ -213,6 +213,7 @@ export interface Comment {
     createdAt: string;
     updatedAt?: string;
     isDeleted?: boolean;
+    topCommentId?: number; // 대댓글인 경우 부모 댓글 ID
     subComments?: Comment[]; // 대댓글 지원
 }
 

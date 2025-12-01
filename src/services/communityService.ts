@@ -46,6 +46,7 @@ const mapDtoToComment = (dto: ApiCommentDTO): Comment => {
             userName: dto.userNickName,
         },
         createdAt: dto.createdAt,
+        topCommentId: dto.topCommentId, // 대댓글인 경우 부모 댓글 ID
         subComments: dto.subComments ? dto.subComments.map(mapDtoToComment) : [],
     };
 };
@@ -146,12 +147,23 @@ export const recommendBoardPost = async (postId: number): Promise<void> => {
 /**
  * 댓글 작성
  * 백엔드 DTO에서 boardId가 @NotNull이므로 요청 본문에 포함 필요
+ * @param postId 게시글 ID
+ * @param text 댓글 내용
+ * @param topCommentId 대댓글인 경우 상위 댓글 ID
  */
-export const createComment = async (postId: number, text: string): Promise<Comment> => {
-    const response = await apiClient.post<ApiCommentDTO>(`/api/boards/${postId}/comments`, { 
-        boardId: postId,  // 백엔드 @NotNull 필드
+export const createComment = async (
+    postId: number, 
+    text: string, 
+    topCommentId?: number
+): Promise<Comment> => {
+    const body: { boardId: number; text: string; topCommentId?: number } = { 
+        boardId: postId,
         text 
-    });
+    };
+    if (topCommentId) {
+        body.topCommentId = topCommentId;
+    }
+    const response = await apiClient.post<ApiCommentDTO>(`/api/boards/${postId}/comments`, body);
     return mapDtoToComment(response.data);
 };
 
