@@ -1,10 +1,12 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef, useId } from 'react';
 import { X, Edit2, Upload } from 'lucide-react';
-import type { CourseApprovalRequest, CourseTarget } from '../../services/mockAdminData';
+import type { CourseApprovalRequest, CourseTarget, CategoryType, AdminAcademy } from '../../types';
+import { getCourseCategories, getAdminAcademies, type CourseCategoryResponse } from '../../services/adminService';
 
 export interface CourseFormState extends Partial<CourseApprovalRequest> {
     imageFile?: File;
+    selectedAcademyId?: number; // 관리자가 선택한 기관 ID
 }
 
 interface CourseRequestModalProps {
@@ -12,13 +14,17 @@ interface CourseRequestModalProps {
     onClose: () => void;
     onSubmit: (data: CourseFormState) => void;
     initialData?: CourseApprovalRequest | null;
+    isAdmin?: boolean; // 관리자 여부
+    defaultAcademyId?: number; // 기관 회원일 경우 기본 기관 ID
 }
 
 const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     isOpen,
     onClose,
     onSubmit,
-    initialData
+    initialData,
+    isAdmin = false,
+    defaultAcademyId
 }) => {
     const titleId = useId();
     const modalRef = useRef<HTMLDivElement>(null);
@@ -26,7 +32,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
 
     const [form, setForm] = useState<CourseFormState>({
         courseName: '',
-        category: '프론트엔드',
+        category: '',
         target: '취업예정자',
         format: '온라인',
         recruitStart: '',
@@ -39,12 +45,67 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         isOffline: false,
         location: '',
         description: '',
-        imageUrl: ''
+        imageUrl: '',
+        selectedAcademyId: defaultAcademyId
     });
     const [error, setError] = useState<string | null>(null);
+    
+    // 카테고리 목록 상태
+    const [categories, setCategories] = useState<CourseCategoryResponse[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    
+    // 기관 목록 상태 (관리자용)
+    const [academies, setAcademies] = useState<AdminAcademy[]>([]);
+    const [isLoadingAcademies, setIsLoadingAcademies] = useState(false);
 
     // blob URL을 추적하기 위한 ref
     const blobUrlRef = useRef<string | null>(null);
+
+    // 기관 목록 로드 (관리자일 경우에만)
+    useEffect(() => {
+        if (isOpen && isAdmin) {
+            const loadAcademies = async () => {
+                setIsLoadingAcademies(true);
+                try {
+                    const { academies } = await getAdminAcademies('APPROVED');
+                    setAcademies(academies);
+                    // 첫 번째 기관을 기본값으로 설정
+                    if (academies.length > 0 && !form.selectedAcademyId) {
+                        setForm(prev => ({ ...prev, selectedAcademyId: academies[0].id }));
+                    }
+                } catch (err) {
+                    console.error('기관 목록 로드 실패:', err);
+                } finally {
+                    setIsLoadingAcademies(false);
+                }
+            };
+            loadAcademies();
+        }
+    }, [isOpen, isAdmin]);
+
+    // 카테고리 목록 로드
+    useEffect(() => {
+        if (isOpen) {
+            const loadCategories = async () => {
+                setIsLoadingCategories(true);
+                try {
+                    // 대상(target)에 따라 카테고리 타입 결정
+                    const categoryType: CategoryType = form.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
+                    const data = await getCourseCategories(categoryType);
+                    setCategories(data);
+                    // 첫 번째 카테고리를 기본값으로 설정
+                    if (data.length > 0 && !form.category) {
+                        setForm(prev => ({ ...prev, category: data[0].categoryName }));
+                    }
+                } catch (err) {
+                    console.error('카테고리 로드 실패:', err);
+                } finally {
+                    setIsLoadingCategories(false);
+                }
+            };
+            loadCategories();
+        }
+    }, [isOpen, form.target]);
 
     useEffect(() => {
         if (isOpen) {
@@ -57,12 +118,12 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
             }, 0);
 
             if (initialData) {
-                setForm({ ...initialData });
+                setForm({ ...initialData, selectedAcademyId: initialData.academyId });
             } else {
                 // 초기화
                 setForm({
                     courseName: '',
-                    category: '프론트엔드',
+                    category: '',
                     target: '취업예정자',
                     format: '온라인',
                     recruitStart: '',
@@ -75,7 +136,8 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     isOffline: false,
                     location: '',
                     description: '',
-                    imageUrl: ''
+                    imageUrl: '',
+                    selectedAcademyId: defaultAcademyId
                 });
             }
 
@@ -234,6 +296,33 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                         </div>
                     </div>
 
+                    {/* 기관 선택 (관리자만 표시) */}
+                    {isAdmin && (
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                훈련기관 <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={form.selectedAcademyId || ''}
+                                onChange={e => setForm({ ...form, selectedAcademyId: Number(e.target.value) })}
+                                disabled={isLoadingAcademies}
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none disabled:opacity-50"
+                            >
+                                {isLoadingAcademies ? (
+                                    <option value="">로딩 중...</option>
+                                ) : academies.length === 0 ? (
+                                    <option value="">승인된 기관이 없습니다</option>
+                                ) : (
+                                    academies.map(academy => (
+                                        <option key={academy.id} value={academy.id}>
+                                            {academy.name}
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                    )}
+
                     {/* Basic Info */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
@@ -260,34 +349,41 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                카테고리
-                            </label>
-                            <select
-                                value={form.category || '프론트엔드'}
-                                onChange={e => setForm({ ...form, category: e.target.value })}
-                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
-                            >
-                                <option value="프론트엔드">프론트엔드</option>
-                                <option value="백엔드">백엔드</option>
-                                <option value="풀스택">풀스택</option>
-                                <option value="데브옵스/인프라">데브옵스/인프라</option>
-                                <option value="인공지능/데이터">인공지능/데이터</option>
-                                <option value="모바일/앱">모바일/앱</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 대상
                             </label>
                             <select
                                 value={form.target || '취업예정자'}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                                    setForm({ ...form, target: e.target.value as CourseTarget })
-                                }
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                    const newTarget = e.target.value as CourseTarget;
+                                    setForm({ ...form, target: newTarget, category: '' });
+                                }}
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
                             >
                                 <option value="취업예정자">취업예정자</option>
                                 <option value="재직자">재직자</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                카테고리
+                            </label>
+                            <select
+                                value={form.category || ''}
+                                onChange={e => setForm({ ...form, category: e.target.value })}
+                                disabled={isLoadingCategories}
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none disabled:opacity-50"
+                            >
+                                {isLoadingCategories ? (
+                                    <option value="">로딩 중...</option>
+                                ) : categories.length === 0 ? (
+                                    <option value="">카테고리 없음</option>
+                                ) : (
+                                    categories.map(cat => (
+                                        <option key={cat.id} value={cat.categoryName}>
+                                            {cat.categoryName}
+                                        </option>
+                                    ))
+                                )}
                             </select>
                         </div>
                     </div>

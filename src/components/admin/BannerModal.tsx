@@ -1,7 +1,7 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef, useId } from 'react';
 import { X, Edit2, Upload } from 'lucide-react';
-import type { BannerData } from '../../services/mockAdminData';
+import type { BannerData } from '../../types';
 
 export interface BannerFormState extends Partial<BannerData> {
     imageFile?: File;
