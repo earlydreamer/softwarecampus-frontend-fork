@@ -3,12 +3,14 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCourseById, fetchCourseReviews, fetchCourseQnAs } from '../services/courseService';
 import { addCourseFavorite, removeCourseFavorite, checkCourseFavorite } from '../services/favoriteService';
+import { useAuthStore } from '../store/authStore';
 import { Calendar, MapPin, Clock, Building, CheckCircle2, Share2, Heart } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
 import CourseReviews from '../components/course/CourseReviews';
 import CourseQnAs from '../components/course/CourseQnAs';
 import ShareModal from '../components/ui/ShareModal';
+import AlertModal from '../components/ui/AlertModal';
 import { QNA_PER_PAGE } from '../constants';
 
 
@@ -24,6 +26,7 @@ const CourseDetailPage = () => {
     const [qnaPage, setQnaPage] = useState(1);
     const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
     const [showShareModal, setShowShareModal] = useState(false);
+    const [showAlertModal, setShowAlertModal] = useState(false);
 
     const queryClient = useQueryClient();
 
@@ -69,12 +72,13 @@ const CourseDetailPage = () => {
     });
 
     // 찜하기 상태 조회 (인증 토큰으로 사용자 식별)
+    const { isAuthenticated } = useAuthStore();
     const {
         data: favoriteCheckResult
     } = useQuery({
         queryKey: ['course-favorite', id],
         queryFn: () => checkCourseFavorite(id!),
-        enabled: isValidId && !!course,
+        enabled: isValidId && !!course && isAuthenticated,
     });
 
     // 찜 상태를 query 결과에서 직접 계산
@@ -140,6 +144,11 @@ const CourseDetailPage = () => {
 
     const handleFavoriteClick = () => {
         if (!course) return;
+
+        if (!isAuthenticated) {
+            setShowAlertModal(true);
+            return;
+        }
 
         if (isFavorite) {
             removeFavoriteMutation.mutate();
@@ -544,8 +553,8 @@ const CourseDetailPage = () => {
                                         onClick={handleFavoriteClick}
                                         disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
                                         className={`flex items-center justify-center gap-2 py-3 rounded-xl border font-medium transition-all ${isFavorite
-                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                                                : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                                            : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                             }`}
                                     >
                                         <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
@@ -585,14 +594,25 @@ const CourseDetailPage = () => {
             </div>
 
             {/* 공유 모달 */}
-            {showShareModal && (
-                <ShareModal
-                    url={shareUrl}
-                    title={course?.name || ''}
-                    onClose={() => setShowShareModal(false)}
-                />
-            )}
-        </div>
+            {
+                showShareModal && (
+                    <ShareModal
+                        url={shareUrl}
+                        title={course?.name || ''}
+                        onClose={() => setShowShareModal(false)}
+                    />
+                )
+            }
+
+            {/* 로그인 알림 모달 */}
+            <AlertModal
+                isOpen={showAlertModal}
+                onClose={() => setShowAlertModal(false)}
+                title="로그인 필요"
+                message="찜하기 기능은 로그인이 필요합니다."
+                type="warning"
+            />
+        </div >
     );
 };
 
