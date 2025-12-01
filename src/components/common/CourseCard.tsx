@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Course } from '../../types';
 import { Star, MessageSquare } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
-import { getCourseDurationInfo } from '../../utils/dateUtils';
+import { getCourseDurationInfo, getCourseStatus, type CourseStatus } from '../../utils/dateUtils';
 
 interface CourseCardProps {
     course: Course;
@@ -15,6 +15,34 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
         course.courseStart || '',
         course.courseEnd || ''
     );
+
+    const status = getCourseStatus(
+        course.recruitStart || '',
+        course.recruitEnd || '',
+        course.courseStart || '',
+        course.courseEnd || ''
+    );
+
+    const getStatusBadge = () => {
+        const statusConfig: Partial<Record<CourseStatus, { label: string; color: string }>> = {
+            RECRUITING: { label: '모집중', color: 'bg-blue-500/90' },
+            IN_PROGRESS: { label: '진행중', color: 'bg-green-500/90' },
+            ENDED: { label: '종료', color: 'bg-slate-500/90' },
+        };
+
+        const config = statusConfig[status];
+        if (!config) {
+            return null;
+        }
+
+        const baseClasses = 'px-2.5 py-1 rounded-full text-xs font-semibold text-white backdrop-blur-sm shadow-sm';
+
+        return (
+            <span className={`${baseClasses} ${config.color}`}>
+                {config.label}
+            </span>
+        );
+    };
 
     return (
         <div className="glass-panel rounded-xl overflow-hidden hover:scale-[1.02] transition-transform duration-300 group">
@@ -34,6 +62,10 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
                         <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800/80 text-white backdrop-blur-sm shadow-sm">
                             {course.format}
                         </span>
+                    </div>
+
+                    <div className="absolute top-3 right-3 flex gap-2">
+                        {getStatusBadge()}
                     </div>
                 </div>
 

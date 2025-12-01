@@ -11,6 +11,7 @@ interface CourseFilterForm {
     category: string; // categoryName for detailed filtering
     categoryType: 'ALL' | 'EMPLOYEE' | 'JOB_SEEKER'; // 백엔드 CategoryType enum에 맞춤
     isOffline: 'ALL' | 'true' | 'false'; // 백엔드 isOffline boolean에 맞춤
+    status: 'ALL' | 'RECRUITING' | 'IN_PROGRESS' | 'ENDED';
 }
 
 // 백엔드 CategoryType enum과 일치
@@ -27,6 +28,13 @@ const classFormats: Array<{ value: CourseFilterForm['isOffline']; label: string 
     { value: 'true', label: '오프라인' }
 ];
 
+const statusOptions: Array<{ value: CourseFilterForm['status']; label: string }> = [
+    { value: 'ALL', label: '전체' },
+    { value: 'RECRUITING', label: '모집 중' },
+    { value: 'IN_PROGRESS', label: '진행 중' },
+    { value: 'ENDED', label: '종료' }
+];
+
 // URL 파라미터 매핑 (백엔드 API와 호환)
 const targetMap: Record<string, CourseFilterForm['categoryType']> = {
     employee: 'EMPLOYEE',
@@ -39,6 +47,12 @@ const formatMap: Record<string, CourseFilterForm['isOffline']> = {
     offline: 'true'
 };
 
+const statusMap: Record<string, CourseFilterForm['status']> = {
+    recruiting: 'RECRUITING',
+    progress: 'IN_PROGRESS',
+    ended: 'ENDED'
+};
+
 const reverseTargetMap: Record<string, string> = {
     EMPLOYEE: 'employee',
     JOB_SEEKER: 'student'
@@ -47,6 +61,12 @@ const reverseTargetMap: Record<string, string> = {
 const reverseFormatMap: Record<string, string> = {
     'true': 'offline',
     'false': 'online'
+};
+
+const reverseStatusMap: Record<string, string> = {
+    RECRUITING: 'recruiting',
+    IN_PROGRESS: 'progress',
+    ENDED: 'ended'
 };
 
 interface FilterDropdownProps {
@@ -124,12 +144,14 @@ const CourseListPage: React.FC = () => {
         const formatParam = searchParams.get('format');
         const keywordParam = searchParams.get('q');
         const categoryParam = searchParams.get('category'); // 카테고리명 필터
+        const statusParam = searchParams.get('status');
 
         return {
             keyword: keywordParam || '',
             category: categoryParam || '', // categoryName
             categoryType: (targetParam && targetMap[targetParam]) || 'ALL' as CourseFilterForm['categoryType'],
-            isOffline: (formatParam && formatMap[formatParam]) || 'ALL' as CourseFilterForm['isOffline']
+            isOffline: (formatParam && formatMap[formatParam]) || 'ALL' as CourseFilterForm['isOffline'],
+            status: (statusParam && statusMap[statusParam]) || 'ALL' as CourseFilterForm['status']
         };
     }, [searchParams]);
 
@@ -158,6 +180,9 @@ const CourseListPage: React.FC = () => {
             if (formData.isOffline && formData.isOffline !== 'ALL') {
                 next.set('format', reverseFormatMap[formData.isOffline]);
             }
+            if (formData.status && formData.status !== 'ALL') {
+                next.set('status', reverseStatusMap[formData.status]);
+            }
             // category는 URL에서 직접 받음 (네비게이션에서 설정)
             const categoryParam = searchParams.get('category');
             if (categoryParam) {
@@ -181,12 +206,13 @@ const CourseListPage: React.FC = () => {
             keyword: currentFilters.keyword.trim() || undefined,
             category: currentFilters.category || undefined, // categoryName 필터 추가
             categoryType: currentFilters.categoryType !== 'ALL' ? currentFilters.categoryType : undefined,
-            isOffline: currentFilters.isOffline !== 'ALL' ? currentFilters.isOffline === 'true' : undefined
+            isOffline: currentFilters.isOffline !== 'ALL' ? currentFilters.isOffline === 'true' : undefined,
+            status: currentFilters.status !== 'ALL' ? currentFilters.status : undefined
         }),
         [currentFilters]
     );
 
-    const { data: courses = [], isLoading, isError } = useQuery({
+    const { data: courses = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['courses', queryFilters],
         queryFn: () => fetchCourses(queryFilters)
     });
@@ -226,6 +252,12 @@ const CourseListPage: React.FC = () => {
                             {/* Dropdown Filters */}
                             <div className="flex flex-wrap gap-3">
                                 <FilterDropdown
+                                    label="모집 상태"
+                                    value={watch('status')}
+                                    options={statusOptions}
+                                    onChange={(val) => setValue('status', val)}
+                                />
+                                <FilterDropdown
                                     label="교육 대상"
                                     value={watch('categoryType')}
                                     options={categoryTypes}
@@ -244,7 +276,14 @@ const CourseListPage: React.FC = () => {
 
                 {isError ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
-                        <p className="text-slate-500 dark:text-slate-400">데이터를 불러오는 데 실패했습니다.</p>
+                        <p className="text-slate-500 dark:text-slate-400 mb-4">데이터를 불러오는 데 실패했습니다.</p>
+                        <button
+                            type="button"
+                            onClick={() => refetch()}
+                            className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
+                        >
+                            다시 시도
+                        </button>
                     </div>
                 ) : noResult ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
