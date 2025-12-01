@@ -47,7 +47,7 @@ const AcademyDetailPage = () => {
         refetch: refetchQnAs
     } = useQuery({
         queryKey: ['academy-qnas', id, qnaPage, qnaSearchKeyword],
-        queryFn: () => fetchAcademyQnAs(id, qnaPage, QNA_PER_PAGE, qnaSearchKeyword),
+        queryFn: () => fetchAcademyQnAs(id, qnaPage, QNA_PER_PAGE),
         enabled: !isNaN(id) && id > 0,
     });
 
@@ -309,7 +309,7 @@ const AcademyDetailPage = () => {
                                             </div>
                                         ) : (
                                             <AcademyQnAs
-                                                qnas={qnaData?.qnas || []}
+                                                qnas={qnaData?.qas || []}
                                                 totalCount={qnaData?.totalCount || 0}
                                                 page={qnaPage}
                                                 onPageChange={setQnaPage}
