@@ -83,30 +83,64 @@ const CourseDetailPage = () => {
     // 찜하기 추가 Mutation
     const addFavoriteMutation = useMutation({
         mutationFn: () => addCourseFavorite(id!),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
+        onMutate: async () => {
+            // 진행 중인 쿼리 취소
+            await queryClient.cancelQueries({ queryKey: ['course-favorite', id] });
+
+            // 이전 상태 스냅샷 저장
+            const previousFavorite = queryClient.getQueryData(['course-favorite', id]);
+
+            // 낙관적 업데이트: 찜한 상태로 변경
+            queryClient.setQueryData(['course-favorite', id], { favorited: true });
+
+            return { previousFavorite };
         },
-        onError: (error) => {
+        onError: (error, _, context) => {
             console.error('Failed to add favorite:', error);
+            // 에러 시 롤백
+            if (context?.previousFavorite) {
+                queryClient.setQueryData(['course-favorite', id], context.previousFavorite);
+            }
             alert('찜하기 처리 중 오류가 발생했습니다.');
+        },
+        onSettled: () => {
+            // 성공/실패 여부와 관계없이 쿼리 무효화하여 최신 상태 동기화
+            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
         }
     });
 
     // 찜하기 삭제 Mutation
     const removeFavoriteMutation = useMutation({
         mutationFn: () => removeCourseFavorite(id!),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
+        onMutate: async () => {
+            // 진행 중인 쿼리 취소
+            await queryClient.cancelQueries({ queryKey: ['course-favorite', id] });
+
+            // 이전 상태 스냅샷 저장
+            const previousFavorite = queryClient.getQueryData(['course-favorite', id]);
+
+            // 낙관적 업데이트: 찜하지 않은 상태로 변경
+            queryClient.setQueryData(['course-favorite', id], { favorited: false });
+
+            return { previousFavorite };
         },
-        onError: (error) => {
+        onError: (error, _, context) => {
             console.error('Failed to remove favorite:', error);
+            // 에러 시 롤백
+            if (context?.previousFavorite) {
+                queryClient.setQueryData(['course-favorite', id], context.previousFavorite);
+            }
             alert('찜 삭제 처리 중 오류가 발생했습니다.');
+        },
+        onSettled: () => {
+            // 성공/실패 여부와 관계없이 쿼리 무효화하여 최신 상태 동기화
+            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
         }
     });
 
     const handleFavoriteClick = () => {
         if (!course) return;
-        
+
         if (isFavorite) {
             removeFavoriteMutation.mutate();
         } else {
@@ -398,8 +432,8 @@ const CourseDetailPage = () => {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <CourseReviews 
-                                                reviews={reviews?.reviews || []} 
+                                            <CourseReviews
+                                                reviews={reviews?.reviews || []}
                                                 courseId={Number(id!)}
                                                 isLoading={isReviewsLoading}
                                                 onReviewsUpdate={() => refetchReviews()}
@@ -506,19 +540,18 @@ const CourseDetailPage = () => {
                                     자세히 보기
                                 </button>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button 
+                                    <button
                                         onClick={handleFavoriteClick}
                                         disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
-                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border font-medium transition-all ${
-                                            isFavorite
+                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border font-medium transition-all ${isFavorite
                                                 ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
                                                 : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                        }`}
+                                            }`}
                                     >
                                         <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
                                         {isFavorite ? '찜 완료' : '찜하기'}
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={handleShareClick}
                                         className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                                     >
@@ -550,10 +583,10 @@ const CourseDetailPage = () => {
                     </div>
                 </div>
             </div>
-            
+
             {/* 공유 모달 */}
             {showShareModal && (
-                <ShareModal 
+                <ShareModal
                     url={shareUrl}
                     title={course?.name || ''}
                     onClose={() => setShowShareModal(false)}
