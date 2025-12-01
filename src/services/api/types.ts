@@ -91,6 +91,7 @@ export interface ApiCourseReviewResponse {
 
 /**
  * 기관 응답 DTO (AcademyResponse)
+ * 백엔드 DTO 필드명: isApproved (ApprovalStatus)
  */
 export interface ApiAcademyResponse {
     id: number;
@@ -98,7 +99,7 @@ export interface ApiAcademyResponse {
     address: string;
     businessNumber: string;
     email: string;
-    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    isApproved: 'PENDING' | 'APPROVED' | 'REJECTED'; // 백엔드 필드명
     approvedAt?: string;
     createdAt: string;
     updatedAt: string;
