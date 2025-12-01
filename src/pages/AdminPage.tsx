@@ -72,6 +72,8 @@ const AdminPage = () => {
     const [courseFilter, setCourseFilter] = useState<'전체' | '대기' | '승인' | '거부'>('대기');
     const [reviewFilter, setReviewFilter] = useState<'전체' | '대기' | '승인' | '거부'>('대기');
     const [academyFilter, setAcademyFilter] = useState<'전체' | '대기' | '활성' | '정지'>('전체');
+    // 로딩 오류 상태
+    const [loadError, setLoadError] = useState<string | null>(null);
     // 배너 모달 상태
     const [isBannerModalOpen, setIsBannerModalOpen] = useState(false);
     const [editingBanner, setEditingBanner] = useState<BannerData | null>(null);
@@ -160,9 +162,11 @@ const AdminPage = () => {
 
             } catch (error) {
                 console.error("Failed to load admin data:", error);
+                setLoadError('데이터를 불러오는데 실패했습니다. 다시 시도해주세요.');
             }
         };
 
+        setLoadError(null);
         loadData();
     }, [isAuthenticated, user, navigate]);
 
@@ -294,16 +298,27 @@ const AdminPage = () => {
         const currentBanner = banners[index];
         const targetBanner = banners[targetIndex];
 
+        // 원본 순서 저장 (롤백용)
+        const originalCurrentOrder = currentBanner.displayOrder;
+        const originalTargetOrder = targetBanner.displayOrder;
+
         try {
             // 두 배너의 순서를 서로 교환
-            await updateBannerOrder(currentBanner.id, targetBanner.displayOrder);
-            await updateBannerOrder(targetBanner.id, currentBanner.displayOrder);
+            await updateBannerOrder(currentBanner.id, originalTargetOrder);
+            try {
+                await updateBannerOrder(targetBanner.id, originalCurrentOrder);
+            } catch (secondError) {
+                // 두 번째 호출 실패 시 첫 번째 변경 롤백
+                console.error("Second order update failed, rolling back:", secondError);
+                await updateBannerOrder(currentBanner.id, originalCurrentOrder);
+                throw secondError;
+            }
 
             const newBanners = await getAdminBanners();
             setBanners(newBanners);
         } catch (error) {
             console.error("Failed to reorder banners", error);
-            alert("배너 순서 변경 중 오류가 발생했습니다.");
+            alert("배너 순서 변경 중 오류가 발생했습니다. 변경 사항이 롤백되었습니다.");
         }
     };
 
@@ -436,7 +451,32 @@ const AdminPage = () => {
         academyFilter === '전체' ? true : academy.status === academyFilter
     );
 
+    // 재로드 함수
+    const handleRetry = () => {
+        setLoadError(null);
+        window.location.reload();
+    };
+
     const renderTabContent = () => {
+        // 오류 상태 표시
+        if (loadError) {
+            return (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                        <XCircle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">데이터 로딩 실패</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mb-6">{loadError}</p>
+                    <button
+                        onClick={handleRetry}
+                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                    >
+                        다시 시도
+                    </button>
+                </div>
+            );
+        }
+
         switch (activeTab) {
             case 'dashboard':
                 return (
