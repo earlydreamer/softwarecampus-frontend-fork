@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft } from 'lucide-react';
+import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft, Download, FileIcon } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import type { Comment } from '../types';
+import type { Comment, BoardAttachment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import {
     fetchBoardPost,
@@ -11,8 +11,19 @@ import {
     createComment,
     updateComment,
     deleteComment,
+    deleteBoardPost,
+    downloadBoardAttachment,
 } from '../services/communityService';
 import { sanitizeInput } from '../utils/security';
+
+// 파일 크기를 읽기 쉬운 형식으로 변환
+const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 const CommunityDetailPage = () => {
     const { postId } = useParams<{ postId?: string }>();
@@ -88,6 +99,43 @@ const CommunityDetailPage = () => {
             queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
     });
+
+    // 게시글 삭제 mutation
+    const deleteBoardMutation = useMutation({
+        mutationFn: () => deleteBoardPost(postIdNumber),
+        onSuccess: () => {
+            alert('게시글이 삭제되었습니다.');
+            navigate('/community');
+        },
+        onError: (error: Error) => {
+            alert(error.message || '게시글 삭제에 실패했습니다.');
+        },
+    });
+
+    // 게시글 삭제 핸들러
+    const handleDeletePost = () => {
+        if (window.confirm('정말 이 게시글을 삭제하시겠습니까?\n삭제된 게시글은 복구할 수 없습니다.')) {
+            deleteBoardMutation.mutate();
+        }
+    };
+
+    // 첨부파일 다운로드 핸들러
+    const handleDownload = async (attachment: BoardAttachment) => {
+        try {
+            const blob = await downloadBoardAttachment(postIdNumber, attachment.id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = attachment.originName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('다운로드 실패:', error);
+            alert('파일 다운로드에 실패했습니다.');
+        }
+    };
 
     // 현재 사용자가 게시글 작성자인지 확인
     const isAuthor = useMemo(() => {
@@ -231,14 +279,35 @@ const CommunityDetailPage = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-8">
             <div className="max-w-4xl mx-auto px-4">
-                {/* 뒤로가기 버튼 */}
-                <Link
-                    to="/community"
-                    className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-6 transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span className="font-medium">목록으로</span>
-                </Link>
+                {/* 상단 버튼 영역 */}
+                <div className="flex justify-between items-center mb-6">
+                    <Link
+                        to="/community"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        목록으로
+                    </Link>
+                    {isAuthor && (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleDeletePost}
+                                disabled={deleteBoardMutation.isPending}
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                {deleteBoardMutation.isPending ? '삭제 중...' : '삭제'}
+                            </button>
+                            <button
+                                onClick={() => navigate(`/community/edit/${postIdNumber}`)}
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                            >
+                                <Pencil className="w-4 h-4" />
+                                수정
+                            </button>
+                        </div>
+                    )}
+                </div>
 
                 {/* 게시글 헤더 */}
                 <div className="glass-panel p-6 md:p-8 rounded-2xl mb-4 shadow-xl">
@@ -300,6 +369,44 @@ const CommunityDetailPage = () => {
                         />
                     </div>
                 </div>
+
+                {/* 첨부파일 */}
+                {post.attachments && post.attachments.length > 0 && (
+                    <div className="glass-panel p-6 md:p-8 rounded-2xl mb-4 shadow-xl">
+                        <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                            <Paperclip className="w-5 h-5 text-blue-600" />
+                            첨부파일 <span className="text-blue-600">({post.attachments.length})</span>
+                        </h3>
+                        <div className="space-y-2">
+                            {post.attachments.map((attachment) => (
+                                <div
+                                    key={attachment.id}
+                                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <FileIcon className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                                                {attachment.originName}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {formatFileSize(attachment.fileSize)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDownload(attachment)}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 dark:bg-blue-900/30 dark:hover:bg-blue-600 rounded-lg transition-all duration-200"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        다운로드
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* 추천 버튼 */}
                 <div className="glass-panel p-6 rounded-2xl mb-6 shadow-xl">
@@ -490,26 +597,6 @@ const CommunityDetailPage = () => {
                             </div>
                         ))}
                     </div>
-                </div>
-
-                {/* 하단 버튼 */}
-                <div className="flex justify-between mt-6">
-                    <Link
-                        to="/community"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        목록으로
-                    </Link>
-                    {isAuthor && (
-                        <button
-                            onClick={() => navigate(`/community/edit/${postIdNumber}`)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
-                        >
-                            <Pencil className="w-4 h-4" />
-                            수정
-                        </button>
-                    )}
                 </div>
             </div>
         </div>

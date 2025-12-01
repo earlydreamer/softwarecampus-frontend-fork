@@ -165,6 +165,13 @@ export interface Academy {
 }
 
 // ===== 게시판(Board) 관련 타입 정의 =====
+export interface BoardAttachment {
+    id: number;
+    originName: string;  // 원본 파일명
+    savedName: string;   // 저장된 파일명 (S3 key)
+    fileSize: number;    // 파일 크기 (bytes)
+}
+
 export interface Board {
     // 백엔드 필드
     id: number;
@@ -191,6 +198,7 @@ export interface Board {
     hasAttachment?: boolean;
     isSecret?: boolean; // 호환성
     comments?: Comment[]; // 상세 조회 시 포함됨
+    attachments?: BoardAttachment[]; // 첨부파일 목록
 }
 
 export interface Comment {

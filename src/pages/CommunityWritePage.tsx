@@ -6,6 +6,7 @@ import { createBoardPost } from '../services/communityService';
 import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
+import FileUpload from '../components/common/FileUpload';
 import { useAuthStore } from '../store/authStore';
 
 // Tiptap 에디터를 lazy load
@@ -27,6 +28,7 @@ const CommunityWritePage = () => {
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
     const [category, setCategory] = useState<BoardCategory>('QUESTION');
+    const [files, setFiles] = useState<File[]>([]);
     const [titleError, setTitleError] = useState<string | null>(null);
     const [contentError, setContentError] = useState<string | null>(null);
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -41,7 +43,7 @@ const CommunityWritePage = () => {
     // 작성 중인 내용이 있는지 확인
     const hasUnsavedChanges = () => {
         const textContent = getTextContent(text).trim();
-        return title.trim() !== '' || textContent !== '';
+        return title.trim() !== '' || textContent !== '' || files.length > 0;
     };
 
     // 브라우저 새로고침/탭 닫기 시 경고
@@ -55,11 +57,21 @@ const CommunityWritePage = () => {
 
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [title, text]);
+    }, [title, text, files]);
 
     // 게시글 작성 mutation
     const createPostMutation = useMutation({
-        mutationFn: createBoardPost,
+        mutationFn: ({ data, files }: {
+            data: {
+                title: string;
+                text: string;
+                category: BoardCategory;
+                account?: { id: number; userName: string; };
+                isSecret: boolean;
+                hasAttachment?: boolean;
+            };
+            files?: File[];
+        }) => createBoardPost(data, files),
         onSuccess: (newPost) => {
             queryClient.invalidateQueries({ queryKey: ['boardPosts'] });
             navigate(`/community/${newPost.id}`);
@@ -108,15 +120,18 @@ const CommunityWritePage = () => {
         }
 
         createPostMutation.mutate({
-            title,
-            text,
-            category,
-            account: {
-                id: user.id,
-                userName: user.userName,
+            data: {
+                title,
+                text,
+                category,
+                account: {
+                    id: user.id,
+                    userName: user.userName,
+                },
+                isSecret: false,
+                hasAttachment: files.length > 0,
             },
-            isSecret: false,
-            hasAttachment: false,
+            files: files.length > 0 ? files : undefined,
         });
     };
 
@@ -232,6 +247,19 @@ const CommunityWritePage = () => {
                                     {contentError}
                                 </p>
                             )}
+                        </div>
+
+                        {/* 첨부파일 */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                                첨부파일
+                            </label>
+                            <FileUpload
+                                files={files}
+                                onFilesChange={setFiles}
+                                maxFiles={5}
+                                maxSizeMB={50}
+                            />
                         </div>
                     </div>
 

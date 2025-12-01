@@ -168,6 +168,8 @@ export interface ApiBoardListResponse {
     userNickName: string;
     accountId: number;
     commentsCount: number;  // 백엔드 필드명
+    hits: number;           // 조회수
+    likeCount: number;      // 추천수
     createdAt: string;
 }
 

@@ -1,6 +1,6 @@
 import apiClient from './api/client';
-import type { Board, Comment, BoardCategory } from '../types';
-import type { ApiBoardListResponse, ApiBoardResponseDTO, ApiCommentDTO, SpringPage } from './api/types';
+import type { Board, Comment, BoardCategory, BoardAttachment } from '../types';
+import type { ApiBoardListResponse, ApiBoardResponseDTO, ApiCommentDTO, ApiBoardAttachDTO, SpringPage } from './api/types';
 
 // DTO -> Board 매핑
 const mapDtoToBoard = (dto: ApiBoardResponseDTO): Board => {
@@ -29,6 +29,9 @@ const mapDtoToBoard = (dto: ApiBoardResponseDTO): Board => {
 
         // 상세 조회 시 댓글 포함
         comments: dto.boardComments.map(mapDtoToComment),
+        
+        // 첨부파일 매핑
+        attachments: dto.boardAttachs.map(mapDtoToAttachment),
     };
 };
 
@@ -44,6 +47,16 @@ const mapDtoToComment = (dto: ApiCommentDTO): Comment => {
         },
         createdAt: dto.createdAt,
         subComments: dto.subComments ? dto.subComments.map(mapDtoToComment) : [],
+    };
+};
+
+// DTO -> BoardAttachment 매핑
+const mapDtoToAttachment = (dto: ApiBoardAttachDTO): BoardAttachment => {
+    return {
+        id: dto.id,
+        originName: dto.originalFile,
+        savedName: dto.savedFile,
+        fileSize: dto.fileSize,
     };
 };
 
@@ -79,11 +92,11 @@ export const fetchBoardPosts = async (
                 id: dto.accountId,
                 userName: dto.userNickName,
             },
-            hits: 0, // 목록에서 미제공
+            hits: dto.hits ?? 0, // 조회수
             secret: dto.secret,
             createdAt: dto.createdAt,
-            likeCount: 0, // 목록에서 미제공
-            like: false, // 목록에서 미제공
+            likeCount: dto.likeCount ?? 0, // 추천수
+            like: false, // 목록에서는 좋아요 여부 미제공
             commentCount: dto.commentsCount,  // commentsCount로 변경
         } as Board));
 
@@ -226,15 +239,24 @@ export const updateBoardPost = async (
         title?: string;
         text?: string;
         secret?: boolean;
+        category?: BoardCategory;
     },
-    files?: File[]
+    files?: File[],
+    deleteAttachIds?: number[]
 ): Promise<Board> => {
     const formData = new FormData();
     formData.append('id', String(postId));  // 백엔드 @NotNull 필드
     if (data.title) formData.append('title', data.title);
     if (data.text) formData.append('text', data.text);
+    if (data.category) formData.append('category', data.category);
     formData.append('secret', String(data.secret ?? false));
     
+    // 삭제할 첨부파일 ID들 추가
+    if (deleteAttachIds && deleteAttachIds.length > 0) {
+        deleteAttachIds.forEach(id => formData.append('deleteAttachIds', String(id)));
+    }
+    
+    // 새로 추가할 첨부파일 추가
     if (files && files.length > 0) {
         files.forEach(file => formData.append('files', file));
     }
@@ -289,4 +311,24 @@ export const recommendComment = async (boardId: number, commentId: number): Prom
  */
 export const cancelRecommendComment = async (boardId: number, commentId: number): Promise<void> => {
     await apiClient.delete(`/api/boards/${boardId}/comments/${commentId}/recommends`);
+};
+
+/**
+ * 에디터 이미지 업로드
+ * 본문에 삽입할 이미지를 S3에 업로드하고 URL을 반환
+ */
+export const uploadEditorImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'board');  // S3Folder enum에 정의된 허용 폴더
+    formData.append('fileType', 'BOARD_ATTACH');
+    
+    const response = await apiClient.post('/api/files/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    
+    // 응답에서 파일 URL 추출
+    return response.data.fileUrl || response.data.url;
 };

@@ -13,23 +13,6 @@ interface AuthState {
   logout: () => void;
 }
 
-// 관리자 테스트 계정 (개발 환경에서만 사용)
-const ADMIN_TEST_ACCOUNT = import.meta.env.DEV ? {
-  user: {
-    id: 1,
-    email: 'admin@test.com',
-    userName: '관리자',
-    phoneNumber: '010-1234-5678',
-    accountType: 'ADMIN' as const,
-    approvalStatus: 'APPROVED' as const,
-    address: '서울시 강남구',
-    affiliation: '소프트웨어캠퍼스',
-    position: '시스템 관리자',
-    academyId: null
-  },
-  password: 'test'
-} : null;
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -39,19 +22,7 @@ export const useAuthStore = create<AuthState>()(
       expiresAt: null,
       isAuthenticated: false,
       login: async (email: string, password: string) => {
-        // 관리자 테스트 계정 (개발 환경에서만 작동)
-        if (import.meta.env.DEV && ADMIN_TEST_ACCOUNT && email === ADMIN_TEST_ACCOUNT.user.email && password === ADMIN_TEST_ACCOUNT.password) {
-          set({
-            user: ADMIN_TEST_ACCOUNT.user,
-            accessToken: 'admin-test-token',
-            refreshToken: 'admin-test-refresh',
-            expiresAt: Date.now() + 3600 * 1000, // 1시간 후 만료
-            isAuthenticated: true
-          });
-          return true;
-        }
-
-        // 실제 백엔드 API 호출
+        // 백엔드 API 호출
         try {
           const response = await apiClient.post('/api/auth/login', { email, password });
           const { accessToken, refreshToken, account, expiresIn } = response.data;
