@@ -56,7 +56,7 @@ const AlertModal = ({ isOpen, onClose, title, message, type = 'info' }: AlertMod
             const mainContent = document.getElementById('root');
             if (mainContent) {
                 mainContent.setAttribute('aria-hidden', 'true');
-                mainContent.style.pointerEvents = 'none';
+                // mainContent.style.pointerEvents = 'none'; // 모달이 root 안에 있으면 모달도 클릭 불가능해짐
             }
 
             // 초기 포커스 설정
@@ -69,12 +69,12 @@ const AlertModal = ({ isOpen, onClose, title, message, type = 'info' }: AlertMod
              */
             const getFocusableElements = (): HTMLElement[] => {
                 if (!modalRef.current) return [];
-                
+
                 const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
                 const elements = Array.from(
                     modalRef.current.querySelectorAll<HTMLElement>(focusableSelectors)
                 );
-                
+
                 return elements.filter(el => !el.hasAttribute('disabled') && el.offsetParent !== null);
             };
 
@@ -116,13 +116,13 @@ const AlertModal = ({ isOpen, onClose, title, message, type = 'info' }: AlertMod
             return () => {
                 clearTimeout(timer);
                 document.removeEventListener('keydown', handleKeyDown);
-                
+
                 // 배경 콘텐츠 복원
                 if (mainContent) {
                     mainContent.removeAttribute('aria-hidden');
-                    mainContent.style.pointerEvents = '';
+                    // mainContent.style.pointerEvents = '';
                 }
-                
+
                 // 이전 포커스 복원
                 previousFocusRef.current?.focus();
             };
