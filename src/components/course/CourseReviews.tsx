@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { CourseReview } from '../../types';
+import type { CourseReview, ReviewSection } from '../../types';
 import { Star, ThumbsUp, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
 import { REVIEW_SECTION_LABELS } from '../../types';
 import { toggleReviewLike, createCourseReview, uploadReviewFile } from '../../services/courseService';
@@ -168,7 +168,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
         setIsWritingReview(true);
     };
 
-    const handleReviewSubmit = async (data: { comment: string; sections: any[]; file?: File }) => {
+    const handleReviewSubmit = async (data: { comment: string; sections: ReviewSection[]; file?: File }) => {
         if (!user) return;
 
         setIsSubmitting(true);
