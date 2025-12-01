@@ -34,23 +34,96 @@ const processQueue = (error: Error | null, token: string | null = null) => {
     failedQueue = [];
 };
 
+// 토큰 갱신 함수
+const refreshAccessToken = async (refreshToken: string, email: string): Promise<string> => {
+    try {
+        const response = await axios.post(
+            `${import.meta.env.VITE_API_BASE_URL || ''}/api/auth/refresh`,
+            { refreshToken, email }
+        );
+        return response.data.accessToken;
+    } catch (error) {
+        throw error;
+    }
+};
+
 /**
  * 요청 인터셉터
  * - 인증 토큰 추가
+ * - 토큰 만료 임박 시 선제적 갱신 (Proactive Refresh)
  */
 apiClient.interceptors.request.use(
-    (config) => {
-        // auth-storage에서 토큰 가져오기
+    async (config) => {
+        // auth-storage에서 토큰 정보 가져오기
         const authStorage = localStorage.getItem('auth-storage');
         if (authStorage) {
             try {
                 const parsed = JSON.parse(authStorage);
-                const token = parsed?.state?.accessToken;
-                if (token && token !== 'admin-test-token') {
+                const state = parsed?.state;
+                let token = state?.accessToken;
+                const refreshToken = state?.refreshToken;
+                const email = state?.user?.email;
+                const expiresAt = state?.expiresAt;
+
+                // 관리자 테스트 토큰은 패스
+                if (token === 'admin-test-token') {
+                    config.headers.Authorization = `Bearer ${token}`;
+                    return config;
+                }
+
+                // 토큰 갱신이 필요한지 확인 (만료 1분 전)
+                const now = Date.now();
+                const isExpiringSoon = expiresAt && (expiresAt - now < 60 * 1000);
+
+                // 갱신 요청이 아니고, 리프레시 토큰이 있고, 만료가 임박했으면 갱신 시도
+                if (
+                    isExpiringSoon &&
+                    refreshToken &&
+                    email &&
+                    !config.url?.includes('/auth/refresh') &&
+                    !config.url?.includes('/auth/login') &&
+                    !isRefreshing
+                ) {
+                    if (!isRefreshing) {
+                        isRefreshing = true;
+                        try {
+                            const newAccessToken = await refreshAccessToken(refreshToken, email);
+
+                            // localStorage 업데이트 (expiresAt은 백엔드 응답에 따라 업데이트 필요하지만, 여기서는 임시로 갱신)
+                            // 실제로는 refreshAccessToken 응답에서 expiresIn을 받아와야 함
+                            // 하지만 여기서는 간단히 토큰만 교체하고, 다음 로그인/갱신 때 정확한 시간을 받도록 함
+                            parsed.state.accessToken = newAccessToken;
+                            // 임시로 3분 연장 (백엔드 기본값) - 정확한 값은 응답 인터셉터나 별도 로직에서 처리 권장
+                            parsed.state.expiresAt = Date.now() + (180 * 1000);
+                            localStorage.setItem('auth-storage', JSON.stringify(parsed));
+
+                            token = newAccessToken;
+                            isRefreshing = false;
+                            processQueue(null, newAccessToken);
+                        } catch (error) {
+                            isRefreshing = false;
+                            processQueue(error as Error, null);
+                            // 갱신 실패 시 로그아웃 처리 등은 응답 인터셉터에서 처리하도록 둠
+                        }
+                    } else {
+                        // 이미 갱신 중이면 대기
+                        await new Promise((resolve) => {
+                            failedQueue.push({ resolve, reject: () => { } });
+                        });
+                        // 갱신된 토큰 다시 읽기
+                        const updatedStorage = localStorage.getItem('auth-storage');
+                        if (updatedStorage) {
+                            const updatedParsed = JSON.parse(updatedStorage);
+                            token = updatedParsed?.state?.accessToken;
+                        }
+                    }
+                }
+
+                if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
                 }
             } catch (e) {
-                console.error('토큰 파싱 오류:', e);
+                console.error('토큰 처리 오류:', e);
             }
         }
         return config;
