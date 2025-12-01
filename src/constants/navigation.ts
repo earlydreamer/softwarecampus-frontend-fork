@@ -115,6 +115,7 @@ export const rawCommunityNav: RawNavNode = {
     path: '/community',
     children: [
         { label: '공지사항', query: { category: 'NOTICE' } },
+        { label: '문의사항', query: { category: 'QUESTION' } },
         { label: '진로이야기', query: { category: 'COURSE_STORY' } },
         { label: '코딩이야기', query: { category: 'CODING_STORY' } },
     ]
