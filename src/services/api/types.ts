@@ -86,6 +86,7 @@ export interface ApiCourseReviewResponse {
     attachments: ApiReviewAttachmentResponse[];
     likeCount: number;
     dislikeCount: number;
+    myLikeType?: string; // 추가: 내 좋아요 상태 (LIKE, DISLIKE, NONE)
     createdAt: string; // 백엔드에서 제공 (ISO 8601)
 }
 

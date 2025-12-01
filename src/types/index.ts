@@ -268,6 +268,7 @@ export interface CourseReview {
     attachments: ReviewAttachment[]; // 첨부파일
     likeCount: number;
     dislikeCount: number;
+    myLikeType?: string; // 추가: 내 좋아요 상태 (LIKE, DISLIKE, NONE)
     approvalStatus: ApprovalStatus;
     createdAt: string; // 백엔드에서 제공 (ISO 8601)
 }

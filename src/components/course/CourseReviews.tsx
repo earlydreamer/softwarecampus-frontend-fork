@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CourseReview } from '../../types';
 import { Star, ThumbsUp, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
@@ -18,12 +18,25 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
     const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
     const [likingReviews, setLikingReviews] = useState<Set<number>>(new Set());
     const [localLikeCounts, setLocalLikeCounts] = useState<Map<number, number>>(new Map());
+    const [localLikeTypes, setLocalLikeTypes] = useState<Map<number, string>>(new Map()); // 추가: 로컬 좋아요 상태 관리
     const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string; type: 'error' | 'warning' | 'info' }>({
         isOpen: false,
         title: '',
         message: '',
         type: 'info'
     });
+
+    // 리뷰 데이터가 변경되면 로컬 상태 초기화
+    useEffect(() => {
+        const counts = new Map<number, number>();
+        const types = new Map<number, string>();
+        reviews.forEach(r => {
+            counts.set(r.id, r.likeCount);
+            types.set(r.id, r.myLikeType || 'NONE');
+        });
+        setLocalLikeCounts(counts);
+        setLocalLikeTypes(types);
+    }, [reviews]);
 
     const queryClient = useQueryClient();
 
@@ -56,26 +69,36 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
 
             // 현재 상태 스냅샷
             const previousLikeCounts = new Map(localLikeCounts);
+            const previousLikeTypes = new Map(localLikeTypes);
             const previousLikingReviews = new Set(likingReviews);
 
             // Optimistic 업데이트: 즉시 UI 반영
             setLikingReviews(prev => new Set(prev).add(reviewId));
 
-            const currentReview = reviews.find(r => r.id === reviewId);
-            if (currentReview) {
-                const currentCount = localLikeCounts.get(reviewId) ?? currentReview.likeCount;
+            const currentType = localLikeTypes.get(reviewId) || 'NONE';
+            const currentCount = localLikeCounts.get(reviewId) || 0;
+
+            // 토글 로직 시뮬레이션
+            if (currentType === 'LIKE') {
+                // 이미 좋아요 상태면 취소 (NONE)
+                setLocalLikeTypes(prev => new Map(prev).set(reviewId, 'NONE'));
+                setLocalLikeCounts(prev => new Map(prev).set(reviewId, Math.max(0, currentCount - 1)));
+            } else {
+                // 좋아요 설정 (LIKE)
+                setLocalLikeTypes(prev => new Map(prev).set(reviewId, 'LIKE'));
                 setLocalLikeCounts(prev => new Map(prev).set(reviewId, currentCount + 1));
             }
 
             // 롤백용 컨텍스트 반환
-            return { previousLikeCounts, previousLikingReviews };
+            return { previousLikeCounts, previousLikeTypes, previousLikingReviews };
         },
-        onError: (error: import('axios').AxiosError, _variables, context) => {
+        onError: (error: any, _variables, context) => {
             console.error('Failed to like review:', error);
 
             // 롤백: 이전 상태로 복원
             if (context) {
                 setLocalLikeCounts(context.previousLikeCounts);
+                setLocalLikeTypes(context.previousLikeTypes);
                 setLikingReviews(context.previousLikingReviews);
             }
 
@@ -89,6 +112,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
         onSuccess: (data, variables) => {
             // 서버 응답으로 최종 업데이트
             setLocalLikeCounts(prev => new Map(prev).set(variables.reviewId, data.likeCount));
+            setLocalLikeTypes(prev => new Map(prev).set(variables.reviewId, data.type));
         },
         onSettled: (_data, _error, variables) => {
             // 로딩 상태 정리
@@ -196,6 +220,7 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
             <div className="space-y-4">
                 {sortedReviews.map(review => {
                     const isExpanded = expandedReviews.has(review.id);
+                    const isLiked = localLikeTypes.get(review.id) === 'LIKE'; // 좋아요 여부 확인
 
                     return (
                         <div
@@ -267,8 +292,8 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                                                 <Star
                                                                     key={star}
                                                                     className={`w-4 h-4 ${star <= section.score
-                                                                            ? 'fill-amber-400 text-amber-400'
-                                                                            : 'text-slate-300 dark:text-slate-600'
+                                                                        ? 'fill-amber-400 text-amber-400'
+                                                                        : 'text-slate-300 dark:text-slate-600'
                                                                         }`}
                                                                 />
                                                             ))}
@@ -320,10 +345,13 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                         <button
                                             onClick={() => handleLike(review.id)}
                                             disabled={likingReviews.has(review.id)}
-                                            className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className={`flex items-center gap-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLiked
+                                                ? 'text-primary-600 dark:text-primary-400 font-medium'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400'
+                                                }`}
                                             aria-label="이 리뷰가 도움이 되었나요?"
                                         >
-                                            <ThumbsUp className="w-4 h-4" />
+                                            <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
                                             도움이 돼요 ({localLikeCounts.get(review.id) ?? review.likeCount ?? 0})
                                         </button>
                                     </div>

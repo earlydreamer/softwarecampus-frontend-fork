@@ -182,6 +182,7 @@ export const fetchCourseReviews = async (
             attachments: review.attachments || [],
             likeCount: review.likeCount,
             dislikeCount: review.dislikeCount,
+            myLikeType: review.myLikeType, // 백엔드에서 제공
             approvalStatus: review.approvalStatus as ApprovalStatus,
             createdAt: review.createdAt, // 백엔드에서 제공 (ISO 8601)
         }));
