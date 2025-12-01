@@ -287,10 +287,6 @@ const CourseListPage: React.FC = () => {
                     </div>
                 ) : noResult ? (
                     <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
-                        <p className="text-slate-500 dark:text-slate-400">데이터를 불러오는 데 실패했습니다.</p>
-                    </div>
-                ) : noResult ? (
-                    <div className="glass-panel p-12 text-center rounded-2xl border-dashed border-2 border-slate-200 dark:border-slate-700">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">조건에 맞는 과정이 없습니다</h2>
                         <p className="text-slate-500 dark:text-slate-400">다른 키워드나 필터를 선택해 다시 검색해 보세요.</p>
                     </div>
