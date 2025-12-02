@@ -16,10 +16,11 @@ const mapDtoToAcademy = (dto: ApiAcademyResponse): Academy => {
         email: dto.email,
         approvalStatus: dto.isApproved, // 백엔드 필드명 매핑
         approvedAt: dto.approvedAt,
+        // 백엔드에서 제공하는 필드
+        phone: dto.phoneNumber,
         // UI 표시용 기본값 (백엔드에서 제공하지 않는 필드)
         description: `${dto.name}에서 제공하는 전문 교육 프로그램입니다.`,
         logoUrl: undefined,
-        phone: undefined,
         website: undefined,
         establishedDate: dto.createdAt,
         courseCount: dto.courseCount ?? 0,

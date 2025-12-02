@@ -176,6 +176,7 @@ export const fetchCourseReviews = async (
         const reviews = response.data.content.map(review => ({
             id: review.reviewId,
             courseId: review.courseId,
+            courseName: review.courseName, // 백엔드에서 제공하는 과정명
             writerId: review.writerId,
             writerName: review.writerName, // 백엔드에서 제공
             averageScore: review.averageScore,
@@ -239,6 +240,7 @@ export const createCourseReview = async (
         return {
             id: review.reviewId,
             courseId: review.courseId,
+            courseName: review.courseName, // 백엔드에서 제공하는 과정명
             writerId: review.writerId,
             writerName: review.writerName,
             averageScore: review.averageScore,

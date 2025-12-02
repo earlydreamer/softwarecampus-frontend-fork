@@ -260,6 +260,7 @@ export interface ReviewAttachment {
 export interface CourseReview {
     id: number;
     courseId: number;
+    courseName?: string; // 백엔드에서 제공하는 과정명
     writerId: number;
     writerName: string; // 백엔드에서 제공
     averageScore: number; // 백엔드: averageScore
