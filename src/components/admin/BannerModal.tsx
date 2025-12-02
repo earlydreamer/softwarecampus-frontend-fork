@@ -112,6 +112,18 @@ const BannerModal: React.FC<BannerModalProps> = ({
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // 파일 유효성 검사
+            if (!file.type.startsWith('image/')) {
+                alert('이미지 파일만 업로드 가능합니다.');
+                e.target.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                alert('파일 크기는 5MB를 초과할 수 없습니다.');
+                e.target.value = '';
+                return;
+            }
+
             // 이전 blob URL이 있으면 revoke (ref에 저장된 것만)
             if (blobUrlRef.current) {
                 URL.revokeObjectURL(blobUrlRef.current);
@@ -132,6 +144,16 @@ const BannerModal: React.FC<BannerModalProps> = ({
         e.preventDefault();
         const file = e.dataTransfer.files?.[0];
         if (file) {
+            // 파일 유효성 검사
+            if (!file.type.startsWith('image/')) {
+                alert('이미지 파일만 업로드 가능합니다.');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                alert('파일 크기는 5MB를 초과할 수 없습니다.');
+                return;
+            }
+
             // 이전 blob URL이 있으면 revoke (ref에 저장된 것만)
             if (blobUrlRef.current) {
                 URL.revokeObjectURL(blobUrlRef.current);
