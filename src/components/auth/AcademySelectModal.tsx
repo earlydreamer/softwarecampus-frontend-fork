@@ -309,6 +309,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+                        aria-label="모달 닫기"
                     >
                         <X className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                     </button>
@@ -464,6 +465,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                                     type="button"
                                                     onClick={() => handleRemoveFile(item.id)}
                                                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition"
+                                                    aria-label={`${item.file.name} 파일 삭제`}
                                                 >
                                                     <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                                                 </button>

@@ -117,7 +117,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
                                 <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-3xl font-bold text-slate-400">
-                                    {user.userName.charAt(0).toUpperCase()}
+                                    {user.userName?.charAt(0)?.toUpperCase() || '?'}
                                 </span>
                             )}
                         </div>
