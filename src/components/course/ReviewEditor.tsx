@@ -1,26 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Star, X, FileText, AlertCircle } from 'lucide-react';
-
-interface ReviewSection {
-    sectionType: 'CURRICULUM' | 'COURSEWARE' | 'INSTRUCTOR' | 'EQUIPMENT';
-    score: number;
-}
+import { REVIEW_SECTION_LABELS, type ReviewSection } from '../../types';
 
 interface ReviewEditorProps {
     onSubmit: (data: { comment: string; sections: ReviewSection[]; file?: File }) => Promise<void>;
     onCancel: () => void;
     isSubmitting?: boolean;
 }
-
-const SECTION_LABELS: Record<string, string> = {
-    CURRICULUM: '커리큘럼',
-    COURSEWARE: '교재/자료',
-    INSTRUCTOR: '강사',
-    EQUIPMENT: '시설/장비',
-};
 
 const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmitting = false }) => {
     const [sections, setSections] = useState<ReviewSection[]>([
@@ -32,6 +21,7 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const editor = useEditor({
         extensions: [
@@ -61,6 +51,7 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
             // 파일 크기 제한 (10MB)
             if (selectedFile.size > 10 * 1024 * 1024) {
                 setError('파일 크기는 10MB를 초과할 수 없습니다.');
+                if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             }
 
@@ -68,6 +59,7 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
             const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
             if (!allowedTypes.includes(selectedFile.type)) {
                 setError('JPG, PNG, PDF 파일만 업로드 가능합니다.');
+                if (fileInputRef.current) fileInputRef.current.value = '';
                 return;
             }
 
@@ -90,9 +82,9 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
     const removeFile = () => {
         setFile(null);
         setPreviewUrl(null);
-        // input value 초기화를 위해 id를 이용하거나 ref를 사용할 수 있음
-        const fileInput = document.getElementById('certificate-upload') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const handleSubmit = async () => {
@@ -112,9 +104,10 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
                 sections,
                 file: file || undefined,
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            setError('후기 작성 중 오류가 발생했습니다.');
+            const errorMessage = err.response?.data?.message || '후기 작성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+            setError(errorMessage);
         }
     };
 
@@ -125,14 +118,14 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {sections.map((section, index) => (
                         <div key={section.sectionType} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="font-medium text-gray-700">{SECTION_LABELS[section.sectionType]}</span>
+                            <span className="font-medium text-gray-700">{REVIEW_SECTION_LABELS[section.sectionType]}</span>
                             <div className="flex gap-1">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <button
                                         key={star}
                                         type="button"
                                         onClick={() => handleScoreChange(index, star)}
-                                        aria-label={`${SECTION_LABELS[section.sectionType]} ${star}점`}
+                                        aria-label={`${REVIEW_SECTION_LABELS[section.sectionType]} ${star}점`}
                                         className={`p-1 transition-colors ${star <= section.score ? 'text-yellow-400' : 'text-gray-300'
                                             }`}
                                     >
@@ -156,6 +149,7 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
                     <div className="flex-1">
                         <input
                             id="certificate-upload"
+                            ref={fileInputRef}
                             type="file"
                             accept=".jpg,.jpeg,.png,.pdf"
                             onChange={handleFileChange}
