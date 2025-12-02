@@ -29,6 +29,13 @@ const mapDtoToBoard = (dto: ApiBoardResponseDTO): Board => {
 
         // 상세 조회 시 댓글 포함
         comments: dto.boardComments.map(mapDtoToComment),
+        // 첨부파일 목록
+        attachments: dto.boardAttachs.map(attach => ({
+            id: attach.id,
+            originalFile: attach.originalFile,
+            savedFile: attach.savedFile,
+            fileSize: attach.fileSize,
+        })),
     };
 };
 
@@ -59,7 +66,13 @@ export const fetchBoardPosts = async (
     searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment'
 ): Promise<{ posts: Board[], total: number }> => {
     try {
-        const params: any = { page, limit };
+        const params: {
+            page: number;
+            limit: number;
+            category?: BoardCategory;
+            keyword?: string;
+            searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment';
+        } = { page, limit };
         if (category) params.category = category;
         if (searchKeyword) params.keyword = searchKeyword;
         if (searchType) params.searchType = searchType;
@@ -148,7 +161,8 @@ export const deleteComment = async (commentId: number, postId: number): Promise<
 };
 
 /**
- * 게시글 작성
+ * 게시글 작성 (첨부파일 포함)
+ * 백엔드는 multipart/form-data로 게시글과 파일을 함께 받음
  */
 export const createBoardPost = async (data: {
     title: string;
@@ -156,15 +170,76 @@ export const createBoardPost = async (data: {
     category: BoardCategory;
     account: { id: number; userName: string; }; // 사용 안함 (토큰 사용)
     isSecret: boolean;
-    hasAttachment: boolean; // 파일 업로드 별도 처리 필요
+    files?: File[];
 }): Promise<Board> => {
-    // 파일 업로드는 별도 API (/api/boards/upload) 사용 필요
-    // 여기서는 텍스트 데이터만 전송
-    const response = await apiClient.post<ApiBoardResponseDTO>('/api/boards', {
-        title: data.title,
-        text: data.text,
-        category: data.category,
-        isSecret: data.isSecret,
-    });
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('text', data.text);
+    formData.append('category', data.category);
+    formData.append('isSecret', String(data.isSecret));
+
+    // 파일 첨부
+    if (data.files && data.files.length > 0) {
+        data.files.forEach(file => {
+            formData.append('files', file);
+        });
+    }
+
+    // Content-Type 헤더를 명시하지 않아 axios/브라우저가 multipart boundary를 자동 설정
+    const response = await apiClient.post<ApiBoardResponseDTO>('/api/boards', formData);
     return mapDtoToBoard(response.data);
+};
+
+/**
+ * 게시글 수정 (첨부파일 포함)
+ * 백엔드는 multipart/form-data로 게시글과 파일을 함께 받음
+ * deleteAttachIds: 삭제할 기존 첨부파일 ID 목록
+ */
+export const updateBoardPost = async (
+    postId: number,
+    data: {
+        title: string;
+        text: string;
+        category: BoardCategory;
+        isSecret: boolean;
+        files?: File[];
+        deleteAttachIds?: number[];
+    }
+): Promise<void> => {
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('text', data.text);
+    formData.append('category', data.category);
+    formData.append('isSecret', String(data.isSecret));
+
+    // 삭제할 첨부파일 ID
+    if (data.deleteAttachIds && data.deleteAttachIds.length > 0) {
+        data.deleteAttachIds.forEach(id => {
+            formData.append('deleteAttachIds', String(id));
+        });
+    }
+
+    // 새 파일 첨부
+    if (data.files && data.files.length > 0) {
+        data.files.forEach(file => {
+            formData.append('files', file);
+        });
+    }
+
+    // Content-Type 헤더를 명시하지 않아 axios/브라우저가 multipart boundary를 자동 설정
+    await apiClient.patch(`/api/boards/${postId}`, formData);
+};
+
+/**
+ * 게시글 삭제
+ */
+export const deleteBoardPost = async (postId: number): Promise<void> => {
+    await apiClient.delete(`/api/boards/${postId}`);
+};
+
+/**
+ * 첨부파일 다운로드 URL 생성
+ */
+export const getBoardAttachmentDownloadUrl = (boardId: number, attachId: number): string => {
+    return `/api/boards/${boardId}/boardAttachs/${attachId}/download`;
 };

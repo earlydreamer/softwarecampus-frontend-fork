@@ -171,6 +171,11 @@ export const fetchCourseQnAs = async (
             createdAt: qna.createdAt,
             updatedAt: qna.updatedAt,
             viewCount: 0,
+            files: qna.files?.map(f => ({
+                id: f.id,
+                originName: f.originName,
+                fileUrl: f.fileUrl,
+            })) || [],
         }));
 
         return { qnas, totalCount: totalElements };
@@ -342,6 +347,78 @@ export const deleteCourse = async (courseId: number): Promise<void> => {
         await apiClient.delete(`/api/courses/${courseId}`);
     } catch (error) {
         console.error(`Failed to delete course ${courseId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 과정 Q&A 질문 등록
+ */
+export const createCourseQnA = async (
+    courseId: number,
+    data: {
+        title: string;
+        questionText: string;
+        fileDetails?: { id: number; originName: string; fileUrl: string }[];
+    }
+): Promise<CourseQna> => {
+    try {
+        const response = await apiClient.post<ApiCourseQnaResponse>(
+            `/api/courses/${courseId}/qna`,
+            data
+        );
+
+        const qna = response.data;
+        return {
+            id: qna.id,
+            courseId: courseId,
+            accountId: qna.accountId,
+            writerName: qna.writerName,
+            title: qna.title,
+            questionText: qna.questionText,
+            isAnswered: qna.isAnswered,
+            answerText: qna.answerText,
+            answeredById: qna.answeredById,
+            answeredByName: qna.answeredByName,
+            createdAt: qna.createdAt,
+            updatedAt: qna.updatedAt,
+            viewCount: 0,
+            files: qna.files?.map(f => ({
+                id: f.id,
+                originName: f.originName,
+                fileUrl: f.fileUrl,
+            })) || [],
+        };
+    } catch (error) {
+        console.error(`Failed to create QnA for course ${courseId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 과정 Q&A 파일 업로드
+ * 백엔드 응답: QnaFileDetail { id: Long, originName: String, fileUrl: String }
+ */
+export const uploadCourseQnaFile = async (
+    courseId: number,
+    file: File
+): Promise<{ id: number; originName: string; fileUrl: string }> => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await apiClient.post<{ id: number; originName: string; fileUrl: string }>(
+            `/api/courses/${courseId}/qna/files/upload`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to upload file for course ${courseId} QnA:`, error);
         throw error;
     }
 };
