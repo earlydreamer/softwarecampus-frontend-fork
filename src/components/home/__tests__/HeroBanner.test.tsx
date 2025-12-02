@@ -103,8 +103,9 @@ describe('HeroBanner - currentIndex 범위 검증', () => {
         expect(screen.getByText('Softwarecampus')).toBeInTheDocument();
     });
 
-    it('currentBanner가 undefined일 때 null을 반환해야 함', () => {
-        // 이 케이스는 useEffect가 실행되기 전 순간적으로 발생할 수 있음
+    it('초기 렌더링 시 정상적으로 렌더링되어야 함', () => {
+        // useEffect가 실행되기 전 순간적으로 currentBanner가 undefined일 수 있지만
+        // 컴포넌트는 크래시 없이 정상적으로 렌더링되어야 함
         const { container } = renderWithRouter(
             <HeroBanner banners={mockBanners} loading={false} />
         );

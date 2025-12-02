@@ -10,6 +10,34 @@ interface HeroBannerProps {
     loading: boolean;
 }
 
+/**
+ * 기본 배너 컴포넌트 - 배너가 없거나 로드 실패 시 표시
+ */
+const DefaultBanner: React.FC = () => (
+    <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-3xl shadow-2xl">
+        {/* 그라디언트 배경 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500" />
+        
+        {/* 장식 요소 */}
+        <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+        </div>
+        
+        {/* 콘텐츠 */}
+        <div className="relative h-full flex items-center justify-center">
+            <div className="text-center text-white space-y-4">
+                <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight">
+                    Softwarecampus
+                </h2>
+                <p className="text-lg md:text-xl text-white/80 font-light">
+                    최고의 교육 과정으로 여러분의 커리어를 시작하세요
+                </p>
+            </div>
+        </div>
+    </div>
+);
+
 const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -47,60 +75,14 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
 
     // 배너가 없을 경우 기본 배너 표시
     if (banners.length === 0) {
-        return (
-            <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-3xl shadow-2xl">
-                {/* 그라디언트 배경 */}
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500" />
-                
-                {/* 장식 요소 */}
-                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-                    <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-                </div>
-                
-                {/* 콘텐츠 */}
-                <div className="relative h-full flex items-center justify-center">
-                    <div className="text-center text-white space-y-4">
-                        <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight">
-                            Softwarecampus
-                        </h2>
-                        <p className="text-lg md:text-xl text-white/80 font-light">
-                            최고의 교육 과정으로 여러분의 커리어를 시작하세요
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
+        return <DefaultBanner />;
     }
 
     const currentBanner = banners[currentIndex];
 
     // 추가 안전장치: currentIndex가 여전히 범위를 벗어난 경우 기본 배너 표시
     if (!currentBanner) {
-        return (
-            <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-3xl shadow-2xl">
-                {/* 그라디언트 배경 */}
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500" />
-                
-                {/* 장식 요소 */}
-                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-                    <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-                </div>
-                
-                {/* 콘텐츠 */}
-                <div className="relative h-full flex items-center justify-center">
-                    <div className="text-center text-white space-y-4">
-                        <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight">
-                            Softwarecampus
-                        </h2>
-                        <p className="text-lg md:text-xl text-white/80 font-light">
-                            최고의 교육 과정으로 여러분의 커리어를 시작하세요
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
+        return <DefaultBanner />;
     }
 
     return (
@@ -137,12 +119,14 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
             {/* Navigation Buttons */}
             <button
                 onClick={goToPrevious}
+                aria-label="이전 배너"
                 className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/20"
             >
                 <ChevronLeft className="w-6 h-6" />
             </button>
             <button
                 onClick={goToNext}
+                aria-label="다음 배너"
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/20"
             >
                 <ChevronRight className="w-6 h-6" />
@@ -154,6 +138,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
                     <button
                         key={index}
                         onClick={() => setCurrentIndex(index)}
+                        aria-label={`배너 ${index + 1}번으로 이동`}
                         className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${currentIndex === index
                             ? 'w-8 bg-white'
                             : 'bg-white/40 hover:bg-white/60'
