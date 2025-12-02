@@ -1,26 +1,15 @@
-import { Camera, Edit, Mail, Phone, Shield, Building, Briefcase, MapPin, Trash2, Activity, FileText, MessageSquare, Bookmark } from 'lucide-react';
-import { getAccountTypeLabel, getApprovalStatusLabel, getApprovalStatusColor, recentActivity } from '../data';
-import type { Account } from '../../../types';
+import { Camera, Edit, Mail, Phone, Shield, Building, Briefcase, MapPin, Trash2 } from 'lucide-react';
+import { getAccountTypeLabel, getApprovalStatusLabel, getApprovalStatusColor } from '../data';
+import type { Account, MyStats } from '../../../types';
 
 interface SidebarProps {
     user: Account;
     onEditClick: () => void;
     onDeleteClick: () => void;
-    myPostsCount: number;
-    totalComments: number;
-    totalViews: number;
+    stats: MyStats;
 }
 
-const getActivityIcon = (type: string) => {
-    switch (type) {
-        case 'post': return <FileText className="w-4 h-4" />;
-        case 'comment': return <MessageSquare className="w-4 h-4" />;
-        case 'bookmark': return <Bookmark className="w-4 h-4" />;
-        default: return <Activity className="w-4 h-4" />;
-    }
-};
-
-const Sidebar = ({ user, onEditClick, onDeleteClick, myPostsCount, totalComments, totalViews }: SidebarProps) => {
+const Sidebar = ({ user, onEditClick, onDeleteClick, stats }: SidebarProps) => {
     return (
         <div className="lg:col-span-1 space-y-6">
             {/* 프로필 정보 */}
@@ -103,45 +92,25 @@ const Sidebar = ({ user, onEditClick, onDeleteClick, myPostsCount, totalComments
                 </div>
             </div>
 
-            {/* 최근 활동 */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-primary-600" />
-                    최근 활동
-                </h3>
-                <div className="space-y-3">
-                    {recentActivity.map((activity, idx) => (
-                        <div key={idx} className="flex items-start gap-3 text-sm">
-                            <div className={`p-1.5 rounded-lg ${activity.type === 'post' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' :
-                                activity.type === 'comment' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' :
-                                    'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
-                                }`}>
-                                {getActivityIcon(activity.type)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-slate-700 dark:text-slate-300 text-xs truncate">{activity.title}</p>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs">{activity.date}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
             {/* 활동 통계 요약 */}
             <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-6 shadow-lg text-white">
                 <h3 className="text-sm font-semibold mb-4 opacity-90">활동 요약</h3>
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <span className="text-sm opacity-90">작성한 글</span>
-                        <span className="text-2xl font-bold">{myPostsCount}</span>
+                        <span className="text-2xl font-bold">{stats.totalPosts}</span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-sm opacity-90">총 댓글</span>
-                        <span className="text-2xl font-bold">{totalComments}</span>
+                        <span className="text-2xl font-bold">{stats.totalComments}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm opacity-90">찜한 과정</span>
+                        <span className="text-2xl font-bold">{stats.totalBookmarks}</span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-sm opacity-90">총 조회수</span>
-                        <span className="text-2xl font-bold">{totalViews}</span>
+                        <span className="text-2xl font-bold">{stats.totalViews}</span>
                     </div>
                 </div>
             </div>

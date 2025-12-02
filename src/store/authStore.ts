@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>()(
       expiresAt: null,
       isAuthenticated: false,
       login: async (email: string, password: string) => {
-        // 백엔드 API를 통한 로그인
+        // 백엔드 API 호출
         try {
           const response = await apiClient.post('/api/auth/login', { email, password });
           const { accessToken, refreshToken, account, expiresIn } = response.data;

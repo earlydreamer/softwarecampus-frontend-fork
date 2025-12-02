@@ -16,9 +16,10 @@ import {
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Undo, Redo, Link as LinkIcon, Image as ImageIcon,
   Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Underline as UnderlineIcon, ListTodo, X, Check, Paperclip, Trash2,
+  Underline as UnderlineIcon, ListTodo, X, Check, Upload, Loader2, Paperclip, Trash2,
   type LucideIcon
 } from 'lucide-react';
+import { uploadEditorImage } from '../../services/communityService';
 import '../../styles/tiptap.css';
 
 // URL Input Modal Component
@@ -172,6 +173,265 @@ const UrlInputModal = ({ isOpen, onClose, onSubmit, title, placeholder, validate
               확인
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 이미지 업로드 모달 컴포넌트
+interface ImageUploadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onImageInsert: (url: string) => void;
+}
+
+const ImageUploadModal = ({ isOpen, onClose, onImageInsert }: ImageUploadModalProps) => {
+  const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
+  const [url, setUrl] = useState('');
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+  const MAX_SIZE_MB = 10;
+
+  useEffect(() => {
+    if (isOpen) {
+      setUrl('');
+      setUrlError(null);
+      setUploadError(null);
+      setActiveTab('upload');
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const validateFile = (file: File): string | null => {
+    // MIME 타입 검증
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return '지원하지 않는 이미지 형식입니다. (jpg, png, gif, webp만 가능)';
+    }
+    
+    // 파일 확장자 검증 (MIME 타입 스푸핑 방지)
+    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(extension)) {
+      return '지원하지 않는 파일 확장자입니다. (jpg, png, gif, webp만 가능)';
+    }
+    
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return `파일 크기는 ${MAX_SIZE_MB}MB를 초과할 수 없습니다.`;
+    }
+    return null;
+  };
+
+  const handleFileUpload = async (file: File) => {
+    const error = validateFile(file);
+    if (error) {
+      setUploadError(error);
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      const imageUrl = await uploadEditorImage(file);
+      onImageInsert(imageUrl);
+      onClose();
+    } catch (err) {
+      console.error('이미지 업로드 실패:', err);
+      setUploadError('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const validateUrl = (inputUrl: string): string | null => {
+    if (!inputUrl || inputUrl.trim() === '') return 'URL을 입력해주세요.';
+    try {
+      const parsedUrl = new URL(inputUrl);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return 'http 또는 https URL만 사용할 수 있습니다.';
+      }
+      return null;
+    } catch {
+      return '올바른 URL 형식이 아닙니다.';
+    }
+  };
+
+  const handleUrlSubmit = () => {
+    const trimmedUrl = url.trim();
+    const error = validateUrl(trimmedUrl);
+    if (error) {
+      setUrlError(error);
+      return;
+    }
+    onImageInsert(trimmedUrl);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
+          <h3 className="font-bold text-slate-900 dark:text-white">이미지 추가</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* 탭 */}
+        <div className="flex border-b border-slate-200 dark:border-slate-700">
+          <button
+            onClick={() => setActiveTab('upload')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'upload'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Upload className="w-4 h-4 inline mr-2" />
+            파일 업로드
+          </button>
+          <button
+            onClick={() => setActiveTab('url')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'url'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <LinkIcon className="w-4 h-4 inline mr-2" />
+            URL 입력
+          </button>
+        </div>
+
+        <div className="p-4">
+          {activeTab === 'upload' ? (
+            <div>
+              {/* 드래그 앤 드롭 영역 */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                  dragOver
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                    : 'border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                }`}
+              >
+                {isUploading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+                    <p className="text-slate-600 dark:text-slate-400">업로드 중...</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                    <p className="text-slate-600 dark:text-slate-400 mb-1">
+                      클릭하거나 이미지를 드래그하세요
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      JPG, PNG, GIF, WebP (최대 {MAX_SIZE_MB}MB)
+                    </p>
+                  </>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              {uploadError && (
+                <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
+                  {uploadError}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    if (urlError) setUrlError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleUrlSubmit();
+                    }
+                  }}
+                  placeholder="https://example.com/image.jpg"
+                  className={`w-full px-4 py-2 rounded-lg border ${
+                    urlError
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'border-slate-200 dark:border-slate-700 focus:ring-blue-500'
+                  } bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none transition-all`}
+                  autoFocus
+                />
+                {urlError && (
+                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
+                    <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
+                    {urlError}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUrlSubmit}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  확인
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -826,13 +1086,10 @@ const TiptapEditor = ({
         validate={validateUrl}
       />
 
-      <UrlInputModal
+      <ImageUploadModal
         isOpen={modalType === 'image'}
         onClose={() => setModalType(null)}
-        onSubmit={handleAddImage}
-        title="이미지 URL 추가"
-        placeholder="https://example.com/image.jpg"
-        validate={validateUrl}
+        onImageInsert={handleAddImage}
       />
     </div>
   );

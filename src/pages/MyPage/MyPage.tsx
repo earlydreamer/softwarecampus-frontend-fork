@@ -31,8 +31,20 @@ const MyPage = () => {
         handlePasswordChangeClick,
         handleEmailVerified,
         myPosts,
+        myComments,
+        bookmarkedCourses,
+        stats,
         totalComments,
-        totalViews
+        postsPage,
+        setPostsPage,
+        commentsPage,
+        setCommentsPage,
+        postsTotalPages,
+        commentsTotalPages,
+        isPostsLoading,
+        isCommentsLoading,
+        isStatsLoading,
+        isFavoritesLoading
     } = useMyPage();
 
     if (!isAuthenticated || !user) {
@@ -42,13 +54,46 @@ const MyPage = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'overview':
-                return <OverviewTab setActiveTab={setActiveTab} />;
+                return (
+                    <OverviewTab 
+                        setActiveTab={setActiveTab}
+                        posts={myPosts}
+                        comments={myComments}
+                        bookmarkedCourses={bookmarkedCourses}
+                        stats={stats}
+                        isLoading={isStatsLoading}
+                    />
+                );
             case 'posts':
-                return <PostsTab />;
+                return (
+                    <PostsTab 
+                        posts={myPosts}
+                        stats={stats}
+                        isLoading={isPostsLoading}
+                        currentPage={postsPage}
+                        totalPages={postsTotalPages}
+                        onPageChange={setPostsPage}
+                    />
+                );
             case 'comments':
-                return <CommentsTab />;
+                return (
+                    <CommentsTab 
+                        comments={myComments}
+                        stats={stats}
+                        isLoading={isCommentsLoading}
+                        currentPage={commentsPage}
+                        totalPages={commentsTotalPages}
+                        onPageChange={setCommentsPage}
+                    />
+                );
             case 'bookmarks':
-                return <BookmarksTab />;
+                return (
+                    <BookmarksTab 
+                        courses={bookmarkedCourses}
+                        stats={stats}
+                        isLoading={isFavoritesLoading}
+                    />
+                );
             default:
                 return null;
         }
@@ -75,9 +120,9 @@ const MyPage = () => {
                             >
                                 <span className="flex items-center justify-center gap-2">
                                     {tab === 'overview' && <><User className="w-5 h-5" />개요</>}
-                                    {tab === 'posts' && <><FileText className="w-5 h-5" />글 ({myPosts.length})</>}
-                                    {tab === 'comments' && <><MessageSquare className="w-5 h-5" />댓글 ({totalComments})</>}
-                                    {tab === 'bookmarks' && <><Bookmark className="w-5 h-5" />찜</>}
+                                    {tab === 'posts' && <><FileText className="w-5 h-5" />글 ({stats.totalPosts})</>}
+                                    {tab === 'comments' && <><MessageSquare className="w-5 h-5" />댓글 ({stats.totalComments})</>}
+                                    {tab === 'bookmarks' && <><Bookmark className="w-5 h-5" />찜 ({stats.totalBookmarks})</>}
                                 </span>
                                 {activeTab === tab && (
                                     <div className="absolute bottom-0 left-0 w-full h-1 bg-primary-600 dark:bg-primary-500" />
@@ -92,9 +137,7 @@ const MyPage = () => {
                         user={user} 
                         onEditClick={() => setIsEditModalOpen(true)}
                         onDeleteClick={() => setIsDeleteModalOpen(true)}
-                        myPostsCount={myPosts.length}
-                        totalComments={totalComments}
-                        totalViews={totalViews}
+                        stats={stats}
                     />
                     {renderTabContent()}
                 </div>

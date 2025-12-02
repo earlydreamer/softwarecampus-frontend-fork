@@ -43,7 +43,7 @@ const CommunityPage = () => {
         setSearchInput(searchKeyword);
     }, [searchKeyword]);
 
-    const { data, isLoading, error } = useQuery({
+    const { data, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['boardPosts', currentCategory, currentPage, searchKeyword, searchType, sortType],
         queryFn: () => fetchBoardPosts(currentCategory, currentPage, 20, searchKeyword, sortType, searchType),
     });
@@ -51,7 +51,7 @@ const CommunityPage = () => {
     // 서버에서 이미 정렬/필터/페이징된 데이터 사용
     const posts = data?.posts || [];
     const totalCount = data?.total || 0;
-    const totalPages = Math.ceil(totalCount / 20);
+    const totalPages = data?.totalPages || Math.ceil(totalCount / 20);
     const startIndex = (currentPage - 1) * 20;
     const endIndex = Math.min(startIndex + 20, totalCount);
 
@@ -135,7 +135,7 @@ const CommunityPage = () => {
                         </p>
                     </div>
                     <Link
-                        to="/community/write"
+                        to={`/community/write${currentCategory ? `?category=${currentCategory}` : ''}`}
                         className="btn-primary flex items-center gap-2"
                     >
                         <PenSquare className="w-4 h-4" />
@@ -233,19 +233,27 @@ const CommunityPage = () => {
                             </div>
                         )}
 
-                        {error && (
-                            <div className="py-20 text-center text-red-500 dark:text-red-400">
-                                게시글을 불러오는데 실패했습니다.
+                        {isError && (
+                            <div className="py-20 text-center">
+                                <p className="text-red-500 dark:text-red-400 mb-4">
+                                    게시글을 불러오는데 실패했습니다.
+                                </p>
+                                <button
+                                    onClick={() => refetch()}
+                                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                                >
+                                    다시 시도
+                                </button>
                             </div>
                         )}
 
-                        {!isLoading && !error && posts.length === 0 && (
+                        {!isLoading && !isError && posts.length === 0 && (
                             <div className="py-20 text-center text-slate-500 dark:text-slate-400">
                                 {searchKeyword ? '검색 결과가 없습니다.' : '등록된 게시글이 없습니다.'}
                             </div>
                         )}
 
-                        {!isLoading && !error && posts.map((post) => (
+                        {!isLoading && !isError && posts.map((post) => (
                             <div
                                 key={post.id}
                                 className="border-b border-slate-100 dark:border-slate-700 last:border-b-0 hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors"
@@ -377,7 +385,7 @@ const CommunityPage = () => {
                 </div>
 
                 {/* 페이징 */}
-                {!isLoading && !error && totalPages > 0 && (
+                {!isLoading && !isError && totalPages > 0 && (
                     <div className="flex flex-col items-center gap-4">
                         {/* 페이지 정보 */}
                         <div className="text-sm text-slate-600 dark:text-slate-400">

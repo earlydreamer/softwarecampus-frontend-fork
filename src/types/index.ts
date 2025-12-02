@@ -189,9 +189,9 @@ export interface Academy {
 // 게시판 첨부파일
 export interface BoardAttachment {
     id: number;
-    originalFile: string;  // 원본 파일명
-    savedFile: string;     // 저장된 파일명
-    fileSize: number;
+    originName: string;  // 원본 파일명
+    savedName: string;   // 저장된 파일명 (S3 key)
+    fileSize: number;    // 파일 크기 (bytes)
     isNew?: boolean;       // 프론트엔드에서 새로 추가된 파일인지 여부
     file?: File;           // 업로드 전 파일 객체
     previewUrl?: string;   // 이미지 미리보기 URL
@@ -238,6 +238,7 @@ export interface Comment {
     createdAt: string;
     updatedAt?: string;
     isDeleted?: boolean;
+    topCommentId?: number; // 대댓글인 경우 부모 댓글 ID
     subComments?: Comment[]; // 대댓글 지원
 }
 
@@ -369,6 +370,54 @@ export interface AcademyQA { // 변경: AcademyQnA -> AcademyQA
     createdAt: string;
     updatedAt: string;
     viewCount?: number;
+}
+
+// ===== 마이페이지 관련 타입 정의 =====
+// Spring Data Page 응답 타입
+export interface PageResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number; // 현재 페이지 (0-indexed)
+    size: number;
+    first: boolean;
+    last: boolean;
+    empty: boolean;
+}
+
+// 내가 쓴 글 (백엔드 MyPostResponseDTO)
+export interface MyPost {
+    id: number;
+    title: string;
+    category: string;
+    hits: number;
+    commentsCount: number;
+    likeCount: number;
+    createdAt: string;
+}
+
+// 내가 쓴 댓글 (백엔드 MyCommentResponseDTO)
+export interface MyComment {
+    id: number;
+    text: string;
+    boardId: number;
+    boardTitle: string;
+    createdAt: string;
+}
+
+// 활동 통계 (백엔드 MyStatsResponseDTO)
+export interface MyStats {
+    totalPosts: number;
+    totalComments: number;
+    totalBookmarks: number;
+    totalViews: number;
+}
+
+// 찜한 강좌 (백엔드 CourseFavoriteResponseDTO)
+export interface CourseFavorite {
+    courseId: number;
+    courseName: string;
+    isFavorite: boolean;
 }
 
 // ===== 관리자 페이지용 타입 정의 =====

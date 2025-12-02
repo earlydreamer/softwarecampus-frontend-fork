@@ -1,17 +1,21 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft } from 'lucide-react';
-import type { Comment } from '../types';
+import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft, Download, FileIcon, Reply, CornerDownRight } from 'lucide-react';
+import type { Comment, BoardAttachment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import {
     fetchBoardPost,
     recommendBoardPost,
+    cancelRecommendBoardPost,
     createComment,
     updateComment,
     deleteComment,
+    deleteBoardPost,
+    downloadBoardAttachment,
 } from '../services/communityService';
 import { sanitizeInput } from '../utils/security';
+import { formatFileSize } from '../utils/formatUtils';
 import { useAuthStore } from '../store/authStore';
 import AlertModal from '../components/ui/AlertModal';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -30,6 +34,8 @@ const CommunityDetailPage = () => {
     const [commentContent, setCommentContent] = useState('');
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
     const [editingContent, setEditingContent] = useState('');
+    const [replyingToId, setReplyingToId] = useState<number | null>(null);  // 답글 대상 댓글 ID
+    const [replyContent, setReplyContent] = useState('');  // 답글 내용
     
     // 모달 상태
     const [alertModal, setAlertModal] = useState<{
@@ -42,6 +48,10 @@ const CommunityDetailPage = () => {
         isOpen: boolean;
         commentId: number | null;
     }>({ isOpen: false, commentId: null });
+    const [deleteReplyConfirmModal, setDeleteReplyConfirmModal] = useState<{
+        isOpen: boolean;
+        replyId: number | null;
+    }>({ isOpen: false, replyId: null });
 
     // 게시글 조회
     const { data: post, isLoading: postLoading, error: postError, refetch: refetchPost } = useQuery({
@@ -75,6 +85,27 @@ const CommunityDetailPage = () => {
         },
     });
 
+    // 추천 취소 mutation
+    const cancelRecommendMutation = useMutation({
+        mutationFn: () => {
+            if (!isAuthenticated) {
+                throw new Error('로그인이 필요한 서비스입니다.');
+            }
+            return cancelRecommendBoardPost(postIdNumber);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
+        },
+        onError: (error: Error) => {
+            setAlertModal({
+                isOpen: true,
+                title: '추천 취소 실패',
+                message: error.message || '추천 취소에 실패했습니다.',
+                type: 'error'
+            });
+        },
+    });
+
     // 댓글 작성 mutation
     const createCommentMutation = useMutation({
         mutationFn: (content: string) => createComment(postIdNumber, content),
@@ -88,6 +119,25 @@ const CommunityDetailPage = () => {
                 isOpen: true,
                 title: '댓글 작성 실패',
                 message: error.message || '댓글 작성에 실패했습니다.',
+                type: 'error'
+            });
+        },
+    });
+
+    // 대댓글 작성 mutation
+    const createReplyMutation = useMutation({
+        mutationFn: ({ content, topCommentId }: { content: string; topCommentId: number }) => 
+            createComment(postIdNumber, content, topCommentId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
+            setReplyingToId(null);
+            setReplyContent('');
+        },
+        onError: (error: Error) => {
+            setAlertModal({
+                isOpen: true,
+                title: '답글 작성 실패',
+                message: error.message || '답글 작성에 실패했습니다.',
                 type: 'error'
             });
         },
@@ -119,6 +169,64 @@ const CommunityDetailPage = () => {
             queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
     });
+
+    // 게시글 삭제 mutation
+    const deleteBoardMutation = useMutation({
+        mutationFn: () => deleteBoardPost(postIdNumber),
+        onSuccess: () => {
+            setAlertModal({
+                isOpen: true,
+                title: '삭제 완료',
+                message: '게시글이 삭제되었습니다.',
+                type: 'success'
+            });
+            // 모달 닫히면 리다이렉트 (버튼 클릭 시)
+            setTimeout(() => navigate('/community'), 1500);
+        },
+        onError: (error: Error) => {
+            setAlertModal({
+                isOpen: true,
+                title: '삭제 실패',
+                message: error.message || '게시글 삭제에 실패했습니다. 다시 시도해주세요.',
+                type: 'error'
+            });
+        },
+    });
+
+    // 게시글 삭제 핸들러
+    const [deletePostConfirmModal, setDeletePostConfirmModal] = useState(false);
+    
+    const handleDeletePost = () => {
+        setDeletePostConfirmModal(true);
+    };
+    
+    const confirmDeletePost = () => {
+        setDeletePostConfirmModal(false);
+        deleteBoardMutation.mutate();
+    };
+
+    // 첨부파일 다운로드 핸들러
+    const handleDownload = async (attachment: BoardAttachment) => {
+        try {
+            const blob = await downloadBoardAttachment(postIdNumber, attachment.id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = attachment.originName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('다운로드 실패:', error);
+            setAlertModal({
+                isOpen: true,
+                title: '다운로드 실패',
+                message: '파일 다운로드에 실패했습니다. 다시 시도해주세요.',
+                type: 'error'
+            });
+        }
+    };
 
     // 현재 사용자가 게시글 작성자인지 확인
     const isAuthor = useMemo(() => {
@@ -174,6 +282,29 @@ const CommunityDetailPage = () => {
     const handleEditSubmit = (commentId: number) => {
         if (editingContent.trim()) {
             updateCommentMutation.mutate({ commentId, text: editingContent });
+        }
+    };
+
+    // 답글 작성 시작
+    const handleReplyStart = (commentId: number) => {
+        setReplyingToId(commentId);
+        setReplyContent('');
+    };
+
+    // 답글 작성 제출
+    // NOTE: 길이 제한(500자)은 프론트엔드와 백엔드 모두에서 검증해야 함 (데이터 무결성 보장)
+    const handleReplySubmit = (topCommentId: number) => {
+        if (replyContent.trim()) {
+            if (replyContent.length > 500) {
+                setAlertModal({
+                    isOpen: true,
+                    title: '입력 오류',
+                    message: '답글은 500자를 초과할 수 없습니다.',
+                    type: 'warning'
+                });
+                return;
+            }
+            createReplyMutation.mutate({ content: replyContent, topCommentId });
         }
     };
 
@@ -267,14 +398,35 @@ const CommunityDetailPage = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-8">
             <div className="max-w-4xl mx-auto px-4">
-                {/* 뒤로가기 버튼 */}
-                <Link
-                    to="/community"
-                    className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-6 transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span className="font-medium">목록으로</span>
-                </Link>
+                {/* 상단 버튼 영역 */}
+                <div className="flex justify-between items-center mb-6">
+                    <Link
+                        to="/community"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        목록으로
+                    </Link>
+                    {isAuthor && (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleDeletePost}
+                                disabled={deleteBoardMutation.isPending}
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                {deleteBoardMutation.isPending ? '삭제 중...' : '삭제'}
+                            </button>
+                            <button
+                                onClick={() => navigate(`/community/edit/${postIdNumber}`)}
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+                            >
+                                <Pencil className="w-4 h-4" />
+                                수정
+                            </button>
+                        </div>
+                    )}
+                </div>
 
                 {/* 게시글 헤더 */}
                 <div className="glass-panel p-6 md:p-8 rounded-2xl mb-4 shadow-xl">
@@ -337,6 +489,44 @@ const CommunityDetailPage = () => {
                     </div>
                 </div>
 
+                {/* 첨부파일 */}
+                {post.attachments && post.attachments.length > 0 && (
+                    <div className="glass-panel p-6 md:p-8 rounded-2xl mb-4 shadow-xl">
+                        <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white mb-4">
+                            <Paperclip className="w-5 h-5 text-blue-600" />
+                            첨부파일 <span className="text-blue-600">({post.attachments.length})</span>
+                        </h3>
+                        <div className="space-y-2">
+                            {post.attachments.map((attachment) => (
+                                <div
+                                    key={attachment.id}
+                                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <FileIcon className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                                                {attachment.originName}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {formatFileSize(attachment.fileSize)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDownload(attachment)}
+                                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 dark:bg-blue-900/30 dark:hover:bg-blue-600 rounded-lg transition-all duration-200"
+                                    >
+                                        <Download className="w-4 h-4" />
+                                        다운로드
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* 추천 버튼 */}
                 <div className="glass-panel p-6 rounded-2xl mb-6 shadow-xl">
                     <div className="flex justify-center">
@@ -351,22 +541,22 @@ const CommunityDetailPage = () => {
                                     });
                                     return;
                                 }
-                                if (!post.like) {
+                                if (post.like) {
+                                    cancelRecommendMutation.mutate();
+                                } else {
                                     recommendMutation.mutate();
                                 }
                             }}
-                            disabled={post.like || recommendMutation.isPending || !isAuthenticated}
-                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 ${post.like
-                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50'
-                                : !isAuthenticated
-                                    ? 'bg-slate-300 text-slate-500 dark:bg-slate-700 dark:text-slate-400 cursor-not-allowed'
-                                    : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
+                            disabled={recommendMutation.isPending || cancelRecommendMutation.isPending}
+                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 cursor-pointer ${post.like
+                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50 hover:from-blue-600 hover:to-indigo-700'
+                                : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
                                 }`}
                         >
                             <ThumbsUp className={`w-10 h-10 ${!post.like && 'group-hover:animate-bounce'}`} />
                             <div className="text-center">
                                 <div className="font-bold text-lg">
-                                    {post.like ? '추천했습니다' : !isAuthenticated ? '로그인 필요' : '추천하기'}
+                                    {post.like ? '추천 취소' : '추천하기'}
                                 </div>
                                 <div className="text-2xl font-bold mt-1">{post.likeCount || 0}</div>
                             </div>
@@ -378,40 +568,59 @@ const CommunityDetailPage = () => {
                 <div className="glass-panel p-6 md:p-8 rounded-2xl shadow-xl">
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
                         <MessageSquare className="w-6 h-6 text-blue-600" />
-                        댓글 <span className="text-blue-600">{comments.length}</span>
+                        댓글 <span className="text-blue-600">
+                            {comments.reduce((total, comment) => 
+                                total + 1 + (comment.subComments?.length || 0), 0
+                            )}
+                        </span>
                     </h2>
 
                     {/* 댓글 작성 폼 */}
-                    <form onSubmit={handleCommentSubmit} className="mb-8">
-                        <div className="mb-3">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                                    댓글 작성
-                                </label>
-                                <span className="text-xs text-slate-500">
-                                    {commentContent.length}/500
-                                </span>
+                    {isAuthenticated ? (
+                        <form onSubmit={handleCommentSubmit} className="mb-8">
+                            <div className="mb-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        댓글 작성
+                                    </label>
+                                    <span className="text-xs text-slate-500">
+                                        {commentContent.length}/500
+                                    </span>
+                                </div>
+                                <textarea
+                                    value={commentContent}
+                                    onChange={(e) => setCommentContent(e.target.value)}
+                                    placeholder="댓글을 입력하세요..."
+                                    maxLength={500}
+                                    className="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:text-white resize-none transition-all"
+                                    rows={4}
+                                />
                             </div>
-                            <textarea
-                                value={commentContent}
-                                onChange={(e) => setCommentContent(e.target.value)}
-                                placeholder="댓글을 입력하세요..."
-                                maxLength={500}
-                                className="w-full px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-800 dark:text-white resize-none transition-all"
-                                rows={4}
-                            />
-                        </div>
-                        <div className="flex justify-end">
-                            <button
-                                type="submit"
-                                disabled={!commentContent.trim() || createCommentMutation.isPending}
-                                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl"
+                            <div className="flex justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={!commentContent.trim() || createCommentMutation.isPending}
+                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl"
+                                >
+                                    <Send className="w-4 h-4" />
+                                    댓글 작성
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="mb-8 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-center">
+                            <p className="text-slate-600 dark:text-slate-400 mb-3">
+                                댓글을 작성하려면 로그인이 필요합니다.
+                            </p>
+                            <Link
+                                to="/login"
+                                state={{ from: `/community/${postIdNumber}` }}
+                                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
                             >
-                                <Send className="w-4 h-4" />
-                                댓글 작성
-                            </button>
+                                로그인하기
+                            </Link>
                         </div>
-                    </form>
+                    )}
 
                     {/* 댓글 목록 */}
                     {commentsLoading && (
@@ -428,11 +637,12 @@ const CommunityDetailPage = () => {
                     )}
 
                     <div className="space-y-4">
-                        {comments.map((comment, index) => (
+                        {comments.filter(comment => !comment.topCommentId).map((comment, index) => (
                             <div
                                 key={comment.id}
                                 className={`pb-4 ${index !== comments.length - 1 ? 'border-b border-slate-200 dark:border-slate-700' : ''}`}
                             >
+                                {/* 상위 댓글 */}
                                 <div className="flex items-start gap-4">
                                     <div className="w-10 h-10 bg-gradient-to-br from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-700 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 shadow-md">
                                         {comment.isDeleted ? '?' : comment.account.userName.charAt(0)}
@@ -486,53 +696,186 @@ const CommunityDetailPage = () => {
                                                         <p className="text-slate-700 dark:text-slate-300 mb-3 whitespace-pre-wrap">
                                                             {comment.text}
                                                         </p>
-                                                        {user && user.id === comment.account.id && (
-                                                            <div className="flex gap-3">
+                                                        <div className="flex gap-3">
+                                                            {/* 답글 버튼 - 로그인한 사용자만 */}
+                                                            {isAuthenticated && (
                                                                 <button
-                                                                    onClick={() => handleEditStart(comment)}
+                                                                    onClick={() => handleReplyStart(comment.id)}
                                                                     className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
                                                                 >
-                                                                    <Pencil className="w-3.5 h-3.5" />
-                                                                    수정
+                                                                    <Reply className="w-3.5 h-3.5" />
+                                                                    답글
                                                                 </button>
-                                                                <button
-                                                                    onClick={() => setDeleteConfirmModal({ isOpen: true, commentId: comment.id })}
-                                                                    className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
-                                                                >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                    삭제
-                                                                </button>
-                                                            </div>
-                                                        )}
+                                                            )}
+                                                            {user && user.id === comment.account.id && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleEditStart(comment)}
+                                                                        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                                                                    >
+                                                                        <Pencil className="w-3.5 h-3.5" />
+                                                                        수정
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setDeleteConfirmModal({ isOpen: true, commentId: comment.id })}
+                                                                        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                        삭제
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
                                                     </>
                                                 )}
                                             </>
                                         )}
                                     </div>
                                 </div>
+
+                                {/* 답글 작성 폼 */}
+                                {replyingToId === comment.id && (
+                                    <div className="mt-4 ml-14 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                                        <div className="flex items-center gap-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                                            <CornerDownRight className="w-4 h-4" />
+                                            <span className="font-medium">{comment.account.userName}</span>
+                                            <span>님에게 답글 작성</span>
+                                        </div>
+                                        <textarea
+                                            value={replyContent}
+                                            onChange={(e) => setReplyContent(e.target.value)}
+                                            placeholder="답글을 입력하세요..."
+                                            maxLength={500}
+                                            className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white resize-none"
+                                            rows={3}
+                                        />
+                                        <div className="mt-2 flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">{replyContent.length}/500</span>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setReplyingToId(null);
+                                                        setReplyContent('');
+                                                    }}
+                                                    className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-white text-sm rounded-lg transition-colors font-medium"
+                                                >
+                                                    취소
+                                                </button>
+                                                <button
+                                                    onClick={() => handleReplySubmit(comment.id)}
+                                                    disabled={!replyContent.trim() || createReplyMutation.isPending}
+                                                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                                >
+                                                    <Send className="w-3.5 h-3.5" />
+                                                    {createReplyMutation.isPending ? '작성 중...' : '답글 작성'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 대댓글 목록 */}
+                                {comment.subComments && comment.subComments.length > 0 && (
+                                    <div className="mt-4 ml-14 space-y-3">
+                                        {comment.subComments.map((subComment) => (
+                                            <div
+                                                key={subComment.id}
+                                                className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+                                            >
+                                                <CornerDownRight className="w-4 h-4 text-slate-400 mt-1 flex-shrink-0" />
+                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-md">
+                                                    {subComment.isDeleted ? '?' : subComment.account.userName.charAt(0)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    {subComment.isDeleted ? (
+                                                        <span className="text-slate-400 dark:text-slate-500 italic text-sm">
+                                                            {subComment.text}
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-semibold text-slate-900 dark:text-white text-sm">
+                                                                    {subComment.account.userName}
+                                                                </span>
+                                                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                                                    {formatDate(subComment.createdAt)}
+                                                                </span>
+                                                            </div>
+                                                            {editingCommentId === subComment.id ? (
+                                                                <div>
+                                                                    <textarea
+                                                                        value={editingContent}
+                                                                        onChange={(e) => setEditingContent(e.target.value)}
+                                                                        className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white resize-none text-sm"
+                                                                        rows={2}
+                                                                    />
+                                                                    <div className="mt-2 flex gap-2">
+                                                                        <button
+                                                                            onClick={() => handleEditSubmit(subComment.id)}
+                                                                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors font-medium"
+                                                                        >
+                                                                            수정
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setEditingCommentId(null);
+                                                                                setEditingContent('');
+                                                                            }}
+                                                                            className="px-3 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-600 dark:hover:bg-slate-500 text-slate-700 dark:text-white text-xs rounded-lg transition-colors font-medium"
+                                                                        >
+                                                                            취소
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <p className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap">
+                                                                        {subComment.text}
+                                                                    </p>
+                                                                    <div className="flex gap-2 mt-2">
+                                                                        {/* 대댓글에도 답글 버튼 - 같은 원댓글에 대댓글로 추가됨 */}
+                                                                        {isAuthenticated && (
+                                                                            <button
+                                                                                onClick={() => handleReplyStart(comment.id)}
+                                                                                className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                                                                            >
+                                                                                <Reply className="w-3 h-3" />
+                                                                                답글
+                                                                            </button>
+                                                                        )}
+                                                                        {user && user.id === subComment.account.id && (
+                                                                            <>
+                                                                                <button
+                                                                                    onClick={() => handleEditStart(subComment)}
+                                                                                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                                                                                >
+                                                                                    <Pencil className="w-3 h-3" />
+                                                                                    수정
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setDeleteReplyConfirmModal({ isOpen: true, replyId: subComment.id });
+                                                                                    }}
+                                                                                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                                                                                >
+                                                                                    <Trash2 className="w-3 h-3" />
+                                                                                    삭제
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
-                </div>
-
-                {/* 하단 버튼 */}
-                <div className="flex justify-between mt-6">
-                    <Link
-                        to="/community"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        목록으로
-                    </Link>
-                    {isAuthor && (
-                        <button
-                            onClick={() => navigate(`/community/edit/${postIdNumber}`)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
-                        >
-                            <Pencil className="w-4 h-4" />
-                            수정
-                        </button>
-                    )}
                 </div>
             </div>
 
@@ -557,6 +900,31 @@ const CommunityDetailPage = () => {
                 }}
                 title="댓글 삭제"
                 message="댓글을 삭제하시겠습니까? 삭제된 댓글은 복구할 수 없습니다."
+            />
+
+            {/* 답글 삭제 확인 모달 */}
+            <ConfirmModal
+                isOpen={deleteReplyConfirmModal.isOpen}
+                onClose={() => setDeleteReplyConfirmModal({ isOpen: false, replyId: null })}
+                onConfirm={() => {
+                    if (deleteReplyConfirmModal.replyId) {
+                        deleteCommentMutation.mutate(deleteReplyConfirmModal.replyId);
+                    }
+                    setDeleteReplyConfirmModal({ isOpen: false, replyId: null });
+                }}
+                title="답글 삭제"
+                message="답글을 삭제하시겠습니까? 삭제된 답글은 복구할 수 없습니다."
+            />
+
+            {/* 게시글 삭제 확인 모달 */}
+            <ConfirmModal
+                isOpen={deletePostConfirmModal}
+                onClose={() => setDeletePostConfirmModal(false)}
+                onConfirm={confirmDeletePost}
+                title="게시글 삭제"
+                message="정말 이 게시글을 삭제하시겠습니까? 삭제된 게시글은 복구할 수 없습니다."
+                confirmText="삭제"
+                cancelText="취소"
             />
         </div>
     );

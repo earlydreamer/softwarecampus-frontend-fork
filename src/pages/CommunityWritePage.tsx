@@ -1,12 +1,14 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { createBoardPost } from '../services/communityService';
 import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
+import AlertModal from '../components/ui/AlertModal';
 import { useAuthStore } from '../store/authStore';
+import { getTextContent } from '../utils/formatUtils';
 import type { AttachedFile } from '../components/editor/TiptapEditor';
 
 // Tiptap 에디터를 lazy load
@@ -15,24 +17,31 @@ const TiptapEditor = lazy(() => import('../components/editor/TiptapEditor'));
 const CommunityWritePage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-
-    // 인증 스토어에서 사용자 정보 가져오기
     const { user, isAuthenticated } = useAuthStore();
+    const [searchParams] = useSearchParams();
+
+    // URL에서 카테고리 읽기, 유효하지 않으면 기본값 'CODING_STORY'
+    const getInitialCategory = (): BoardCategory => {
+        const urlCategory = searchParams.get('category') as BoardCategory;
+        const validCategories: BoardCategory[] = ['NOTICE', 'QUESTION', 'COURSE_STORY', 'CODING_STORY'];
+        return validCategories.includes(urlCategory) ? urlCategory : 'CODING_STORY';
+    };
+
+    // 비로그인 시 로그인 페이지로 리다이렉트
+    useEffect(() => {
+        if (!isAuthenticated) {
+            // 로그인 페이지로 리다이렉트 (로그인 페이지에서 안내 표시)
+            navigate('/login', { state: { from: '/community/write', message: '로그인이 필요한 서비스입니다.' } });
+        }
+    }, [isAuthenticated, navigate]);
 
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
-    const [category, setCategory] = useState<BoardCategory>('QUESTION');
+    const [category, setCategory] = useState<BoardCategory>(getInitialCategory());
     const [titleError, setTitleError] = useState<string | null>(null);
     const [contentError, setContentError] = useState<string | null>(null);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-
-    // HTML 태그를 제거하고 실제 텍스트 내용만 추출 (DOMParser 사용으로 안전성 향상)
-    const getTextContent = (html: string): string => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        return doc.body.textContent || '';
-    };
 
     // 작성 중인 내용이 있는지 확인
     const hasUnsavedChanges = () => {
@@ -55,7 +64,17 @@ const CommunityWritePage = () => {
 
     // 게시글 작성 mutation
     const createPostMutation = useMutation({
-        mutationFn: createBoardPost,
+        mutationFn: ({ data, files }: {
+            data: {
+                title: string;
+                text: string;
+                category: BoardCategory;
+                account?: { id: number; userName: string; };
+                isSecret: boolean;
+                hasAttachment?: boolean;
+            };
+            files?: File[];
+        }) => createBoardPost(data, files),
         onSuccess: (newPost) => {
             queryClient.invalidateQueries({ queryKey: ['boardPosts'] });
             navigate(`/community/${newPost.id}`);
@@ -76,7 +95,7 @@ const CommunityWritePage = () => {
 
         if (!isAuthenticated || !user) {
             setContentError('로그인이 필요한 서비스입니다.');
-            setTimeout(() => navigate('/login'), 1500);
+            setTimeout(() => navigate('/login', { state: { from: '/community/write' } }), 1500);
             return;
         }
 
@@ -107,14 +126,17 @@ const CommunityWritePage = () => {
         const files = attachedFiles.map(f => f.file);
 
         createPostMutation.mutate({
-            title,
-            text,
-            category,
-            account: {
-                id: user.id,
-                userName: user.userName,
+            data: {
+                title,
+                text,
+                category,
+                account: {
+                    id: user.id,
+                    userName: user.userName,
+                },
+                isSecret: false,
+                hasAttachment: files.length > 0,
             },
-            isSecret: false,
             files: files.length > 0 ? files : undefined,
         });
     };
@@ -159,6 +181,7 @@ const CommunityWritePage = () => {
                                         key={cat}
                                         type="button"
                                         onClick={() => setCategory(cat)}
+                                        aria-pressed={category === cat}
                                         className={`px-4 py-3 rounded-xl font-medium transition-all duration-200 ${category === cat
                                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
                                             : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'
@@ -234,6 +257,19 @@ const CommunityWritePage = () => {
                                     {contentError}
                                 </p>
                             )}
+                        </div>
+
+                        {/* 첨부파일 */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                                첨부파일
+                            </label>
+                            <FileUpload
+                                files={files}
+                                onFilesChange={setFiles}
+                                maxFiles={5}
+                                maxSizeMB={50}
+                            />
                         </div>
                     </div>
 
