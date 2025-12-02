@@ -63,21 +63,22 @@ const mapDtoToAttachment = (dto: ApiBoardAttachDTO): BoardAttachment => {
 
 /**
  * 게시글 목록 조회
- * 백엔드 파라미터: pageNo, searchText (page, keyword 아님!)
+ * 백엔드 파라미터: pageNo, searchText, sortType (page, keyword 아님!)
  */
 export const fetchBoardPosts = async (
     category?: BoardCategory,
     page: number = 1,
     _limit: number = 20,  // 백엔드 미지원, 무시됨
     searchKeyword?: string,
-    _sortType?: 'latest' | 'popular' | 'views' | 'comments',  // 백엔드 미지원
+    sortType?: 'latest' | 'popular' | 'views' | 'comments',
     searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment'
 ): Promise<{ posts: Board[], total: number, totalPages: number }> => {
     try {
-        // 백엔드 파라미터명에 맞춤: pageNo, searchText
+        // 백엔드 파라미터명에 맞춤: pageNo, searchText, sortType
         const params: Record<string, any> = { pageNo: page };
         if (category) params.category = category;
         if (searchKeyword) params.searchText = searchKeyword;
+        if (sortType) params.sortType = sortType;  // 정렬 타입 전달
         
         // searchType 매핑: 프론트 → 백엔드
         if (searchType) {
