@@ -12,6 +12,7 @@ import CourseQnAs from '../components/course/CourseQnAs';
 import ShareModal from '../components/ui/ShareModal';
 import AlertModal from '../components/ui/AlertModal';
 import { QNA_PER_PAGE } from '../constants';
+import type { AlertModalState } from '../types';
 
 
 const CourseDetailPage = () => {
@@ -26,12 +27,12 @@ const CourseDetailPage = () => {
     const [qnaPage, setQnaPage] = useState(1);
     const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
     const [showShareModal, setShowShareModal] = useState(false);
-    const [alertModal, setAlertModal] = useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        type: 'success' | 'warning' | 'error' | 'info';
-    }>({ isOpen: false, title: '', message: '', type: 'info' });
+    const [alertModal, setAlertModal] = useState<AlertModalState>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     const queryClient = useQueryClient();
 

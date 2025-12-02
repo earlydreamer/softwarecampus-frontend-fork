@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Link as LinkIcon, Check, Copy } from 'lucide-react';
 import AlertModal from './AlertModal';
 
@@ -101,8 +102,9 @@ const ShareModal = ({ url, title, onClose }: ShareModalProps) => {
         try {
             await navigator.clipboard.writeText(url);
             setCopied(true);
-        } catch (error) {
-            console.error('Failed to copy link:', error);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+            console.error('Failed to copy link:', errorMessage);
             setAlertModal({
                 isOpen: true,
                 title: '복사 실패',
@@ -238,14 +240,17 @@ const ShareModal = ({ url, title, onClose }: ShareModalProps) => {
                 </div>
             </div>
 
-            {/* Alert Modal */}
-            <AlertModal
-                isOpen={alertModal.isOpen}
-                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
-                title={alertModal.title}
-                message={alertModal.message}
-                type={alertModal.type}
-            />
+            {/* Alert Modal - Portal로 document.body에 렌더링하여 z-index 스택킹 컨텍스트 문제 해결 */}
+            {createPortal(
+                <AlertModal
+                    isOpen={alertModal.isOpen}
+                    onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                    title={alertModal.title}
+                    message={alertModal.message}
+                    type={alertModal.type}
+                />,
+                document.body
+            )}
         </div>
     );
 };

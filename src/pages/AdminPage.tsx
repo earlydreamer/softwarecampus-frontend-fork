@@ -728,12 +728,13 @@ const AdminPage = () => {
                                                                             message: `"${req.courseName}" 과정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
                                                                             onConfirm: async () => {
                                                                                 try {
-                                                                                    await deleteCourse(req.courseId);
+                                                                                    await deleteCourse(req.id);
                                                                                     showAlert('삭제 완료', '과정이 삭제되었습니다.', 'success');
                                                                                     // 목록에서 제거
-                                                                                    setCourseRequests(prev => prev.filter(c => c.courseId !== req.courseId));
-                                                                                } catch (error) {
-                                                                                    console.error('과정 삭제 실패:', error);
+                                                                                    setCourseRequests(prev => prev.filter(c => c.id !== req.id));
+                                                                                } catch (error: unknown) {
+                                                                                    const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+                                                                                    console.error('과정 삭제 실패:', errorMessage);
                                                                                     showAlert('삭제 실패', '과정 삭제 중 오류가 발생했습니다.', 'error');
                                                                                 }
                                                                             }
