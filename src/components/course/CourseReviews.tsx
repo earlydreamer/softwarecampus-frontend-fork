@@ -153,15 +153,21 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
     const [isWritingReview, setIsWritingReview] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // 이미 작성한 리뷰가 있는지 확인
-    const myReview = reviews.find(r => r.writerId === user?.id);
+    // 이미 작성한 리뷰가 있는지 확인 (거부된 리뷰는 제외 - 다시 작성 가능)
+    const myReview = reviews.find(r => r.writerId === user?.id && r.approvalStatus !== 'REJECTED');
+    // 내 리뷰의 승인 상태
+    const myReviewStatus = myReview?.approvalStatus;
 
     const handleWriteClick = () => {
         if (!isAuthenticated) {
             showAlert('로그인 필요', '후기를 작성하려면 로그인이 필요합니다.', 'warning');
             return;
         }
-        if (myReview) {
+        if (myReviewStatus === 'PENDING') {
+            showAlert('승인 대기 중', '작성한 후기가 승인 대기 중입니다.', 'info');
+            return;
+        }
+        if (myReviewStatus === 'APPROVED') {
             showAlert('작성 불가', '이미 이 과정에 대한 후기를 작성하셨습니다.', 'info');
             return;
         }
@@ -311,7 +317,15 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                         <option value="recent">최신순</option>
                         <option value="rating">평점순</option>
                     </select>
-                    {!myReview && (
+                    {myReviewStatus === 'PENDING' ? (
+                        <span className="px-4 py-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg text-sm">
+                            작성한 후기가 승인 대기 중입니다
+                        </span>
+                    ) : myReviewStatus === 'APPROVED' ? (
+                        <span className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-lg text-sm">
+                            이미 후기를 작성하셨습니다
+                        </span>
+                    ) : (
                         <button
                             onClick={handleWriteClick}
                             className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
