@@ -38,16 +38,6 @@ const LoginPage = () => {
             <div className="glass-panel p-8 rounded-2xl w-full max-w-md">
                 <h1 className="text-3xl font-bold text-center mb-8 text-slate-900 dark:text-white">로그인</h1>
 
-                {/* 샘플 계정 안내 - 개발 환경에서만 표시 */}
-                {import.meta.env.DEV && (
-                    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">테스트 계정 (개발용)</p>
-                        <div className="text-xs text-blue-700 dark:text-blue-400 space-y-1">
-                            <p>• 관리자: admin@test.com / test</p>
-                        </div>
-                    </div>
-                )}
-
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {error && (
                         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2 text-red-700 dark:text-red-400 text-sm">
