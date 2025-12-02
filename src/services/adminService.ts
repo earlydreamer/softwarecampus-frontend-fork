@@ -76,6 +76,7 @@ interface ApiReviewResponse {
     likeCount: number;
     dislikeCount: number;
     createdAt: string;
+    academyId: number;
 }
 
 // 페이지네이션 파라미터 타입
@@ -98,6 +99,8 @@ interface ApiUserResponse {
     lastLoginAt?: string;
     accountApproved: string;
     deletedAt?: string;
+    postCount: number;
+    commentCount: number;
 }
 
 // API 기관 응답 타입
@@ -160,30 +163,7 @@ export const getCourseApprovalRequests = async (
         { params }
     );
 
-    const requests = response.data.content.map(course => ({
-        id: course.id,
-        courseName: course.name,
-        academyId: course.academyId,
-        academyName: course.academyName,
-        requesterId: course.requesterId,
-        requesterName: course.requesterName,
-        category: course.categoryName,
-        target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
-        format: course.offline ? '오프라인' : '온라인',
-        requestType: '등록', // 현재는 등록 요청만 처리 (수정/삭제 요청 구분 없음)
-        requestDate: course.createdAt,
-        status: mapStatus(course.approvalStatus),
-        recruitStart: course.recruitStart,
-        recruitEnd: course.recruitEnd,
-        courseStart: course.courseStart,
-        courseEnd: course.courseEnd,
-        cost: course.cost,
-        isKdt: course.kdt,
-        isNailbaeum: course.nailbaeum,
-        isOffline: course.offline,
-        location: course.location,
-        description: course.requirement,
-    } as CourseApprovalRequest));
+    const requests = response.data.content.map(mapApiCourseToApprovalRequest);
 
     return { requests, totalCount: response.data.totalElements };
 };
@@ -224,18 +204,7 @@ export const getReviewApprovalRequests = async (
         { params }
     );
 
-    const requests = response.data.content.map(review => ({
-        id: review.reviewId,
-        reviewId: review.reviewId,
-        courseName: review.courseName,
-        academyId: 0, // TODO: 백엔드 DTO에 academyId 추가 필요
-        writerName: review.writerName,
-        rating: review.averageScore,
-        comment: review.comment,
-        requestType: '등록',
-        requestDate: review.createdAt,
-        status: mapStatus(review.approvalStatus),
-    } as ReviewApprovalRequest));
+    const requests = response.data.content.map(mapApiReviewToApprovalRequest);
 
     return { requests, totalCount: response.data.totalElements };
 };
@@ -330,8 +299,8 @@ export const getAdminUsers = async (
         registeredDate: user.createdAt,
         lastLogin: user.lastLoginAt || '-',
         status: user.accountApproved === 'APPROVED' ? '활성' : (user.deletedAt ? '탈퇴' : '정지'),
-        postCount: 0,
-        commentCount: 0
+        postCount: user.postCount,
+        commentCount: user.commentCount
     } as AdminUser));
 
     return { users, totalCount: response.data.totalElements };
@@ -418,30 +387,7 @@ export const getInstitutionCourses = async (
         { params }
     );
 
-    const requests = response.data.content.map(course => ({
-        id: course.id,
-        courseName: course.name,
-        academyId: course.academyId,
-        academyName: course.academyName,
-        requesterId: course.requesterId,
-        requesterName: course.requesterName,
-        category: course.categoryName,
-        target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
-        format: course.offline ? '오프라인' : '온라인',
-        requestType: '등록',
-        requestDate: course.createdAt,
-        status: mapStatus(course.approvalStatus),
-        recruitStart: course.recruitStart,
-        recruitEnd: course.recruitEnd,
-        courseStart: course.courseStart,
-        courseEnd: course.courseEnd,
-        cost: course.cost,
-        isKdt: course.kdt,
-        isNailbaeum: course.nailbaeum,
-        isOffline: course.offline,
-        location: course.location,
-        description: course.requirement,
-    } as CourseApprovalRequest));
+    const requests = response.data.content.map(mapApiCourseToApprovalRequest);
 
     return { requests, totalCount: response.data.totalElements };
 };
@@ -468,18 +414,7 @@ export const getInstitutionReviews = async (
         { params }
     );
 
-    const requests = response.data.content.map(review => ({
-        id: review.reviewId,
-        reviewId: review.reviewId,
-        courseName: review.courseName,
-        academyId: 0, // TODO: 백엔드 DTO에 academyId 추가 필요
-        writerName: review.writerName,
-        rating: review.averageScore,
-        comment: review.comment,
-        requestType: '등록',
-        requestDate: review.createdAt,
-        status: mapStatus(review.approvalStatus),
-    } as ReviewApprovalRequest));
+    const requests = response.data.content.map(mapApiReviewToApprovalRequest);
 
     return { requests, totalCount: response.data.totalElements };
 };
@@ -559,33 +494,10 @@ export const convertFormToRequest = (
  */
 export const requestCourseRegistration = async (courseData: CourseRegistrationRequest): Promise<CourseApprovalRequest> => {
     const response = await apiClient.post<ApiCourseResponse>('/courses/request', courseData);
-    
+
     // 응답 데이터를 프론트엔드 타입으로 변환
     const course = response.data;
-    return {
-        id: course.id,
-        courseName: course.name,
-        academyId: course.academyId,
-        academyName: course.academyName,
-        requesterId: course.requesterId,
-        requesterName: course.requesterName,
-        category: course.categoryName,
-        target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
-        format: course.offline ? '오프라인' : '온라인',
-        requestType: '등록',
-        requestDate: course.createdAt,
-        status: mapStatus(course.approvalStatus),
-        recruitStart: course.recruitStart,
-        recruitEnd: course.recruitEnd,
-        courseStart: course.courseStart,
-        courseEnd: course.courseEnd,
-        cost: course.cost,
-        isKdt: course.kdt,
-        isNailbaeum: course.nailbaeum,
-        isOffline: course.offline,
-        location: course.location,
-        description: course.requirement,
-    };
+    return mapApiCourseToApprovalRequest(course);
 };
 
 /**
@@ -593,68 +505,22 @@ export const requestCourseRegistration = async (courseData: CourseRegistrationRe
  */
 export const createCourseByAdmin = async (courseData: CourseRegistrationRequest): Promise<CourseApprovalRequest> => {
     const response = await apiClient.post<ApiCourseResponse>('/courses', courseData);
-    
+
     const course = response.data;
-    return {
-        id: course.id,
-        courseName: course.name,
-        academyId: course.academyId,
-        academyName: course.academyName,
-        requesterId: course.requesterId,
-        requesterName: course.requesterName,
-        category: course.categoryName,
-        target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
-        format: course.offline ? '오프라인' : '온라인',
-        requestType: '등록',
-        requestDate: course.createdAt,
-        status: '승인', // 관리자가 생성하면 즉시 승인
-        recruitStart: course.recruitStart,
-        recruitEnd: course.recruitEnd,
-        courseStart: course.courseStart,
-        courseEnd: course.courseEnd,
-        cost: course.cost,
-        isKdt: course.kdt,
-        isNailbaeum: course.nailbaeum,
-        isOffline: course.offline,
-        location: course.location,
-        description: course.requirement,
-    };
+    return mapApiCourseToApprovalRequest(course);
 };
 
 /**
  * 과정 수정 요청 (기관용)
  */
 export const updateCourseRequest = async (
-    courseId: number, 
+    courseId: number,
     courseData: CourseRegistrationRequest
 ): Promise<CourseApprovalRequest> => {
     const response = await apiClient.put<ApiCourseResponse>(`/courses/${courseId}`, courseData);
-    
+
     const course = response.data;
-    return {
-        id: course.id,
-        courseName: course.name,
-        academyId: course.academyId,
-        academyName: course.academyName,
-        requesterId: course.requesterId,
-        requesterName: course.requesterName,
-        category: course.categoryName,
-        target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
-        format: course.offline ? '오프라인' : '온라인',
-        requestType: '수정',
-        requestDate: course.createdAt,
-        status: mapStatus(course.approvalStatus),
-        recruitStart: course.recruitStart,
-        recruitEnd: course.recruitEnd,
-        courseStart: course.courseStart,
-        courseEnd: course.courseEnd,
-        cost: course.cost,
-        isKdt: course.kdt,
-        isNailbaeum: course.nailbaeum,
-        isOffline: course.offline,
-        location: course.location,
-        description: course.requirement,
-    };
+    return mapApiCourseToApprovalRequest(course);
 };
 
 // 과정 이미지 응답 타입
@@ -699,3 +565,85 @@ export const uploadCourseImage = async (
 
     return response.data;
 };
+
+/**
+ * 배너 생성
+ */
+export const createBanner = async (bannerData: FormData): Promise<BannerData> => {
+    const response = await apiClient.post<ApiBannerResponse>('/admin/banners', bannerData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+    return {
+        id: response.data.id,
+        title: response.data.title,
+        imageUrl: response.data.imageUrl,
+        linkUrl: response.data.linkUrl,
+        displayOrder: response.data.sequence,
+        isActive: response.data.isActivated,
+        createdDate: response.data.createdAt,
+    };
+};
+
+/**
+ * 배너 수정
+ */
+export const updateBanner = async (bannerId: number, bannerData: FormData): Promise<BannerData> => {
+    const response = await apiClient.put<ApiBannerResponse>(`/admin/banners/${bannerId}`, bannerData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+    return {
+        id: response.data.id,
+        title: response.data.title,
+        imageUrl: response.data.imageUrl,
+        linkUrl: response.data.linkUrl,
+        displayOrder: response.data.sequence,
+        isActive: response.data.isActivated,
+        createdDate: response.data.createdAt,
+    };
+};
+
+// Helper: 과정 응답 매핑
+const mapApiCourseToApprovalRequest = (course: ApiCourseResponse): CourseApprovalRequest => ({
+    id: course.id,
+    courseName: course.name,
+    academyId: course.academyId,
+    academyName: course.academyName,
+    requesterId: course.requesterId,
+    requesterName: course.requesterName,
+    category: course.categoryName,
+    target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
+    format: course.offline ? '오프라인' : '온라인',
+    requestType: '등록',
+    requestDate: course.createdAt,
+    status: mapStatus(course.approvalStatus),
+    recruitStart: course.recruitStart,
+    recruitEnd: course.recruitEnd,
+    courseStart: course.courseStart,
+    courseEnd: course.courseEnd,
+    cost: course.cost,
+    isKdt: course.kdt,
+    isNailbaeum: course.nailbaeum,
+    isOffline: course.offline,
+    location: course.location,
+    description: course.requirement,
+});
+
+// Helper: 리뷰 응답 매핑
+const mapApiReviewToApprovalRequest = (review: ApiReviewResponse): ReviewApprovalRequest => ({
+    id: review.reviewId,
+    reviewId: review.reviewId,
+    courseName: review.courseName,
+    academyId: review.academyId,
+    writerName: review.writerName,
+    rating: review.averageScore,
+    comment: review.comment,
+    requestType: '등록',
+    requestDate: review.createdAt,
+    status: mapStatus(review.approvalStatus),
+});
