@@ -2,6 +2,7 @@ import type * as React from 'react';
 import { useState, useEffect, useRef, useId } from 'react';
 import { X, Edit2, Upload } from 'lucide-react';
 import type { BannerData } from '../../types';
+import AlertModal from '../ui/AlertModal';
 
 export interface BannerFormState extends Partial<BannerData> {
     imageFile?: File;
@@ -31,6 +32,46 @@ const BannerModal: React.FC<BannerModalProps> = ({
         linkUrl: '',
         isActive: true
     });
+
+    // AlertModal 상태
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'error' | 'warning' | 'info';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
+
+    /**
+     * 이미지 파일 유효성 검증 헬퍼 함수
+     * @param file - 검증할 파일
+     * @returns 오류 메시지 또는 null (유효한 경우)
+     */
+    const validateImageFile = (file: File): string | null => {
+        if (!file.type.startsWith('image/')) {
+            return '이미지 파일만 업로드 가능합니다.';
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            return '파일 크기는 5MB를 초과할 수 없습니다.';
+        }
+        return null;
+    };
+
+    /**
+     * 오류 모달 표시 헬퍼 함수
+     */
+    const showErrorModal = (message: string) => {
+        setAlertModal({
+            isOpen: true,
+            title: '파일 업로드 오류',
+            message,
+            type: 'error'
+        });
+    };
 
     // blob URL을 추적하기 위한 ref
     const blobUrlRef = useRef<string | null>(null);
@@ -112,14 +153,10 @@ const BannerModal: React.FC<BannerModalProps> = ({
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // 파일 유효성 검사
-            if (!file.type.startsWith('image/')) {
-                alert('이미지 파일만 업로드 가능합니다.');
-                e.target.value = '';
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) { // 5MB
-                alert('파일 크기는 5MB를 초과할 수 없습니다.');
+            // 파일 유효성 검사 (헬퍼 함수 사용)
+            const validationError = validateImageFile(file);
+            if (validationError) {
+                showErrorModal(validationError);
                 e.target.value = '';
                 return;
             }
@@ -144,13 +181,10 @@ const BannerModal: React.FC<BannerModalProps> = ({
         e.preventDefault();
         const file = e.dataTransfer.files?.[0];
         if (file) {
-            // 파일 유효성 검사
-            if (!file.type.startsWith('image/')) {
-                alert('이미지 파일만 업로드 가능합니다.');
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) { // 5MB
-                alert('파일 크기는 5MB를 초과할 수 없습니다.');
+            // 파일 유효성 검사 (헬퍼 함수 사용)
+            const validationError = validateImageFile(file);
+            if (validationError) {
+                showErrorModal(validationError);
                 return;
             }
 
@@ -199,12 +233,13 @@ const BannerModal: React.FC<BannerModalProps> = ({
                     <button
                         onClick={onClose}
                         className="text-slate-400 hover:text-slate-600 transition-colors"
+                        aria-label="배너 등록 모달 닫기"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Image Upload Area */}
+                    {/* 배너 이미지 업로드 영역 */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                             배너 이미지
@@ -222,7 +257,7 @@ const BannerModal: React.FC<BannerModalProps> = ({
                                 <>
                                     <img
                                         src={form.imageUrl}
-                                        alt="Preview"
+                                        alt="배너 이미지 미리보기"
                                         className="absolute inset-0 w-full h-full object-cover"
                                     />
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -321,6 +356,15 @@ const BannerModal: React.FC<BannerModalProps> = ({
                     </div>
                 </form>
             </div>
+
+            {/* 파일 업로드 오류 모달 */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };
