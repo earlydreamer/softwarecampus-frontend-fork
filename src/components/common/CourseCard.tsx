@@ -4,12 +4,36 @@ import type { Course } from '../../types';
 import { Star, MessageSquare } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
 import { getCourseDurationInfo, getCourseStatus, type CourseStatus } from '../../utils/dateUtils';
+import { DEFAULT_IMAGES } from '../../constants';
+
+const DEFAULT_COURSE_IMAGE = DEFAULT_IMAGES.COURSE_THUMBNAIL;
 
 interface CourseCardProps {
     course: Course;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+    /**
+     * 이미지 로딩 에러 핸들러 (무한 루프 방지)
+     * - data-fallback 속성으로 폴백 적용 여부 추적 (URL 비교보다 안정적)
+     * - 브라우저 URL 정규화로 인한 비교 실패 방지
+     * - SSR 환경에서 dataset 접근 안전성 확보
+     */
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+        const img = e.currentTarget;
+        
+        // SSR 환경 체크 및 이미 폴백이 적용된 경우 핸들러 제거
+        if (typeof window === 'undefined' || img.dataset?.fallback === 'true') {
+            img.onerror = null;
+            return;
+        }
+        
+        // 폴백 마커 설정 및 핸들러 제거로 무한 루프 방지
+        img.dataset.fallback = 'true';
+        img.onerror = null;
+        img.src = DEFAULT_COURSE_IMAGE;
+    };
+
     // 강의 기간 정보 계산
     const durationInfo = getCourseDurationInfo(
         course.courseStart || '',
@@ -50,8 +74,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
                 <div className="relative h-48 overflow-hidden">
                     <img
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        src={sanitizeUrl(course.imageUrl || '')}
+                        src={sanitizeUrl(course.imageUrl || '') || DEFAULT_COURSE_IMAGE}
                         alt={course.name || '과정 이미지'}
+                        onError={handleImageError}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 

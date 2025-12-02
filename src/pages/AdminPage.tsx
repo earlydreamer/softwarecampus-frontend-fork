@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { sanitizeUrl } from '../utils/security';
+import { targetToCategoryType } from '../utils/categoryType';
 import {
     LayoutDashboard,
     BookOpen,
@@ -52,6 +53,7 @@ import {
     updateCourseRequest,
     convertFormToRequest,
     uploadCourseImage,
+    deleteCourseImage,
     createBanner,
     updateBanner,
     type DashboardStats
@@ -493,14 +495,65 @@ const AdminPage = () => {
                 setCourseRequests(prev => [newRequest, ...prev]);
             }
 
-            // 이미지 파일이 있으면 업로드
-            if (data.imageFile) {
-                try {
-                    const categoryType = data.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
-                    await uploadCourseImage(categoryType, newRequest.id, data.imageFile, true);
-                } catch (imageError) {
-                    console.error('이미지 업로드 실패:', imageError);
-                    showAlert('이미지 업로드 실패', '과정은 등록되었지만 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+            // 이미지 업로드 처리 (새 구조: ImageState 사용)
+            // targetToCategoryType: 중앙화된 변환 함수로 유효성 검증 및 기본값 처리
+            const categoryType = targetToCategoryType(data.target);
+
+            // 썸네일 이미지 처리
+            if (data.thumbnailImage?.isChanged) {
+                if (data.thumbnailImage.file) {
+                    // 새 이미지 업로드
+                    // 참고: 백엔드에서 새 이미지 업로드 시 기존 동일 타입 이미지는 자동으로 CONTENT 타입으로 변경됨
+                    // Soft Delete된 이미지는 FileCleanupScheduler가 매일 새벽 5시에 자동 정리
+                    try {
+                        await uploadCourseImage(categoryType, newRequest.id, data.thumbnailImage.file, 'THUMBNAIL');
+                    } catch (imageError) {
+                        console.error('썸네일 이미지 업로드 실패:', imageError);
+                        showAlert('이미지 업로드 실패', '과정은 등록되었지만 썸네일 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+                    }
+                } else if (data.thumbnailImage.isDeleted && editingCourse) {
+                    // 기존 이미지 삭제 (수정 모드에서만)
+                    // Soft Delete API 호출 - 백엔드 스케줄러가 나중에 S3 파일을 정리
+                    if (data.thumbnailImage.imageId) {
+                        try {
+                            await deleteCourseImage(categoryType, data.thumbnailImage.imageId);
+                        } catch (deleteError) {
+                            console.error('썸네일 이미지 삭제 실패:', deleteError);
+                            // 삭제 실패는 치명적이지 않으므로 경고만 표시
+                            showAlert('이미지 삭제 실패', '썸네일 이미지 삭제에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+                        }
+                    } else {
+                        console.warn('[이미지 삭제] imageId가 없어 삭제 API 호출 불가 (레거시 데이터):', data.thumbnailImage.serverUrl);
+                    }
+                }
+            }
+
+            // 헤더 이미지 처리
+            if (data.headerImage?.isChanged) {
+                if (data.headerImage.file) {
+                    // 새 이미지 업로드
+                    // 참고: 백엔드에서 새 이미지 업로드 시 기존 동일 타입 이미지는 자동으로 CONTENT 타입으로 변경됨
+                    // Soft Delete된 이미지는 FileCleanupScheduler가 매일 새벽 5시에 자동 정리
+                    try {
+                        await uploadCourseImage(categoryType, newRequest.id, data.headerImage.file, 'HEADER');
+                    } catch (imageError) {
+                        console.error('헤더 이미지 업로드 실패:', imageError);
+                        showAlert('이미지 업로드 실패', '과정은 등록되었지만 헤더 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+                    }
+                } else if (data.headerImage.isDeleted && editingCourse) {
+                    // 기존 이미지 삭제 (수정 모드에서만)
+                    // Soft Delete API 호출 - 백엔드 스케줄러가 나중에 S3 파일을 정리
+                    if (data.headerImage.imageId) {
+                        try {
+                            await deleteCourseImage(categoryType, data.headerImage.imageId);
+                        } catch (deleteError) {
+                            console.error('헤더 이미지 삭제 실패:', deleteError);
+                            // 삭제 실패는 치명적이지 않으므로 경고만 표시
+                            showAlert('이미지 삭제 실패', '헤더 이미지 삭제에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+                        }
+                    } else {
+                        console.warn('[이미지 삭제] imageId가 없어 삭제 API 호출 불가 (레거시 데이터):', data.headerImage.serverUrl);
+                    }
                 }
             }
 

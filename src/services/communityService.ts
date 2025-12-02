@@ -80,6 +80,12 @@ export const fetchBoardPosts = async (
 
         const response = await apiClient.get<ApiBoardListResponse[]>('/api/boards', { params });
 
+        // 응답이 배열인지 확인 (API 오류 시 HTML 등이 반환될 수 있음)
+        if (!Array.isArray(response.data)) {
+            console.warn('게시판 API 응답이 배열이 아닙니다:', typeof response.data);
+            return { posts: [], total: 0 };
+        }
+
         // 목록 응답 매핑
         const posts = response.data.map(dto => ({
             id: dto.id,

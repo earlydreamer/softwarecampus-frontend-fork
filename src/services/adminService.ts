@@ -7,6 +7,7 @@ import type {
     AdminAcademy,
     CategoryType
 } from '../types';
+import { targetToCategoryType, categoryTypeToTarget } from '../utils/categoryType';
 
 // 대시보드 통계 응답 타입
 export interface DashboardStats {
@@ -61,6 +62,10 @@ interface ApiCourseResponse {
     approvalStatus: string;
     approvedAt: string;
     createdAt: string;
+    imageUrl?: string; // 과정 썸네일 이미지 URL
+    thumbnailImageId?: number; // 썸네일 이미지 ID (삭제 API용)
+    headerImageUrl?: string; // 헤더 이미지 URL
+    headerImageId?: number; // 헤더 이미지 ID (삭제 API용)
 }
 
 // 백엔드 리뷰 응답 타입 (CourseReviewResponse)
@@ -123,14 +128,26 @@ interface ApiAcademyResponse {
 export const getCourseCategories = async (
     categoryType?: CategoryType
 ): Promise<CourseCategoryResponse[]> => {
-    const params: Partial<Pick<PaginationParams, 'categoryType'>> = {};
-    if (categoryType) params.categoryType = categoryType;
+    try {
+        const params: Partial<Pick<PaginationParams, 'categoryType'>> = {};
+        if (categoryType) params.categoryType = categoryType;
 
-    const response = await apiClient.get<CourseCategoryResponse[]>(
-        '/courses/categories',
-        { params }
-    );
-    return response.data;
+        const response = await apiClient.get<CourseCategoryResponse[]>(
+            '/api/courses/categories',
+            { params }
+        );
+        
+        // 응답이 배열인지 확인 (API 오류 시 HTML 등이 반환될 수 있음)
+        if (!Array.isArray(response.data)) {
+            console.warn('카테고리 API 응답이 배열이 아닙니다:', typeof response.data);
+            return [];
+        }
+        
+        return response.data;
+    } catch (error) {
+        console.error('카테고리 조회 실패:', error);
+        return [];
+    }
 };
 
 /**
@@ -367,45 +384,52 @@ export const getAdminAcademies = async (
     page: number = 1,
     size: number = 20
 ): Promise<{ academies: AdminAcademy[]; totalCount: number }> => {
-    const params: Partial<PaginationParams> = {
-        page: page - 1,
-        size,
-        sort: 'createdAt,desc'
-    };
-    if (status) params.status = status;
-    if (keyword) params.keyword = keyword;
+    try {
+        const params: Partial<PaginationParams> = {
+            page: page - 1,
+            size,
+            sort: 'createdAt,desc'
+        };
+        if (status) params.status = status;
+        if (keyword) params.keyword = keyword;
 
-    const response = await apiClient.get<{ content: ApiAcademyResponse[]; totalElements: number }>(
-        '/admin/academies',
-        { params }
-    );
+        const response = await apiClient.get<{ content: ApiAcademyResponse[]; totalElements: number }>(
+            '/admin/academies',
+            { params }
+        );
 
-    // 응답 데이터 유효성 검사 + 타입 안전성 강화
-    const rawContent = response.data?.content;
-    const content = Array.isArray(rawContent) ? rawContent : [];
-    if (!Array.isArray(rawContent)) {
-        console.warn('[adminService] getAdminAcademies: 예상치 못한 응답 형식', {
-            status: response.status,
-            keys: Object.keys(response.data || {}),
-            contentType: typeof rawContent
-        });
+        // 응답 데이터 유효성 검사 + 타입 안전성 강화
+        const rawContent = response.data?.content;
+        const content = Array.isArray(rawContent) ? rawContent : [];
+        if (!Array.isArray(rawContent)) {
+            const responseData = response.data as unknown;
+            console.warn('[adminService] getAdminAcademies: 예상치 못한 응답 형식', {
+                status: response.status,
+                dataType: typeof responseData,
+                data: typeof responseData === 'string' ? responseData.substring(0, 200) : responseData
+            });
+            return { academies: [], totalCount: 0 };
+        }
+
+        const academies = content.map(academy => ({
+            id: academy.id,
+            name: academy.name,
+            businessNumber: academy.businessNumber,
+            phone: academy.phoneNumber || '-',
+            email: academy.email,
+            address: academy.address,
+            status: academy.isApproved === 'APPROVED' ? '활성' : (academy.isApproved === 'PENDING' ? '대기' : '정지'),
+            registeredDate: academy.createdAt,
+            courseCount: academy.courseCount || 0,
+        } as AdminAcademy));
+
+        const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
+
+        return { academies, totalCount: totalElements };
+    } catch (error) {
+        console.error('[adminService] getAdminAcademies 실패:', error);
+        return { academies: [], totalCount: 0 };
     }
-
-    const academies = content.map(academy => ({
-        id: academy.id,
-        name: academy.name,
-        businessNumber: academy.businessNumber,
-        phone: academy.phoneNumber || '-',
-        email: academy.email,
-        address: academy.address,
-        status: academy.isApproved === 'APPROVED' ? '활성' : (academy.isApproved === 'PENDING' ? '대기' : '정지'),
-        registeredDate: academy.createdAt,
-        courseCount: academy.courseCount || 0,
-    } as AdminAcademy));
-
-    const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
-
-    return { academies, totalCount: totalElements };
 };
 
 /**
@@ -553,8 +577,8 @@ export const convertFormToRequest = (
     },
     academyId: number
 ): CourseRegistrationRequest => {
-    // 대상(target)에 따라 categoryType 결정
-    const categoryType: 'EMPLOYEE' | 'JOB_SEEKER' = formData.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
+    // 대상(target)에 따라 categoryType 결정 (중앙화된 유틸리티 함수 사용)
+    const categoryType = targetToCategoryType(formData.target);
 
     // 카테고리명은 이제 백엔드에서 직접 가져온 값을 사용
     const categoryName = formData.category || '';
@@ -582,7 +606,7 @@ export const convertFormToRequest = (
  * 과정 등록 요청 (기관용 - PENDING 상태로 생성)
  */
 export const requestCourseRegistration = async (courseData: CourseRegistrationRequest): Promise<CourseApprovalRequest> => {
-    const response = await apiClient.post<ApiCourseResponse>('/courses/request', courseData);
+    const response = await apiClient.post<ApiCourseResponse>('/api/courses/request', courseData);
 
     // 응답 데이터를 프론트엔드 타입으로 변환
     const course = response.data;
@@ -593,7 +617,7 @@ export const requestCourseRegistration = async (courseData: CourseRegistrationRe
  * 과정 직접 등록 (관리자용 - 즉시 APPROVED 상태로 생성)
  */
 export const createCourseByAdmin = async (courseData: CourseRegistrationRequest): Promise<CourseApprovalRequest> => {
-    const response = await apiClient.post<ApiCourseResponse>('/courses', courseData);
+    const response = await apiClient.post<ApiCourseResponse>('/api/courses', courseData);
 
     const course = response.data;
     return mapApiCourseToApprovalRequest(course);
@@ -606,23 +630,21 @@ export const updateCourseRequest = async (
     courseId: number,
     courseData: CourseRegistrationRequest
 ): Promise<CourseApprovalRequest> => {
-    const response = await apiClient.put<ApiCourseResponse>(`/courses/${courseId}`, courseData);
+    const response = await apiClient.put<ApiCourseResponse>(`/api/courses/${courseId}`, courseData);
 
     const course = response.data;
     return mapApiCourseToApprovalRequest(course);
 };
 
+// 과정 이미지 타입
+export type CourseImageType = 'THUMBNAIL' | 'HEADER' | 'CONTENT';
+
 // 과정 이미지 응답 타입
 export interface CourseImageUploadResponse {
-    id: number;
-    originalFileName: string;
-    storedFileName: string;
-    downloadUrl: string;
-    thumbnailUrl: string | null;
-    fileSize: number;
-    contentType: string;
-    isThumbnail: boolean;
-    createdAt: string;
+    imageId: number;
+    imageUrl: string;
+    imageType: CourseImageType;
+    isThumbnail: boolean; // 하위 호환
 }
 
 /**
@@ -630,22 +652,22 @@ export interface CourseImageUploadResponse {
  * @param categoryType 카테고리 타입 (EMPLOYEE/JOB_SEEKER)
  * @param courseId 과정 ID
  * @param file 업로드할 이미지 파일
- * @param isThumbnail 썸네일 여부
+ * @param imageType 이미지 타입 (THUMBNAIL, HEADER, CONTENT) - 기본값: THUMBNAIL
  */
 export const uploadCourseImage = async (
     categoryType: CategoryType,
     courseId: number,
     file: File,
-    isThumbnail: boolean = true
+    imageType: CourseImageType = 'THUMBNAIL'
 ): Promise<CourseImageUploadResponse> => {
     const formData = new FormData();
     formData.append('file', file);
 
     const response = await apiClient.post<CourseImageUploadResponse>(
-        `/${categoryType}/courses/${courseId}/images`,
+        `/api/${categoryType}/courses/${courseId}/images`,
         formData,
         {
-            params: { isThumbnail },
+            params: { imageType },
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -653,6 +675,19 @@ export const uploadCourseImage = async (
     );
 
     return response.data;
+};
+
+/**
+ * 과정 이미지 삭제 (Soft Delete)
+ * 백엔드에서 isDeleted=true로 마킹되고, 스케줄러가 나중에 S3 파일을 정리합니다.
+ * @param categoryType 카테고리 타입 (EMPLOYEE/JOB_SEEKER)
+ * @param imageId 삭제할 이미지 ID
+ */
+export const deleteCourseImage = async (
+    categoryType: CategoryType,
+    imageId: number
+): Promise<void> => {
+    await apiClient.delete(`/api/${categoryType}/courses/images/${imageId}`);
 };
 
 /**
@@ -706,7 +741,7 @@ const mapApiCourseToApprovalRequest = (course: ApiCourseResponse): CourseApprova
     requesterId: course.requesterId,
     requesterName: course.requesterName,
     category: course.categoryName,
-    target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
+    target: categoryTypeToTarget(course.categoryType),
     format: course.offline ? '오프라인' : '온라인',
     requestType: '등록',
     requestDate: course.createdAt,
@@ -721,6 +756,10 @@ const mapApiCourseToApprovalRequest = (course: ApiCourseResponse): CourseApprova
     isOffline: course.offline,
     location: course.location,
     description: course.requirement,
+    imageUrl: course.imageUrl,
+    thumbnailImageId: course.thumbnailImageId,
+    headerImageUrl: course.headerImageUrl,
+    headerImageId: course.headerImageId,
 });
 
 // Helper: 리뷰 응답 매핑

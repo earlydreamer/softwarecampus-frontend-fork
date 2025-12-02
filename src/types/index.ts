@@ -143,7 +143,10 @@ export interface Course {
     rating?: number;
     reviewCount?: number;
     tags?: string[];
-    imageUrl?: string;
+    imageUrl?: string; // 썸네일 이미지 (목록용)
+    thumbnailImageId?: number; // 썸네일 이미지 ID (삭제 API용)
+    headerImageUrl?: string; // 헤더 이미지 (상세 페이지 배경)
+    headerImageId?: number; // 헤더 이미지 ID (삭제 API용)
     description?: string;
     highlights?: string[];
     externalLink?: string;
@@ -394,7 +397,10 @@ export interface CourseApprovalRequest {
     isOffline?: boolean;
     location?: string;
     description?: string;
-    imageUrl?: string;
+    imageUrl?: string;           // 썸네일 이미지
+    thumbnailImageId?: number;   // 썸네일 이미지 ID (삭제 API용)
+    headerImageUrl?: string;     // 헤더 배경 이미지
+    headerImageId?: number;      // 헤더 이미지 ID (삭제 API용)
 }
 
 export interface ReviewApprovalRequest {

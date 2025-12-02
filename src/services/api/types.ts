@@ -4,6 +4,11 @@
  */
 
 /**
+ * 과정 이미지 타입
+ */
+export type CourseImageType = 'THUMBNAIL' | 'HEADER' | 'CONTENT';
+
+/**
  * 과정 응답 DTO (CourseResponseDTO)
  */
 export interface ApiCourseResponse {
@@ -39,8 +44,11 @@ export interface ApiCourseResponse {
     requesterId?: number;
     requesterName?: string;
 
-    // 과정 이미지 (썸네일)
+    // 과정 이미지 (썸네일 - 목록용)
     imageUrl?: string;
+    
+    // 과정 헤더 이미지 (상세 페이지 배경)
+    headerImageUrl?: string;
 }
 
 export interface ApiCourseDetailResponse extends ApiCourseResponse {

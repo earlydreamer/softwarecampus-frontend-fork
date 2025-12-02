@@ -1,9 +1,14 @@
 // ===== API 연동 서비스 =====
 // 과정 섹션: 최적화된 단일 API 사용
 
-import { fetchActiveBanners } from './bannerService';
+import { fetchActiveBanners, fetchActiveBannersLegacy, type BannerResult, type BannerError } from './bannerService';
 import apiClient from './api/client';
 import type { Course } from '../types';
+import { categoryTypeToTarget } from '../utils/categoryType';
+import { DEFAULT_IMAGES } from '../constants';
+
+// 배너 관련 타입 re-export
+export type { BannerResult, BannerError };
 
 // API 응답 타입 정의
 interface ApiCourseListResponse {
@@ -33,9 +38,15 @@ interface HomeCoursesResponse {
 }
 
 /**
- * 배너 조회 (실제 API)
+ * 배너 조회 (Result 패턴 - 에러 유형별 처리 가능)
  */
-export const fetchHomeBanners = fetchActiveBanners;
+export const fetchHomeBannersWithResult = fetchActiveBanners;
+
+/**
+ * 배너 조회 (레거시 - 실패 시 빈 배열 반환)
+ * react-query 등 기존 사용처와 호환
+ */
+export const fetchHomeBanners = fetchActiveBannersLegacy;
 
 /**
  * 홈 화면 과정 섹션 데이터 조회 (최적화된 단일 API)
@@ -62,7 +73,7 @@ export const fetchHomeCourseSections = async () => {
                 id: 0,
                 categoryName: apiCourse.categoryName,
                 categoryType: apiCourse.categoryType,
-                name: apiCourse.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
+                name: categoryTypeToTarget(apiCourse.categoryType),
             },
             name: apiCourse.name,
             recruitStart: apiCourse.recruitStart,
@@ -84,7 +95,7 @@ export const fetchHomeCourseSections = async () => {
             rating: apiCourse.rating || 0,
             reviewCount: apiCourse.reviewCount || 0,
             tags: [],
-            imageUrl: apiCourse.imageUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            imageUrl: apiCourse.imageUrl || DEFAULT_IMAGES.COURSE_THUMBNAIL,
             description: `${apiCourse.name} 과정입니다.`,
             highlights: [],
         });

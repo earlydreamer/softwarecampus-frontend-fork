@@ -51,9 +51,10 @@ describe('HeroBanner - currentIndex 범위 검증', () => {
         expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
-    it('배너가 없을 때 null을 반환해야 함', () => {
-        const { container } = renderWithRouter(<HeroBanner banners={[]} loading={false} />);
-        expect(container.firstChild).toBeNull();
+    it('배너가 없을 때 기본 배너를 표시해야 함', () => {
+        renderWithRouter(<HeroBanner banners={[]} loading={false} />);
+        expect(screen.getByText('Softwarecampus')).toBeInTheDocument();
+        expect(screen.getByText('최고의 교육 과정으로 여러분의 커리어를 시작하세요')).toBeInTheDocument();
     });
 
     it('배너가 있을 때 첫 번째 배너를 표시해야 함', () => {
@@ -87,8 +88,8 @@ describe('HeroBanner - currentIndex 범위 검증', () => {
         expect(screen.getByText('배너 1')).toBeInTheDocument();
     });
 
-    it('배너가 모두 제거되면 null을 반환해야 함', async () => {
-        const { rerender, container } = renderWithRouter(
+    it('배너가 모두 제거되면 기본 배너를 표시해야 함', async () => {
+        const { rerender } = renderWithRouter(
             <HeroBanner banners={mockBanners} loading={false} />
         );
 
@@ -99,11 +100,12 @@ describe('HeroBanner - currentIndex 범위 검증', () => {
             </BrowserRouter>
         );
 
-        expect(container.firstChild).toBeNull();
+        expect(screen.getByText('Softwarecampus')).toBeInTheDocument();
     });
 
-    it('currentBanner가 undefined일 때 null을 반환해야 함', () => {
-        // 이 케이스는 useEffect가 실행되기 전 순간적으로 발생할 수 있음
+    it('초기 렌더링 시 정상적으로 렌더링되어야 함', () => {
+        // useEffect가 실행되기 전 순간적으로 currentBanner가 undefined일 수 있지만
+        // 컴포넌트는 크래시 없이 정상적으로 렌더링되어야 함
         const { container } = renderWithRouter(
             <HeroBanner banners={mockBanners} loading={false} />
         );
