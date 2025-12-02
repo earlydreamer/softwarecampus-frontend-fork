@@ -61,6 +61,7 @@ interface ApiCourseResponse {
     kdt: boolean;
     nailbaeum: boolean;
     approvalStatus: string;
+    rejectionReason?: string; // 거부 사유
     approvedAt: string;
     createdAt: string;
     imageUrl?: string; // 과정 썸네일 이미지 URL
@@ -78,6 +79,7 @@ interface ApiReviewResponse {
     courseName: string; // 백엔드에서 제공하는 과정 이름
     comment: string;
     approvalStatus: string;
+    rejectionReason?: string; // 거부 사유
     averageScore: number;
     likeCount: number;
     dislikeCount: number;
@@ -199,10 +201,10 @@ export const getCourseApprovalRequests = async (
 };
 
 /**
- * 과정 승인 (기존 API 사용)
+ * 과정 승인
  */
 export const approveCourse = async (courseId: number): Promise<void> => {
-    await apiClient.post(`/courses/${courseId}/approve`);
+    await apiClient.post(`/admin/courses/${courseId}/approve`);
 };
 
 /**
@@ -300,7 +302,7 @@ export const updateBannerOrder = async (bannerId: number, newOrder: number): Pro
  * 백엔드에서 트랜잭션으로 처리하여 데이터 정합성 보장
  */
 export const swapBannerOrder = async (bannerId1: number, bannerId2: number): Promise<void> => {
-    await apiClient.patch('/admin/banners/swap-order', null, {
+    await apiClient.post('/admin/banners/swap-order', null, {
         params: { bannerId1, bannerId2 }
     });
 };
@@ -445,6 +447,53 @@ export const approveAcademy = async (academyId: number): Promise<void> => {
  */
 export const rejectAcademy = async (academyId: number, reason: string): Promise<void> => {
     await apiClient.patch(`/admin/academies/${academyId}/reject`, { reason });
+};
+
+/**
+ * 기관 생성 요청 데이터 타입
+ */
+export interface AcademyCreateData {
+    name: string;
+    address: string;
+    businessNumber: string;
+    email: string;
+    files: File[];
+}
+
+/**
+ * 기관 등록 (관리자)
+ */
+export const createAcademy = async (data: AcademyCreateData): Promise<AdminAcademy> => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('address', data.address);
+    formData.append('businessNumber', data.businessNumber);
+    formData.append('email', data.email);
+    
+    data.files.forEach((file) => {
+        formData.append('files', file);
+    });
+
+    const response = await apiClient.post('/api/academies', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+    // 응답을 AdminAcademy 형태로 변환
+    const academy = response.data;
+    return {
+        id: academy.id,
+        name: academy.name,
+        businessNumber: academy.businessNumber,
+        address: academy.address,
+        phone: academy.phoneNumber || '',
+        email: academy.email,
+        status: academy.approvalStatus === 'APPROVED' ? '활성' : 
+                academy.approvalStatus === 'PENDING' ? '대기' : '정지',
+        registeredDate: academy.createdAt || new Date().toISOString(),
+        courseCount: 0,
+    };
 };
 
 /**
@@ -750,6 +799,7 @@ const mapApiCourseToApprovalRequest = (course: ApiCourseResponse): CourseApprova
     requestType: '등록',
     requestDate: course.createdAt,
     status: mapStatus(course.approvalStatus),
+    rejectionReason: course.rejectionReason,
     recruitStart: course.recruitStart,
     recruitEnd: course.recruitEnd,
     courseStart: course.courseStart,
@@ -774,9 +824,11 @@ const mapApiReviewToApprovalRequest = (review: ApiReviewResponse): ReviewApprova
     courseName: review.courseName,
     academyId: review.academyId,
     writerName: review.writerName,
+    writerId: review.writerId,
     rating: review.averageScore,
     comment: review.comment,
     requestType: '등록',
     requestDate: review.createdAt,
     status: mapStatus(review.approvalStatus),
+    rejectionReason: review.rejectionReason,
 });

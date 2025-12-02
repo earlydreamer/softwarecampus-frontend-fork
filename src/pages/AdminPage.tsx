@@ -48,6 +48,7 @@ import {
     deleteBanner,
     approveAcademy,
     rejectAcademy,
+    createAcademy,
     requestCourseRegistration,
     createCourseByAdmin,
     updateCourseRequest,
@@ -61,9 +62,34 @@ import {
 import { deleteCourse } from '../services/courseService';
 import CourseRequestModal, { type CourseFormState } from '../components/admin/CourseRequestModal';
 import BannerModal, { type BannerFormState } from '../components/admin/BannerModal';
+import AcademyCreateModal, { type AcademyFormData } from '../components/admin/AcademyCreateModal';
 import AlertModal from '../components/ui/AlertModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ReasonInputModal from '../components/common/ReasonInputModal';
+
+/**
+ * 배너 썸네일 컴포넌트 - 이미지가 없거나 로드 실패 시 그라데이션 배경 표시
+ */
+const BannerThumbnail: React.FC<{ imageUrl: string; title: string }> = ({ imageUrl, title }) => {
+    const [imageError, setImageError] = useState(false);
+
+    if (!imageUrl || imageError) {
+        return (
+            <div className="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
+                <span className="text-white text-xs font-medium text-center px-2 line-clamp-2">{title}</span>
+            </div>
+        );
+    }
+
+    return (
+        <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover"
+            onError={() => setImageError(true)}
+        />
+    );
+};
 
 const AdminPage = () => {
     const navigate = useNavigate();
@@ -91,6 +117,9 @@ const AdminPage = () => {
     // 과정 모달 상태
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<CourseApprovalRequest | null>(null);
+
+    // 기관 등록 모달 상태
+    const [isAcademyModalOpen, setIsAcademyModalOpen] = useState(false);
 
     // AlertModal 상태 (알림 메시지 표시)
     const [alertModal, setAlertModal] = useState<{
@@ -129,6 +158,17 @@ const AdminPage = () => {
         title: '',
         message: '',
         onConfirm: () => {}
+    });
+
+    // 거부 사유 조회 모달 상태
+    const [rejectionReasonModal, setRejectionReasonModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        reason: string;
+    }>({
+        isOpen: false,
+        title: '',
+        reason: ''
     });
 
     // 데이터 필터링 (ACADEMY 회원은 본인 기관 데이터만)
@@ -267,6 +307,28 @@ const AdminPage = () => {
         });
     };
 
+    // 기관 등록 핸들러
+    const handleCreateAcademy = async (data: AcademyFormData) => {
+        try {
+            const newAcademy = await createAcademy({
+                name: data.name,
+                address: data.address,
+                businessNumber: data.businessNumber,
+                email: data.email,
+                files: data.files,
+            });
+            setIsAcademyModalOpen(false);
+            showAlert('등록 완료', `기관 "${newAcademy.name}"이(가) 등록되었습니다.`, 'success');
+            // 목록 갱신
+            const { academies } = await getAdminAcademies();
+            setAcademies(academies);
+        } catch (error) {
+            console.error('Failed to create academy:', error);
+            showAlert('등록 실패', '기관 등록에 실패했습니다. 입력 정보를 확인해주세요.', 'error');
+            throw error; // 모달에서 에러 상태 처리를 위해 throw
+        }
+    };
+
     if (!isAuthenticated || (user?.accountType !== 'ADMIN' && user?.accountType !== 'ACADEMY')) {
         return null;
     }
@@ -384,7 +446,7 @@ const AdminPage = () => {
         }
     };
 
-    // 배너 순서 변경 (원자적 교환 API 사용)
+    // 배너 순서 변경 (낙관적 업데이트 적용)
     const handleBannerMove = async (id: number, direction: 'up' | 'down') => {
         // displayOrder 기준으로 정렬된 배너 목록 사용
         const sortedBanners = [...banners].sort((a, b) => a.displayOrder - b.displayOrder);
@@ -397,14 +459,29 @@ const AdminPage = () => {
         const currentBanner = sortedBanners[index];
         const targetBanner = sortedBanners[targetIndex];
 
+        // 낙관적 업데이트: 이전 상태 저장 후 UI 먼저 업데이트
+        const previousBanners = banners;
+        
+        // displayOrder 값 교환
+        const updatedBanners = banners.map(b => {
+            if (b.id === currentBanner.id) {
+                return { ...b, displayOrder: targetBanner.displayOrder };
+            }
+            if (b.id === targetBanner.id) {
+                return { ...b, displayOrder: currentBanner.displayOrder };
+            }
+            return b;
+        });
+        setBanners(updatedBanners);
+
         try {
             // 두 배너의 순서를 원자적으로 교환 (백엔드에서 트랜잭션으로 처리)
             await swapBannerOrder(currentBanner.id, targetBanner.id);
-            const newBanners = await getAdminBanners();
-            setBanners(newBanners);
         } catch (error) {
+            // 실패 시 롤백
             console.error("Failed to reorder banners", error);
-            showAlert('순서 변경 실패', '배너 순서 변경 중 오류가 발생했습니다.', 'error');
+            setBanners(previousBanners);
+            showAlert('순서 변경 실패', '배너 순서 변경에 실패했습니다.', 'error');
         }
     };
 
@@ -422,20 +499,30 @@ const AdminPage = () => {
             
             const formData = new FormData();
             formData.append('title', data.title || '');
-            formData.append('description', data.description || '');
             formData.append('linkUrl', safeLinkUrl);
             formData.append('isActivated', String(data.isActive));
-            if (data.imageFile) {
-                formData.append('imageFile', data.imageFile);
-            }
 
             if (editingBanner) {
+                // 수정 시: sequence 필드 필수, 이미지 파일명은 newImageFile
+                formData.append('sequence', String(data.displayOrder ?? editingBanner.displayOrder));
+                if (data.imageFile) {
+                    formData.append('newImageFile', data.imageFile);
+                }
                 const updatedBanner = await updateBanner(editingBanner.id, formData);
                 setBanners(prev => prev.map(b =>
                     b.id === editingBanner.id ? updatedBanner : b
                 ));
                 showAlert('수정 완료', '배너가 수정되었습니다.', 'success');
             } else {
+                // 등록 시: sequence 필드 필수, 이미지 파일명은 imageFile
+                // 새 배너는 기존 배너들 다음 순서로 추가
+                const nextSequence = banners.length > 0 
+                    ? Math.max(...banners.map(b => b.displayOrder)) + 1 
+                    : 1;
+                formData.append('sequence', String(data.displayOrder ?? nextSequence));
+                if (data.imageFile) {
+                    formData.append('imageFile', data.imageFile);
+                }
                 const newBanner = await createBanner(formData);
                 setBanners(prev => [...prev, newBanner]);
                 showAlert('등록 완료', '배너가 생성되었습니다.', 'success');
@@ -747,19 +834,76 @@ const AdminPage = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {user?.accountType === 'ADMIN' && req.status === '대기' ? (
+                                                    {user?.accountType === 'ADMIN' ? (
                                                         <div className="flex items-center gap-2">
+                                                            {req.status === '대기' && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleCourseApproval(req.id, '승인')}
+                                                                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        승인
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleCourseApproval(req.id, '거부')}
+                                                                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        거부
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {req.status === '거부' && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => setRejectionReasonModal({
+                                                                            isOpen: true,
+                                                                            title: '과정 거부 사유',
+                                                                            reason: req.rejectionReason || '거부 사유가 기록되지 않았습니다.'
+                                                                        })}
+                                                                        className="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        거부 사유
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleCourseApproval(req.id, '승인')}
+                                                                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        재승인
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                             <button
-                                                                onClick={() => handleCourseApproval(req.id, '승인')}
-                                                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                                                                onClick={() => openCourseModal(req)}
+                                                                className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                                                title="수정"
+                                                                aria-label="수정"
                                                             >
-                                                                승인
+                                                                <Edit2 className="w-4 h-4" />
                                                             </button>
                                                             <button
-                                                                onClick={() => handleCourseApproval(req.id, '거부')}
-                                                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition"
+                                                                onClick={() => {
+                                                                    setConfirmModal({
+                                                                        isOpen: true,
+                                                                        title: '과정 삭제',
+                                                                        message: `"${req.courseName}" 과정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+                                                                        onConfirm: async () => {
+                                                                            try {
+                                                                                await deleteCourse(req.id);
+                                                                                showAlert('삭제 완료', '과정이 삭제되었습니다.', 'success');
+                                                                                setCourseRequests(prev => prev.filter(c => c.id !== req.id));
+                                                                            } catch (error: unknown) {
+                                                                                const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+                                                                                console.error('과정 삭제 실패:', errorMessage);
+                                                                                showAlert('삭제 실패', '과정 삭제 중 오류가 발생했습니다.', 'error');
+                                                                            }
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                title="삭제"
+                                                                aria-label="삭제"
                                                             >
-                                                                거부
+                                                                <Trash2 className="w-4 h-4" />
                                                             </button>
                                                         </div>
                                                     ) : user?.accountType === 'ACADEMY' ? (
@@ -870,20 +1014,44 @@ const AdminPage = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    {user?.accountType === 'ADMIN' && req.status === '대기' ? (
+                                                    {user?.accountType === 'ADMIN' && (req.status === '대기' || req.status === '거부') ? (
                                                         <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => handleReviewApproval(req.id, '승인')}
-                                                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
-                                                            >
-                                                                승인
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleReviewApproval(req.id, '거부')}
-                                                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition"
-                                                            >
-                                                                거부
-                                                            </button>
+                                                            {req.status === '대기' && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleReviewApproval(req.id, '승인')}
+                                                                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        승인
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleReviewApproval(req.id, '거부')}
+                                                                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        거부
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {req.status === '거부' && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => setRejectionReasonModal({
+                                                                            isOpen: true,
+                                                                            title: '리뷰 거부 사유',
+                                                                            reason: req.rejectionReason || '거부 사유가 기록되지 않았습니다.'
+                                                                        })}
+                                                                        className="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        거부 사유
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleReviewApproval(req.id, '승인')}
+                                                                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                                                                    >
+                                                                        재승인
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     ) : (
                                                         <span className="text-sm text-slate-500">-</span>
@@ -913,7 +1081,7 @@ const AdminPage = () => {
                         </div>
 
                         <div className="grid gap-4">
-                            {[...banners].sort((a, b) => a.displayOrder - b.displayOrder).map((banner) => (
+                            {[...banners].sort((a, b) => a.displayOrder - b.displayOrder).map((banner, index) => (
                                 <div key={banner.id} className="glass-panel p-4 rounded-xl flex items-center gap-4">
                                     <div className="w-8 flex flex-col items-center gap-1">
                                         <button
@@ -922,7 +1090,7 @@ const AdminPage = () => {
                                         >
                                             <ArrowUp className="w-4 h-4" />
                                         </button>
-                                        <span className="text-xs font-bold text-slate-500">{banner.displayOrder}</span>
+                                        <span className="text-xs font-bold text-slate-500">{index + 1}</span>
                                         <button
                                             onClick={() => handleBannerMove(banner.id, 'down')}
                                             className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600"
@@ -930,8 +1098,8 @@ const AdminPage = () => {
                                             <ArrowDown className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    <div className="w-32 h-20 rounded-lg bg-slate-100 dark:bg-slate-800 overflow-hidden flex-shrink-0">
-                                        <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                                    <div className="w-32 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                                        <BannerThumbnail imageUrl={banner.imageUrl} title={banner.title} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
@@ -1060,7 +1228,10 @@ const AdminPage = () => {
                                         </button>
                                     ))}
                                 </div>
-                                <button className="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+                                <button 
+                                    onClick={() => setIsAcademyModalOpen(true)}
+                                    className="btn-primary flex items-center gap-2 px-4 py-2 text-sm"
+                                >
                                     <Plus className="w-4 h-4" />
                                     <span>기관 등록</span>
                                 </button>
@@ -1206,6 +1377,13 @@ const AdminPage = () => {
                 isAdmin={user?.accountType === 'ADMIN'}
             />
 
+            {/* Academy Create Modal */}
+            <AcademyCreateModal
+                isOpen={isAcademyModalOpen}
+                onClose={() => setIsAcademyModalOpen(false)}
+                onSubmit={handleCreateAcademy}
+            />
+
             {/* Alert Modal */}
             <AlertModal
                 isOpen={alertModal.isOpen}
@@ -1232,6 +1410,30 @@ const AdminPage = () => {
                 title={reasonModal.title}
                 message={reasonModal.message}
             />
+
+            {/* Rejection Reason View Modal - 거부 사유 조회 */}
+            {rejectionReasonModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                            {rejectionReasonModal.title}
+                        </h3>
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                            <p className="text-red-800 dark:text-red-300 whitespace-pre-wrap">
+                                {rejectionReasonModal.reason}
+                            </p>
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setRejectionReasonModal(prev => ({ ...prev, isOpen: false }))}
+                                className="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition"
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
