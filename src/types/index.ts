@@ -143,7 +143,8 @@ export interface Course {
     rating?: number;
     reviewCount?: number;
     tags?: string[];
-    imageUrl?: string;
+    imageUrl?: string; // 썸네일 이미지 (목록용)
+    headerImageUrl?: string; // 헤더 이미지 (상세 페이지 배경)
     description?: string;
     highlights?: string[];
     externalLink?: string;
@@ -394,7 +395,8 @@ export interface CourseApprovalRequest {
     isOffline?: boolean;
     location?: string;
     description?: string;
-    imageUrl?: string;
+    imageUrl?: string;           // 썸네일 이미지
+    headerImageUrl?: string;     // 헤더 배경 이미지
 }
 
 export interface ReviewApprovalRequest {
