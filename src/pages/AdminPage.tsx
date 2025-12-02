@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { sanitizeUrl } from '../utils/security';
 import {
     LayoutDashboard,
     BookOpen,
@@ -338,10 +340,13 @@ const AdminPage = () => {
 
     const handleBannerSubmit = async (data: BannerFormState) => {
         try {
+            // 링크 URL 보안 검증
+            const safeLinkUrl = sanitizeUrl(data.linkUrl ?? '');
+            
             const formData = new FormData();
             formData.append('title', data.title || '');
             formData.append('description', data.description || '');
-            formData.append('linkUrl', data.linkUrl || '');
+            formData.append('linkUrl', safeLinkUrl);
             formData.append('isActivated', String(data.isActive));
             if (data.imageFile) {
                 formData.append('imageFile', data.imageFile);
@@ -445,15 +450,20 @@ const AdminPage = () => {
         } catch (error: unknown) {
             console.error('Failed to submit course:', error);
             let message = '과정 처리 중 오류가 발생했습니다.';
-            if (error instanceof Error) {
-                // axios error check could be more specific but for now checking property existence or using type guard
-                const anyError = error as any;
-                if (anyError.response?.data?.message) {
-                    message = anyError.response.data.message;
-                } else {
+            
+            // axios 에러 타입 가드를 사용하여 타입 안전하게 처리
+            if (axios.isAxiosError<{ message?: string }>(error)) {
+                // AxiosError인 경우 응답 데이터의 메시지 사용
+                if (error.response?.data?.message) {
+                    message = error.response.data.message;
+                } else if (error.message) {
                     message = error.message;
                 }
+            } else if (error instanceof Error) {
+                // 일반 Error인 경우
+                message = error.message;
             }
+            
             alert(message);
         }
     };
