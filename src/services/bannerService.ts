@@ -24,6 +24,12 @@ export const fetchActiveBanners = async (): Promise<Banner[]> => {
     try {
         const response = await apiClient.get<ApiBannerResponse[]>('/banners');
         
+        // 응답이 배열인지 확인 (API 오류 시 HTML 등이 반환될 수 있음)
+        if (!Array.isArray(response.data)) {
+            console.warn('배너 API 응답이 배열이 아닙니다:', typeof response.data);
+            return [];
+        }
+        
         // 시퀀스 순으로 정렬
         const sortedBanners = response.data.sort((a, b) => a.sequence - b.sequence);
         
@@ -37,6 +43,7 @@ export const fetchActiveBanners = async (): Promise<Banner[]> => {
         }));
     } catch (error) {
         console.error('배너 조회 실패:', error);
-        throw error;
+        // API 실패 시 빈 배열 반환 → HeroBanner의 기본 배너 표시
+        return [];
     }
 };
