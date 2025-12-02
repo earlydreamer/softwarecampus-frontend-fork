@@ -50,7 +50,7 @@ const CommunityPage = () => {
         setSearchInput(searchKeyword);
     }, [searchKeyword]);
 
-    const { data, isLoading, isError, error, refetch } = useQuery({
+    const { data, isLoading, isError, error: _error, refetch } = useQuery({
         queryKey: ['boardPosts', currentCategory, currentPage, searchKeyword, searchType, sortType],
         queryFn: () => fetchBoardPosts(currentCategory, currentPage, 20, searchKeyword, sortType, searchType),
     });
@@ -303,7 +303,7 @@ const CommunityPage = () => {
                                     <div className="col-span-5">
                                         <div className="flex items-center gap-2">
                                             {post.secret && (
-                                                <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" title="비밀글" />
+                                                <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" aria-label="비밀글" />
                                             )}
                                             <h3 className="font-medium text-slate-900 dark:text-white hover:text-primary-600 truncate">
                                                 {post.title}
@@ -343,7 +343,7 @@ const CommunityPage = () => {
                                     </div>
                                     <h3 className="font-medium text-slate-900 mb-2 line-clamp-1 flex items-center gap-2">
                                         {post.secret && (
-                                            <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" title="비밀글" />
+                                            <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" aria-label="비밀글" />
                                         )}
                                         {post.title}
                                     </h3>

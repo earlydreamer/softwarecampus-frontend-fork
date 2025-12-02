@@ -1,4 +1,4 @@
-import type { Banner, Course, CommunityPost, Academy, CourseQna, AcademyQA } from '../types';
+import type { Banner, Course, Academy, CourseQna, AcademyQA } from '../types';
 
 // ===== Mock Banners =====
 export const mockBanners: Banner[] = [

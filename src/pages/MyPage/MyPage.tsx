@@ -34,7 +34,7 @@ const MyPage = () => {
         myComments,
         bookmarkedCourses,
         stats,
-        totalComments,
+        totalComments: _totalComments,
         postsPage,
         setPostsPage,
         commentsPage,
