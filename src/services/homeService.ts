@@ -1,8 +1,7 @@
 // ===== API 연동 서비스 =====
-// 배너는 목업 유지 (다른 작업자 작업 중)
 // 과정 섹션: 최적화된 단일 API 사용
 
-import { fetchHomeBanners } from './mockData';
+import { fetchActiveBanners } from './bannerService';
 import apiClient from './api/client';
 import type { Course } from '../types';
 
@@ -34,9 +33,9 @@ interface HomeCoursesResponse {
 }
 
 /**
- * 배너 조회 (목업 유지)
+ * 배너 조회 (실제 API)
  */
-export { fetchHomeBanners };
+export const fetchHomeBanners = fetchActiveBanners;
 
 /**
  * 홈 화면 과정 섹션 데이터 조회 (최적화된 단일 API)

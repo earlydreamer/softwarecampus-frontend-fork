@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { Lock, Camera } from 'lucide-react';
 import Modal from '../../../../components/ui/Modal';
+import AlertModal from '../../../../components/ui/AlertModal';
 import { type UpdateProfileData, uploadFile } from '../../../../services/mypageService';
 import type { Account } from '../../../../types';
 import { useEffect, useState, useRef } from 'react';
@@ -19,6 +20,12 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'warning' | 'error' | 'info';
+    }>({ isOpen: false, title: '', message: '', type: 'info' });
 
     useEffect(() => {
         if (user && isOpen) {
@@ -45,14 +52,24 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
         // 파일 타입 검증
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
-            alert('JPG, PNG, GIF, WEBP 형식의 이미지만 업로드 가능합니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '파일 형식 오류',
+                message: 'JPG, PNG, GIF, WEBP 형식의 이미지만 업로드 가능합니다.',
+                type: 'warning'
+            });
             return;
         }
 
         // 파일 크기 검증 (5MB)
         const maxSize = 5 * 1024 * 1024;
         if (file.size > maxSize) {
-            alert('이미지 크기는 5MB 이하여야 합니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '파일 크기 초과',
+                message: '이미지 크기는 5MB 이하여야 합니다.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -63,7 +80,12 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
             setValue('profileImage', imageUrl);
         } catch (error) {
             console.error('Failed to upload image:', error);
-            alert('이미지 업로드에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '업로드 실패',
+                message: '이미지 업로드에 실패했습니다.',
+                type: 'error'
+            });
         } finally {
             setIsUploading(false);
         }
@@ -95,7 +117,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
                                 <img src={previewImage} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-3xl font-bold text-slate-400">
-                                    {user.userName.charAt(0).toUpperCase()}
+                                    {user.userName?.charAt(0)?.toUpperCase() || '?'}
                                 </span>
                             )}
                         </div>
@@ -184,6 +206,15 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
                     </button>
                 </div>
             </form>
+
+            {/* 알림 모달 */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </Modal>
     );
 };

@@ -16,11 +16,11 @@ const mapDtoToAcademy = (dto: ApiAcademyResponse): Academy => {
         email: dto.email,
         approvalStatus: dto.isApproved, // 백엔드 필드명 매핑
         approvedAt: dto.approvedAt,
-        // UI 표시용 기본값 (백엔드에서 제공하지 않는 필드)
-        description: `${dto.name}에서 제공하는 전문 교육 프로그램입니다.`,
-        logoUrl: undefined,
-        phone: undefined,
-        website: undefined,
+        // 백엔드에서 제공하는 필드
+        phone: dto.phoneNumber,
+        description: dto.description || `${dto.name}에서 제공하는 전문 교육 프로그램입니다.`,
+        logoUrl: dto.logoUrl,
+        website: dto.website,
         establishedDate: dto.createdAt,
         courseCount: dto.courseCount ?? 0,
         rating: dto.rating ?? 0.0,
@@ -81,22 +81,108 @@ export const fetchCoursesByAcademyId = async (academyId: number): Promise<Course
 
 /**
  * 기관 Q&A 조회
- * 백엔드 API 엔드포인트가 구현되지 않은 경우 빈 배열 반환
+ * 페이징 및 검색 지원
  */
 export const fetchAcademyQnAs = async (
     academyId: number,
-    _page: number = 1,
-    _limit: number = 5
+    page: number = 1,
+    limit: number = 5,
+    keyword?: string
 ): Promise<{ qas: AcademyQA[], totalCount: number }> => {
     try {
-        // TODO: 백엔드 Q&A API 엔드포인트 확인 필요
-        // 현재는 빈 응답 반환
-        console.warn(`Academy Q&A API not yet implemented for academy ${academyId}`);
-        return { qas: [], totalCount: 0 };
+        // 백엔드는 0-based 페이지 인덱스 사용
+        const params: { page: number; size: number; keyword?: string } = {
+            page: page - 1,
+            size: limit,
+        };
+        if (keyword) {
+            params.keyword = keyword;
+        }
+        
+        const response = await apiClient.get<{
+            content: Array<{
+                id: number;
+                title: string;
+                questionText: string;
+                answerText?: string;
+                createdAt: string;
+                updatedAt: string;
+                academyId: number;
+                accountId: number;
+                writerName: string;
+                answeredById?: number;
+                answeredByName?: string;
+                isAnswered: boolean;
+            }>;
+            totalElements: number;
+            totalPages: number;
+            size: number;
+            number: number;
+        }>(`/api/academies/${academyId}/qna`, { params });
+
+        const qas: AcademyQA[] = response.data.content.map(qa => ({
+            id: qa.id,
+            academyId: qa.academyId,
+            accountId: qa.accountId,
+            writerName: qa.writerName,
+            title: qa.title,
+            questionText: qa.questionText,
+            answerText: qa.answerText,
+            isAnswered: qa.isAnswered,
+            answeredById: qa.answeredById,
+            answeredByName: qa.answeredByName,
+            createdAt: qa.createdAt,
+            updatedAt: qa.updatedAt,
+        }));
+
+        return { qas, totalCount: response.data.totalElements };
     } catch (error) {
         console.error(`Failed to fetch Q&As for academy ${academyId}:`, error);
         return { qas: [], totalCount: 0 };
     }
+};
+
+/**
+ * 기관 Q&A 질문 등록
+ */
+export const createAcademyQnA = async (
+    academyId: number,
+    title: string,
+    questionText: string
+): Promise<AcademyQA> => {
+    const response = await apiClient.post<{
+        id: number;
+        title: string;
+        questionText: string;
+        answerText?: string;
+        createdAt: string;
+        updatedAt: string;
+        academyId: number;
+        accountId: number;
+        writerName: string;
+        answeredById?: number;
+        answeredByName?: string;
+        isAnswered: boolean;
+    }>(`/api/academies/${academyId}/qna`, {
+        title,
+        questionText,
+        academyId,
+    });
+
+    return {
+        id: response.data.id,
+        academyId: response.data.academyId,
+        accountId: response.data.accountId,
+        writerName: response.data.writerName,
+        title: response.data.title,
+        questionText: response.data.questionText,
+        answerText: response.data.answerText,
+        isAnswered: response.data.isAnswered,
+        answeredById: response.data.answeredById,
+        answeredByName: response.data.answeredByName,
+        createdAt: response.data.createdAt,
+        updatedAt: response.data.updatedAt,
+    };
 };
 
 /**

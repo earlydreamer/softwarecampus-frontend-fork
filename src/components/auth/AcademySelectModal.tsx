@@ -3,7 +3,8 @@ import { useState, useEffect, useRef, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
-import { getApprovedAcademies } from '../../services/academyService';
+import { getApprovedAcademies, createAcademy } from '../../services/academyService';
+import AlertModal from '../ui/AlertModal';
 
 interface AcademySelectModalProps {
     isOpen: boolean;
@@ -18,6 +19,13 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showRegisterForm, setShowRegisterForm] = useState(false);
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'warning' | 'error' | 'info';
+        onCloseCallback?: () => void;
+    }>({ isOpen: false, title: '', message: '', type: 'info' });
 
     // useQuery로 아카데미 목록 가져오기
     const { data: academies = [], isLoading, isError } = useQuery({
@@ -121,52 +129,66 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
 
     const handleRegister = async () => {
         if (!regName || !regBusinessNumber || !regAddress || !regEmail) {
-            alert('모든 필수 정보를 입력해주세요.');
+            setAlertModal({
+                isOpen: true,
+                title: '입력 오류',
+                message: '모든 필수 정보를 입력해주세요.',
+                type: 'warning'
+            });
             return;
         }
 
         if (uploadedFiles.length === 0) {
-            alert('사업자등록증 파일을 첨부해주세요.');
+            setAlertModal({
+                isOpen: true,
+                title: '파일 필요',
+                message: '사업자등록증 파일을 첨부해주세요.',
+                type: 'warning'
+            });
             return;
         }
 
-        /* 
-        // Real API implementation
-        const formData = new FormData();
-        formData.append('name', regName);
-        formData.append('businessNumber', regBusinessNumber);
-        formData.append('address', regAddress);
-        formData.append('email', regEmail);
-        formData.append('businessRegistration', uploadedFiles[0].file);
-
-        try {
-            await createAcademy(formData);
-            alert('기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.');
-            onClose();
-        } catch (error) {
-            console.error('Registration failed:', error);
-            alert('기관 등록 요청 중 오류가 발생했습니다.');
+        // 사업자등록번호 형식 검증 (xxx-xx-xxxxx)
+        const businessNumberRegex = /^\d{3}-\d{2}-\d{5}$/;
+        if (!businessNumberRegex.test(regBusinessNumber)) {
+            setAlertModal({
+                isOpen: true,
+                title: '형식 오류',
+                message: '사업자등록번호 형식이 올바르지 않습니다.\n(예: 123-45-67890)',
+                type: 'warning'
+            });
+            return;
         }
-        */
 
-        // Mock implementation for UI testing
         try {
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            console.log('Mock Registration Data:', {
-                name: regName,
-                businessNumber: regBusinessNumber,
-                address: regAddress,
-                email: regEmail,
-                files: uploadedFiles
+            const formData = new FormData();
+            formData.append('name', regName);
+            formData.append('businessNumber', regBusinessNumber);
+            formData.append('address', regAddress);
+            formData.append('email', regEmail);
+            
+            // 모든 첨부 파일 추가
+            uploadedFiles.forEach(({ file }) => {
+                formData.append('files', file);
             });
 
-            alert('기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.');
-            onClose();
+            await createAcademy(formData);
+            
+            setAlertModal({
+                isOpen: true,
+                title: '등록 요청 완료',
+                message: '기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.',
+                type: 'success',
+                onCloseCallback: onClose
+            });
         } catch (error) {
             console.error('Registration failed:', error);
-            alert('기관 등록 요청 중 오류가 발생했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '등록 실패',
+                message: '기관 등록 요청 중 오류가 발생했습니다.',
+                type: 'error'
+            });
         }
     };
 
@@ -287,6 +309,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+                        aria-label="모달 닫기"
                     >
                         <X className="w-6 h-6 text-slate-500 dark:text-slate-400" />
                     </button>
@@ -442,6 +465,7 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                                                     type="button"
                                                     onClick={() => handleRemoveFile(item.id)}
                                                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded transition"
+                                                    aria-label={`${item.file.name} 파일 삭제`}
                                                 >
                                                     <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                                                 </button>
@@ -598,6 +622,18 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
                     </div>
                 </div>
             </div>
+
+            {/* Alert Modal */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => {
+                    setAlertModal(prev => ({ ...prev, isOpen: false }));
+                    alertModal.onCloseCallback?.();
+                }}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };

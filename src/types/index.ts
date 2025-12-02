@@ -2,6 +2,19 @@
 export type AccountType = 'USER' | 'ACADEMY' | 'ADMIN';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+// ===== 공통 모달 상태 타입 정의 =====
+/**
+ * AlertModal 컴포넌트의 상태를 관리하기 위한 공통 타입
+ * 여러 컴포넌트에서 재사용되어 일관된 알림 UX를 제공합니다.
+ */
+export type AlertModalState = {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'warning' | 'error' | 'info';
+    onCloseCallback?: () => void;
+};
+
 // ===== 사용자(Account) 타입 정의 (백엔드 Account 엔티티 참조) =====
 // 변경: User -> Account
 export interface Account {
@@ -121,6 +134,9 @@ export interface Course {
     requirement?: string;
     approvalStatus: ApprovalStatus;
     approvedAt?: string;
+    // 과정 등록자 정보 (백엔드: requester)
+    requesterId?: number;
+    requesterName?: string;
     // 커리큘럼 정보 (백엔드: List<CourseCurriculum> curriculums)
     curriculums?: CourseCurriculum[];
     // UI 표시용 추가 필드 (백엔드에 없음 - 추후 추가 필요)
@@ -260,6 +276,7 @@ export interface ReviewAttachment {
 export interface CourseReview {
     id: number;
     courseId: number;
+    courseName?: string; // 백엔드에서 제공하는 과정명
     writerId: number;
     writerName: string; // 백엔드에서 제공
     averageScore: number; // 백엔드: averageScore

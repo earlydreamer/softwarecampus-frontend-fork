@@ -12,6 +12,7 @@ import CourseQnAs from '../components/course/CourseQnAs';
 import ShareModal from '../components/ui/ShareModal';
 import AlertModal from '../components/ui/AlertModal';
 import { QNA_PER_PAGE } from '../constants';
+import type { AlertModalState } from '../types';
 
 
 const CourseDetailPage = () => {
@@ -26,7 +27,12 @@ const CourseDetailPage = () => {
     const [qnaPage, setQnaPage] = useState(1);
     const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
     const [showShareModal, setShowShareModal] = useState(false);
-    const [showAlertModal, setShowAlertModal] = useState(false);
+    const [alertModal, setAlertModal] = useState<AlertModalState>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     const queryClient = useQueryClient();
 
@@ -105,7 +111,12 @@ const CourseDetailPage = () => {
             if (context?.previousFavorite) {
                 queryClient.setQueryData(['course-favorite', id], context.previousFavorite);
             }
-            alert('찜하기 처리 중 오류가 발생했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '찜하기 실패',
+                message: '찜하기 처리 중 오류가 발생했습니다.',
+                type: 'error'
+            });
         },
         onSettled: () => {
             // 성공/실패 여부와 관계없이 쿼리 무효화하여 최신 상태 동기화
@@ -134,7 +145,12 @@ const CourseDetailPage = () => {
             if (context?.previousFavorite) {
                 queryClient.setQueryData(['course-favorite', id], context.previousFavorite);
             }
-            alert('찜 삭제 처리 중 오류가 발생했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '찜 삭제 실패',
+                message: '찜 삭제 처리 중 오류가 발생했습니다.',
+                type: 'error'
+            });
         },
         onSettled: () => {
             // 성공/실패 여부와 관계없이 쿼리 무효화하여 최신 상태 동기화
@@ -146,7 +162,12 @@ const CourseDetailPage = () => {
         if (!course) return;
 
         if (!isAuthenticated) {
-            setShowAlertModal(true);
+            setAlertModal({
+                isOpen: true,
+                title: '로그인 필요',
+                message: '찜하기 기능은 로그인이 필요합니다.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -482,7 +503,12 @@ const CourseDetailPage = () => {
                                                 isLoading={isQnAsLoading}
                                                 onQuestionSubmit={(title, content) => {
                                                     console.log('Question submitted:', { title, content });
-                                                    alert('질문이 등록되었습니다.');
+                                                    setAlertModal({
+                                                        isOpen: true,
+                                                        title: '질문 등록',
+                                                        message: '질문이 등록되었습니다.',
+                                                        type: 'success'
+                                                    });
                                                 }}
                                                 onSearch={(keyword) => {
                                                     setQnaSearchKeyword(keyword);
@@ -538,10 +564,20 @@ const CourseDetailPage = () => {
                                             if (safeUrl) {
                                                 window.open(safeUrl, '_blank', 'noopener,noreferrer');
                                             } else {
-                                                alert('유효하지 않은 링크입니다.');
+                                                setAlertModal({
+                                                    isOpen: true,
+                                                    title: '링크 오류',
+                                                    message: '유효하지 않은 링크입니다.',
+                                                    type: 'error'
+                                                });
                                             }
                                         } else {
-                                            alert('자세히 보기 링크가 제공되지 않았습니다.');
+                                            setAlertModal({
+                                                isOpen: true,
+                                                title: '링크 없음',
+                                                message: '자세히 보기 링크가 제공되지 않았습니다.',
+                                                type: 'info'
+                                            });
                                         }
                                     }}
                                     className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30"
@@ -606,11 +642,11 @@ const CourseDetailPage = () => {
 
             {/* 로그인 알림 모달 */}
             <AlertModal
-                isOpen={showAlertModal}
-                onClose={() => setShowAlertModal(false)}
-                title="로그인 필요"
-                message="찜하기 기능은 로그인이 필요합니다."
-                type="warning"
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
             />
         </div >
     );

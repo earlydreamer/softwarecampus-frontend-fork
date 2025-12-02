@@ -34,6 +34,13 @@ export interface ApiCourseResponse {
     approvedAt?: string; // LocalDateTime -> ISO string
     rating?: number;
     reviewCount?: number;
+
+    // 과정 등록자 정보
+    requesterId?: number;
+    requesterName?: string;
+
+    // 과정 이미지 (썸네일)
+    imageUrl?: string;
 }
 
 export interface ApiCourseDetailResponse extends ApiCourseResponse {
@@ -81,6 +88,7 @@ export interface ApiCourseReviewResponse {
     writerId: number;
     writerName: string; // 백엔드에서 제공
     courseId: number;
+    courseName?: string; // 백엔드에서 제공하는 과정명
     comment: string;
     approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
     averageScore: number;
@@ -102,6 +110,13 @@ export interface ApiAcademyResponse {
     address: string;
     businessNumber: string;
     email: string;
+    phoneNumber?: string; // 백엔드에서 제공하는 전화번호
+
+    // 기관 추가 정보
+    description?: string;
+    logoUrl?: string;
+    website?: string;
+
     isApproved: 'PENDING' | 'APPROVED' | 'REJECTED'; // 백엔드 필드명
     approvedAt?: string;
     createdAt: string;

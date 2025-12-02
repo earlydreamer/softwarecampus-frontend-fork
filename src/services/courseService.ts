@@ -38,10 +38,14 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         approvalStatus: dto.approvalStatus as ApprovalStatus,
         approvedAt: dto.approvedAt,
 
+        // 과정 등록자 정보 (백엔드에서 제공)
+        requesterId: dto.requesterId,
+        requesterName: dto.requesterName,
+
         // UI fields (Default values or mapped)
         rating: dto.rating ?? 0,
         reviewCount: dto.reviewCount ?? 0,
-        imageUrl: DEFAULT_COURSE_IMAGE, // Placeholder image
+        imageUrl: dto.imageUrl || DEFAULT_COURSE_IMAGE, // 백엔드 이미지 또는 기본 이미지
         description: dto.requirement,
         format: dto.offline ? '오프라인' : '온라인',
         duration: formatCourseDuration(dto.courseStart, dto.courseEnd),
@@ -56,6 +60,15 @@ export interface CourseFilterParams {
     status?: 'RECRUITING' | 'IN_PROGRESS' | 'ENDED';
 }
 
+// 과정 목록 조회 파라미터 타입
+interface FetchCoursesParams {
+    keyword?: string;
+    categoryId?: number;
+    categoryType?: string;
+    isOffline?: boolean;
+    status?: string;
+}
+
 export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course[]> => {
     const { categoryType, categoryId, keyword, isOffline, status } = filters || {};
 
@@ -63,7 +76,7 @@ export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course
 
     try {
         // 백엔드 리팩토링: /api/courses with query params (Page 응답)
-        const params: any = {};
+        const params: FetchCoursesParams = {};
         if (keyword) params.keyword = keyword;
         if (categoryId) params.categoryId = categoryId;
         if (categoryType && categoryType !== 'ALL') params.categoryType = categoryType;
@@ -109,6 +122,19 @@ export const fetchCourseById = async (courseId: number): Promise<Course | null> 
     }
 };
 
+// Q&A 목록 조회 파라미터 타입
+interface FetchQnAsParams {
+    page: number;
+    size: number;
+    keyword?: string;
+}
+
+// Q&A 페이지네이션 응답 타입
+interface PaginatedQnAResponse {
+    content: ApiCourseQnaResponse[];
+    totalElements: number;
+}
+
 export const fetchCourseQnAs = async (
     courseId: number,
     page: number = 1,
@@ -117,7 +143,7 @@ export const fetchCourseQnAs = async (
 ): Promise<{ qnas: CourseQna[], totalCount: number }> => {
     try {
         // 백엔드 API 파라미터 준비
-        const params: any = {
+        const params: FetchQnAsParams = {
             page: page - 1,
             size: limit,
         };
@@ -126,9 +152,9 @@ export const fetchCourseQnAs = async (
         }
 
         // 백엔드 리팩토링: /api/courses/{courseId}/qna
-        const response = await apiClient.get<any>(`/api/courses/${courseId}/qna`, { params });
+        const response = await apiClient.get<PaginatedQnAResponse>(`/api/courses/${courseId}/qna`, { params });
 
-        const content = response.data.content as ApiCourseQnaResponse[];
+        const content = response.data.content;
         const totalElements = response.data.totalElements;
 
         const qnas = content.map(qna => ({
@@ -176,6 +202,7 @@ export const fetchCourseReviews = async (
         const reviews = response.data.content.map(review => ({
             id: review.reviewId,
             courseId: review.courseId,
+            courseName: review.courseName, // 백엔드에서 제공하는 과정명
             writerId: review.writerId,
             writerName: review.writerName, // 백엔드에서 제공
             averageScore: review.averageScore,
@@ -239,6 +266,7 @@ export const createCourseReview = async (
         return {
             id: review.reviewId,
             courseId: review.courseId,
+            courseName: review.courseName, // 백엔드에서 제공하는 과정명
             writerId: review.writerId,
             writerName: review.writerName,
             averageScore: review.averageScore,
@@ -296,6 +324,24 @@ export const deleteReviewFile = async (
         await apiClient.delete(`/api/courses/${courseId}/reviews/${reviewId}/file/${fileId}`);
     } catch (error) {
         console.error(`Failed to delete file ${fileId} for review ${reviewId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 과정 삭제
+ * 관리자 또는 과정 등록자만 삭제 가능
+ */
+export const deleteCourse = async (courseId: number): Promise<void> => {
+    // 유효하지 않은 courseId 검증
+    if (!courseId || courseId <= 0) {
+        throw new Error('유효하지 않은 과정 ID입니다.');
+    }
+
+    try {
+        await apiClient.delete(`/api/courses/${courseId}`);
+    } catch (error) {
+        console.error(`Failed to delete course ${courseId}:`, error);
         throw error;
     }
 };
