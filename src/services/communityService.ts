@@ -77,8 +77,12 @@ export const fetchBoardPosts = async (
         // 백엔드 파라미터명에 맞춤: pageNo, searchText
         const params: Record<string, any> = { pageNo: page };
         if (category) params.category = category;
-        if (searchKeyword) params.searchText = searchKeyword;  // keyword → searchText
-        if (searchType) params.searchType = searchType;
+        if (searchKeyword) params.searchText = searchKeyword;
+        
+        // searchType 매핑: 프론트 → 백엔드
+        if (searchType) {
+            params.searchType = searchType;  // all, title, content, title_content, author, comment 그대로 전달
+        }
 
         // 백엔드는 Spring Page 객체 반환
         const response = await apiClient.get<SpringPage<ApiBoardListResponse>>('/api/boards', { params });
