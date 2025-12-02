@@ -299,3 +299,16 @@ export const deleteReviewFile = async (
         throw error;
     }
 };
+
+/**
+ * 과정 삭제
+ * 관리자 또는 과정 등록자만 삭제 가능
+ */
+export const deleteCourse = async (courseId: number): Promise<void> => {
+    try {
+        await apiClient.delete(`/api/courses/${courseId}`);
+    } catch (error) {
+        console.error(`Failed to delete course ${courseId}:`, error);
+        throw error;
+    }
+};

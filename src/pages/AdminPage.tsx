@@ -56,6 +56,7 @@ import {
     updateBanner,
     type DashboardStats
 } from '../services/adminService';
+import { deleteCourse } from '../services/courseService';
 import CourseRequestModal, { type CourseFormState } from '../components/admin/CourseRequestModal';
 import BannerModal, { type BannerFormState } from '../components/admin/BannerModal';
 import AlertModal from '../components/ui/AlertModal';
@@ -720,7 +721,24 @@ const AdminPage = () => {
                                                             </button>
                                                             {req.status === '대기' && (
                                                                 <button
-                                                                    onClick={() => showAlert('알림', '삭제 요청이 접수되었습니다.', 'info')}
+                                                                    onClick={() => {
+                                                                        setConfirmModal({
+                                                                            isOpen: true,
+                                                                            title: '과정 삭제',
+                                                                            message: `"${req.courseName}" 과정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+                                                                            onConfirm: async () => {
+                                                                                try {
+                                                                                    await deleteCourse(req.courseId);
+                                                                                    showAlert('삭제 완료', '과정이 삭제되었습니다.', 'success');
+                                                                                    // 목록에서 제거
+                                                                                    setCourseRequests(prev => prev.filter(c => c.courseId !== req.courseId));
+                                                                                } catch (error) {
+                                                                                    console.error('과정 삭제 실패:', error);
+                                                                                    showAlert('삭제 실패', '과정 삭제 중 오류가 발생했습니다.', 'error');
+                                                                                }
+                                                                            }
+                                                                        });
+                                                                    }}
                                                                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                                     title="삭제 요청"
                                                                     aria-label="삭제 요청"
