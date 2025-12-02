@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -136,18 +136,21 @@ const TiptapToolbar = ({ editor, onAddImage, onAddLink, onAddFile, showFileButto
     isActive = false,
     disabled = false,
     icon: Icon,
-    title
+    title,
+    ariaLabel
   }: {
     onClick: () => void;
     isActive?: boolean;
     disabled?: boolean;
     icon: LucideIcon;
     title: string;
+    ariaLabel?: string;
   }) => (
     <button
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-label={ariaLabel ?? title}
       type="button"
       className={`p-2 rounded-lg transition-colors ${isActive
         ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
@@ -323,7 +326,7 @@ const TiptapToolbar = ({ editor, onAddImage, onAddLink, onAddFile, showFileButto
   );
 };
 
-// 첨부파일 타입 (내부용)
+// 에디터/폼 공통에서 사용하는 첨부파일 타입
 interface AttachedFile {
   id: string;           // 임시 ID (UUID)
   file: File;
@@ -369,6 +372,23 @@ const TiptapEditor = ({
 }: TiptapEditorProps) => {
   const [modalType, setModalType] = useState<'link' | 'image' | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const errorTimeoutRef = useRef<number | null>(null);
+
+  // 에러 타임아웃 클린업 및 Object URL 해제
+  useEffect(() => {
+    return () => {
+      // 에러 타임아웃 정리
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+      // 남아있는 previewUrl 해제
+      attachedFiles.forEach((file) => {
+        if (file.previewUrl) {
+          URL.revokeObjectURL(file.previewUrl);
+        }
+      });
+    };
+  }, [attachedFiles]);
 
   // 파일 유효성 검사
   const validateFile = useCallback((file: File): string | null => {
@@ -394,10 +414,22 @@ const TiptapEditor = ({
     const newFiles: AttachedFile[] = [];
     const errors: string[] = [];
 
-    // 최대 파일 수 검사
-    const remainingSlots = maxFileCount - attachedFiles.length;
+    // 최대 파일 수 검사 (음수 방지)
+    const remainingSlots = Math.max(0, maxFileCount - attachedFiles.length);
+    
+    // 추가 가능한 슬롯이 없으면 에러 메시지 후 조기 반환
+    if (remainingSlots === 0) {
+      setFileError(`최대 ${maxFileCount}개의 파일만 첨부할 수 있습니다.`);
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = window.setTimeout(() => {
+        setFileError(null);
+        errorTimeoutRef.current = null;
+      }, 5000);
+      return;
+    }
+    
     if (fileArray.length > remainingSlots) {
-      errors.push(`최대 ${maxFileCount}개의 파일만 첨부할 수 있습니다.`);
+      errors.push(`최대 ${maxFileCount}개의 파일만 첨부할 수 있습니다. (${remainingSlots}개 추가 가능)`);
     }
 
     const filesToAdd = fileArray.slice(0, remainingSlots);
@@ -424,7 +456,11 @@ const TiptapEditor = ({
 
     if (errors.length > 0) {
       setFileError(errors.join('\n'));
-      setTimeout(() => setFileError(null), 5000);
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = window.setTimeout(() => {
+        setFileError(null);
+        errorTimeoutRef.current = null;
+      }, 5000);
     }
 
     if (newFiles.length > 0) {
@@ -483,37 +519,32 @@ const TiptapEditor = ({
       attributes: {
         class: 'prose prose-slate dark:prose-invert max-w-none focus:outline-none min-h-[400px] p-4',
       },
-      // 이미지 붙여넣기/드래그앤드롭 처리
+      // 파일 붙여넣기/드래그앤드롭 처리 (모든 파일 타입 지원)
       handlePaste: (_view, event) => {
-        if (!enableFileAttachment) return false;
+        if (!enableFileAttachment || !onFilesChange) return false;
 
         const items = event.clipboardData?.items;
         if (!items) return false;
 
-        const imageItems = Array.from(items).filter(item => item.type.startsWith('image/'));
-        if (imageItems.length === 0) return false;
+        const files = Array.from(items)
+          .filter(item => item.kind === 'file')
+          .map(item => item.getAsFile())
+          .filter((file): file is File => file !== null);
 
-        // 이미지를 파일로 변환하여 첨부
-        for (const item of imageItems) {
-          const file = item.getAsFile();
-          if (file) {
-            handleAddFiles([file]);
-          }
-        }
+        if (files.length === 0) return false;
 
-        // 기본 동작 방지 (base64 삽입 방지)
+        event.preventDefault();
+        handleAddFiles(files);
         return true;
       },
       handleDrop: (_view, event) => {
-        if (!enableFileAttachment) return false;
+        if (!enableFileAttachment || !onFilesChange) return false;
 
         const files = event.dataTransfer?.files;
         if (!files || files.length === 0) return false;
 
-        const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-        if (imageFiles.length === 0) return false;
-
-        handleAddFiles(imageFiles);
+        event.preventDefault();
+        handleAddFiles(Array.from(files));
         return true;
       },
     },
@@ -551,7 +582,15 @@ const TiptapEditor = ({
   };
 
   // 파일 선택 다이얼로그 열기
-  const openFileDialog = () => {
+  const openFileDialog = useCallback(() => {
+    // 파일 핸들러가 없으면 조기 반환
+    if (!onFilesChange) {
+      if (import.meta.env.DEV) {
+        console.warn('[TiptapEditor] openFileDialog called but onFilesChange is not defined');
+      }
+      return;
+    }
+    
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -563,7 +602,7 @@ const TiptapEditor = ({
       }
     };
     input.click();
-  };
+  }, [onFilesChange, allowedExtensions, handleAddFiles]);
 
   return (
     <div className="border-2 border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg relative">
@@ -637,6 +676,7 @@ const TiptapEditor = ({
                       onClick={() => handleRemoveFile(file.id)}
                       className="p-2 text-slate-400 hover:text-red-500 transition-colors"
                       title="파일 삭제"
+                      aria-label={`${file.name} 파일 삭제`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -645,9 +685,16 @@ const TiptapEditor = ({
               </div>
             </div>
           ) : (
-            <div
-              className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+            <button
+              type="button"
+              className="w-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 transition-colors bg-transparent"
               onClick={openFileDialog}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openFileDialog();
+                }
+              }}
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-400'); }}
               onDragLeave={(e) => { e.currentTarget.classList.remove('border-blue-400'); }}
               onDrop={(e) => {
@@ -657,6 +704,7 @@ const TiptapEditor = ({
                   handleAddFiles(e.dataTransfer.files);
                 }
               }}
+              aria-label="파일 첨부 영역. 클릭하거나 파일을 드래그하여 첨부하세요."
             >
               <Paperclip className="w-8 h-8 mx-auto mb-2 text-slate-400" />
               <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -665,7 +713,7 @@ const TiptapEditor = ({
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                 최대 {maxFileCount}개, 파일당 {formatFileSize(maxFileSize)}
               </p>
-            </div>
+            </button>
           )}
         </div>
       )}
