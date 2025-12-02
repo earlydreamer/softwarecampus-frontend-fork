@@ -574,13 +574,14 @@ const TiptapEditor = ({
 
   // handleAddFiles를 ref로 저장하여 useEditor 의존성에서 제외
   const handleAddFilesRef = useRef(handleAddFiles);
-  handleAddFilesRef.current = handleAddFiles;
+  useEffect(() => {
+    handleAddFilesRef.current = handleAddFiles;
+  }, [handleAddFiles]);
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        // StarterKit에서 중복되는 확장 비활성화
-      }),
+      // StarterKit: 기본 텍스트 편집 기능 (제목, 문단, 굵게, 기울임 등)
+      StarterKit,
       Placeholder.configure({
         placeholder: '내용을 입력하세요...',
       }),
