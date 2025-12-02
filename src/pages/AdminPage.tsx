@@ -50,6 +50,8 @@ import {
     updateCourseRequest,
     convertFormToRequest,
     uploadCourseImage,
+    createBanner,
+    updateBanner,
     type DashboardStats
 } from '../services/adminService';
 import CourseRequestModal, { type CourseFormState } from '../components/admin/CourseRequestModal';
@@ -310,7 +312,12 @@ const AdminPage = () => {
             } catch (secondError) {
                 // 두 번째 호출 실패 시 첫 번째 변경 롤백
                 console.error("Second order update failed, rolling back:", secondError);
-                await updateBannerOrder(currentBanner.id, originalCurrentOrder);
+                try {
+                    await updateBannerOrder(currentBanner.id, originalCurrentOrder);
+                } catch (rollbackError) {
+                    console.error("Rollback also failed:", rollbackError);
+                    alert("배너 순서 복구에 실패했습니다. 새로고침해주세요.");
+                }
                 throw secondError;
             }
 
@@ -329,21 +336,33 @@ const AdminPage = () => {
 
 
 
-    const handleBannerSubmit = (data: BannerFormState) => {
-        if (editingBanner) {
-            setBanners(prev => prev.map(b =>
-                b.id === editingBanner.id ? { ...b, ...data } as BannerData : b
-            ));
-        } else {
-            const newBanner: BannerData = {
-                ...data as BannerData,
-                id: Math.max(...banners.map(b => b.id), 0) + 1,
-                createdDate: new Date().toISOString().split('T')[0],
-                displayOrder: banners.length + 1
-            };
-            setBanners(prev => [...prev, newBanner]);
+    const handleBannerSubmit = async (data: BannerFormState) => {
+        try {
+            const formData = new FormData();
+            formData.append('title', data.title || '');
+            formData.append('description', data.description || '');
+            formData.append('linkUrl', data.linkUrl || '');
+            formData.append('isActivated', String(data.isActive));
+            if (data.imageFile) {
+                formData.append('imageFile', data.imageFile);
+            }
+
+            if (editingBanner) {
+                const updatedBanner = await updateBanner(editingBanner.id, formData);
+                setBanners(prev => prev.map(b =>
+                    b.id === editingBanner.id ? updatedBanner : b
+                ));
+                alert('배너가 수정되었습니다.');
+            } else {
+                const newBanner = await createBanner(formData);
+                setBanners(prev => [...prev, newBanner]);
+                alert('배너가 생성되었습니다.');
+            }
+            setIsBannerModalOpen(false);
+        } catch (error) {
+            console.error('Banner submit failed:', error);
+            alert('배너 저장 중 오류가 발생했습니다.');
         }
-        setIsBannerModalOpen(false);
     };
 
     // 과정 모달 핸들러
@@ -355,7 +374,7 @@ const AdminPage = () => {
     const handleCourseSubmit = async (data: CourseFormState) => {
         // 관리자는 기관 선택 필요, 기관 회원은 본인 기관 사용
         let academyId: number;
-        
+
         if (user?.accountType === 'ADMIN') {
             // 관리자는 모달에서 선택한 기관 사용
             if (data.selectedAcademyId) {
@@ -381,7 +400,7 @@ const AdminPage = () => {
             if (editingCourse) {
                 // 과정 수정 요청
                 newRequest = await updateCourseRequest(editingCourse.id, requestData);
-                setCourseRequests(prev => prev.map(req => 
+                setCourseRequests(prev => prev.map(req =>
                     req.id === editingCourse.id ? newRequest : req
                 ));
             } else {
@@ -423,9 +442,18 @@ const AdminPage = () => {
             }
 
             setIsCourseModalOpen(false);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to submit course:', error);
-            const message = error.response?.data?.message || '과정 처리 중 오류가 발생했습니다.';
+            let message = '과정 처리 중 오류가 발생했습니다.';
+            if (error instanceof Error) {
+                // axios error check could be more specific but for now checking property existence or using type guard
+                const anyError = error as any;
+                if (anyError.response?.data?.message) {
+                    message = anyError.response.data.message;
+                } else {
+                    message = error.message;
+                }
+            }
             alert(message);
         }
     };
