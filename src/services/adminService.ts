@@ -53,6 +53,7 @@ interface ApiCourseResponse {
     courseStart: string;
     courseEnd: string;
     cost: number;
+    capacity?: number; // 모집 정원
     location: string;
     classDay: string;
     requirement: string;
@@ -545,6 +546,7 @@ export interface CourseRegistrationRequest {
     courseStart?: string;
     courseEnd?: string;
     cost?: number;
+    capacity?: number;  // 모집 정원
     classDay?: string;
     location?: string;
     isKdt?: boolean;
@@ -568,6 +570,7 @@ export const convertFormToRequest = (
         courseStart?: string;
         courseEnd?: string;
         cost?: number;
+        capacity?: number;
         classDay?: string;
         isKdt?: boolean;
         isNailbaeum?: boolean;
@@ -593,6 +596,7 @@ export const convertFormToRequest = (
         courseStart: formData.courseStart,
         courseEnd: formData.courseEnd,
         cost: formData.cost,
+        capacity: formData.capacity,
         classDay: formData.classDay, // 수업 요일 (백엔드 기본값: 평일)
         location: formData.location,
         isKdt: formData.isKdt,
@@ -751,6 +755,7 @@ const mapApiCourseToApprovalRequest = (course: ApiCourseResponse): CourseApprova
     courseStart: course.courseStart,
     courseEnd: course.courseEnd,
     cost: course.cost,
+    capacity: course.capacity,
     isKdt: course.kdt,
     isNailbaeum: course.nailbaeum,
     isOffline: course.offline,

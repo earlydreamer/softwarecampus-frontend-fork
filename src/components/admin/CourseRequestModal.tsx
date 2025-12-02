@@ -85,6 +85,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         courseStart: '',
         courseEnd: '',
         cost: 0,
+        capacity: 30, // 기본값: 30명
         classDay: '평일', // 기본값: 평일
         isKdt: false,
         isNailbaeum: false,
@@ -274,6 +275,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     courseStart: '',
                     courseEnd: '',
                     cost: 0,
+                    capacity: 30, // 기본값: 30명
                     classDay: '평일', // 기본값
                     isKdt: false,
                     isNailbaeum: false,
@@ -957,7 +959,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     </div>
 
                     {/* Cost & Options */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 수강료 (원)
@@ -972,6 +974,23 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                     setForm({ ...form, cost });
                                 }}
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                모집 정원 (명)
+                            </label>
+                            <input
+                                type="number"
+                                min="1"
+                                value={form.capacity || 30}
+                                onChange={e => {
+                                    const parsed = parseInt(e.target.value, 10);
+                                    const capacity = Math.max(1, isNaN(parsed) ? 30 : parsed);
+                                    setForm({ ...form, capacity });
+                                }}
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
+                                placeholder="30"
                             />
                         </div>
                         <div>
