@@ -46,7 +46,7 @@ export interface ApiCourseResponse {
 
     // 과정 이미지 (썸네일 - 목록용)
     imageUrl?: string;
-    
+
     // 과정 헤더 이미지 (상세 페이지 배경)
     headerImageUrl?: string;
 }
@@ -99,6 +99,7 @@ export interface ApiCourseReviewResponse {
     courseName?: string; // 백엔드에서 제공하는 과정명
     comment: string;
     approvalStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
+    rejectionReason?: string | null; // 추가: 거부 사유 (2025-12-02)
     averageScore: number;
     sections: ApiReviewSectionResponse[];
     attachments: ApiReviewAttachmentResponse[];
@@ -184,8 +185,9 @@ export interface ApiCourseQnaResponse {
     answeredById?: number;
     answeredByName?: string;
     isAnswered: boolean;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: string;       // 질문 작성일
+    updatedAt: string;       // 질문 수정일
+    answeredAt?: string;     // 답변 작성일 (2025-12-03 추가)
     files?: ApiCourseQnaFileResponse[];
 }
 
@@ -242,8 +244,8 @@ export interface ApiBoardResponseDTO {
 
 export interface ApiBoardAttachDTO {
     id: number;
-    originalFile: string;
-    savedFile: string;
+    originalFilename: string;
+    realFilename: string;
     fileSize: number;
 }
 
