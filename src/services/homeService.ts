@@ -6,6 +6,7 @@ import apiClient from './api/client';
 import type { Course } from '../types';
 import { categoryTypeToTarget } from '../utils/categoryType';
 import { DEFAULT_IMAGES } from '../constants';
+import { sanitizeUrl } from '../utils/security';
 
 // 배너 관련 타입 re-export
 export type { BannerResult, BannerError };
@@ -95,7 +96,15 @@ export const fetchHomeCourseSections = async () => {
             rating: apiCourse.rating || 0,
             reviewCount: apiCourse.reviewCount || 0,
             tags: [],
-            imageUrl: apiCourse.imageUrl || DEFAULT_IMAGES.COURSE_THUMBNAIL,
+            // imageUrl 검증: 문자열이고 안전한 프로토콜(http/https)인지 확인
+            imageUrl: (() => {
+                if (typeof apiCourse.imageUrl !== 'string' || !apiCourse.imageUrl) {
+                    return DEFAULT_IMAGES.COURSE_THUMBNAIL;
+                }
+                const sanitized = sanitizeUrl(apiCourse.imageUrl);
+                // sanitizeUrl이 빈 문자열을 반환하면 위험한 URL이므로 기본 이미지 사용
+                return sanitized || DEFAULT_IMAGES.COURSE_THUMBNAIL;
+            })(),
             description: `${apiCourse.name} 과정입니다.`,
             highlights: [],
         });
