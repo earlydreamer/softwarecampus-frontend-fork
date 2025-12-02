@@ -1,17 +1,41 @@
 import { Calendar, MapPin, Building } from 'lucide-react';
 import type { Course } from '../../types';
+import { sanitizeUrl } from '../../utils/security';
 
 interface CourseDetailHeaderProps {
     course: Course;
     headerBackgroundImage: string;
 }
 
+/**
+ * 배경 이미지 URL을 안전하게 처리
+ * - sanitizeUrl로 XSS 방지
+ * - 따옴표 제거 및 공백 트림
+ * - 유효하지 않은 URL은 undefined 반환
+ */
+const getSafeBackgroundImage = (url: string | undefined): string | undefined => {
+    if (!url) return undefined;
+    
+    const sanitized = sanitizeUrl(url);
+    if (!sanitized) return undefined;
+    
+    // 따옴표 제거 및 공백 트림
+    const cleaned = sanitized.replace(/^['"]|['"]$/g, '').trim();
+    
+    // 빈 문자열이나 '#'만 남은 경우 무효 처리
+    if (!cleaned || cleaned === '#') return undefined;
+    
+    return cleaned;
+};
+
 const CourseDetailHeader = ({ course, headerBackgroundImage }: CourseDetailHeaderProps) => {
+    const safeBackgroundUrl = getSafeBackgroundImage(headerBackgroundImage);
+    
     return (
         <div className="bg-slate-900 text-white py-12 lg:py-20 relative overflow-hidden">
             <div 
                 className="absolute inset-0 opacity-40 bg-cover bg-center"
-                style={{ backgroundImage: `url('${headerBackgroundImage}')` }}
+                style={safeBackgroundUrl ? { backgroundImage: `url(${safeBackgroundUrl})` } : undefined}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
 
