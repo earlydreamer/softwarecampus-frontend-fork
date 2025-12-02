@@ -1,8 +1,9 @@
 import type * as React from 'react';
-import { useState, useEffect, useRef, useId } from 'react';
-import { X, Edit2, Upload } from 'lucide-react';
+import { useState, useEffect, useRef, useId, useCallback } from 'react';
+import { X, Edit2, Upload, RefreshCw } from 'lucide-react';
 import type { CourseApprovalRequest, CourseTarget, CategoryType, AdminAcademy } from '../../types';
 import { getCourseCategories, getAdminAcademies, type CourseCategoryResponse } from '../../services/adminService';
+import AlertModal from '../ui/AlertModal';
 
 export interface CourseFormState extends Partial<CourseApprovalRequest> {
     imageFile?: File;
@@ -51,6 +52,46 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     });
     const [error, setError] = useState<string | null>(null);
 
+    // AlertModal 상태
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'error' | 'warning' | 'info';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
+
+    /**
+     * 이미지 파일 유효성 검증 헬퍼 함수
+     * @param file - 검증할 파일
+     * @returns 오류 메시지 또는 null (유효한 경우)
+     */
+    const validateImageFile = (file: File): string | null => {
+        if (!file.type.startsWith('image/')) {
+            return '이미지 파일만 업로드 가능합니다.';
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            return '파일 크기는 5MB를 초과할 수 없습니다.';
+        }
+        return null;
+    };
+
+    /**
+     * 오류 모달 표시 헬퍼 함수
+     */
+    const showErrorModal = (message: string) => {
+        setAlertModal({
+            isOpen: true,
+            title: '파일 업로드 오류',
+            message,
+            type: 'error'
+        });
+    };
+
     // 카테고리 목록 상태
     const [categories, setCategories] = useState<CourseCategoryResponse[]>([]);
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
@@ -64,29 +105,33 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     // blob URL을 추적하기 위한 ref
     const blobUrlRef = useRef<string | null>(null);
 
+    /**
+     * 기관 목록 로드 함수 (관리자용)
+     */
+    const loadAcademies = useCallback(async () => {
+        setIsLoadingAcademies(true);
+        setAcademyLoadError(null);
+        try {
+            const { academies } = await getAdminAcademies('APPROVED');
+            setAcademies(academies);
+            // 첫 번째 기관을 기본값으로 설정 (함수형 업데이트로 stale closure 방지)
+            if (academies.length > 0) {
+                setForm(prev => prev.selectedAcademyId ? prev : { ...prev, selectedAcademyId: academies[0].id });
+            }
+        } catch (err) {
+            console.error('기관 목록 로드 실패:', err);
+            setAcademyLoadError('기관 목록을 불러오는데 실패했습니다.');
+        } finally {
+            setIsLoadingAcademies(false);
+        }
+    }, []);
+
     // 기관 목록 로드 (관리자일 경우에만)
     useEffect(() => {
         if (isOpen && isAdmin) {
-            const loadAcademies = async () => {
-                setIsLoadingAcademies(true);
-                setAcademyLoadError(null);
-                try {
-                    const { academies } = await getAdminAcademies('APPROVED');
-                    setAcademies(academies);
-                    // 첫 번째 기관을 기본값으로 설정 (함수형 업데이트로 stale closure 방지)
-                    if (academies.length > 0) {
-                        setForm(prev => prev.selectedAcademyId ? prev : { ...prev, selectedAcademyId: academies[0].id });
-                    }
-                } catch (err) {
-                    console.error('기관 목록 로드 실패:', err);
-                    setAcademyLoadError('기관 목록을 불러오는데 실패했습니다.');
-                } finally {
-                    setIsLoadingAcademies(false);
-                }
-            };
             loadAcademies();
         }
-    }, [isOpen, isAdmin]);
+    }, [isOpen, isAdmin, loadAcademies]);
 
     // 카테고리 목록 로드
     useEffect(() => {
@@ -215,15 +260,10 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            // 파일 유효성 검사
-            if (!file.type.startsWith('image/')) {
-                alert('이미지 파일만 업로드 가능합니다.');
-                e.target.value = ''; // 입력 초기화
-                return;
-            }
-
-            if (file.size > 5 * 1024 * 1024) { // 5MB
-                alert('파일 크기는 5MB를 초과할 수 없습니다.');
+            // 파일 유효성 검사 (헬퍼 함수 사용)
+            const validationError = validateImageFile(file);
+            if (validationError) {
+                showErrorModal(validationError);
                 e.target.value = ''; // 입력 초기화
                 return;
             }
@@ -355,7 +395,18 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                 )}
                             </select>
                             {academyLoadError && (
-                                <p className="mt-1 text-sm text-red-500">{academyLoadError}</p>
+                                <div className="mt-1 flex items-center justify-between">
+                                    <p className="text-sm text-red-500">{academyLoadError}</p>
+                                    <button
+                                        type="button"
+                                        onClick={loadAcademies}
+                                        disabled={isLoadingAcademies}
+                                        className="text-xs text-primary-600 hover:underline flex items-center gap-1 disabled:opacity-50"
+                                    >
+                                        <RefreshCw className={`w-3 h-3 ${isLoadingAcademies ? 'animate-spin' : ''}`} />
+                                        다시 시도
+                                    </button>
+                                </div>
                             )}
                         </div>
                     )}
@@ -589,6 +640,15 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     </div>
                 </form>
             </div>
+
+            {/* 파일 업로드 오류 모달 */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };
