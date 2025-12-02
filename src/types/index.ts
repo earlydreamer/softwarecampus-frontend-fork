@@ -126,6 +126,7 @@ export interface Course {
     courseStart?: string; // LocalDate
     courseEnd?: string; // LocalDate
     cost?: number;
+    capacity?: number; // 모집 정원 (기본값: 30)
     classDay?: string;
     location?: string;
     kdt: boolean;
@@ -391,6 +392,7 @@ export interface CourseApprovalRequest {
     courseStart?: string;
     courseEnd?: string;
     cost?: number;
+    capacity?: number;     // 모집 정원
     classDay?: string;      // 수업 요일
     isKdt?: boolean;
     isNailbaeum?: boolean;

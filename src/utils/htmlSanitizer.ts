@@ -102,7 +102,7 @@ const sanitizeStyle = (style: string): string => {
         }
         // 색상 관련 속성 검증
         else if (property === 'color' || property === 'background-color' || 
-                 property.includes('border') && property.includes('color') ||
+                 (property.includes('border') && property.includes('color')) ||
                  property === 'text-decoration-color') {
             isValid = isValidCssColor(value);
         }

@@ -1,6 +1,7 @@
 import apiClient from './api/client';
 import type { Banner } from '../types';
 import { AxiosError } from 'axios';
+import { sanitizeUrl } from '../utils/security';
 
 /**
  * 백엔드 배너 응답 타입
@@ -37,6 +38,7 @@ export interface BannerError {
 /**
  * 배너 객체 유효성 검사
  * 필수 필드가 존재하고 올바른 타입인지 확인
+ * URL 필드는 sanitizeUrl을 통해 안전한 프로토콜인지 검증
  */
 const isValidBanner = (banner: unknown): banner is ApiBannerResponse => {
     if (typeof banner !== 'object' || banner === null) {
@@ -45,13 +47,33 @@ const isValidBanner = (banner: unknown): banner is ApiBannerResponse => {
     
     const b = banner as Record<string, unknown>;
     
-    return (
-        typeof b.id === 'number' &&
-        typeof b.title === 'string' &&
-        typeof b.imageUrl === 'string' &&
-        typeof b.linkUrl === 'string' &&
-        typeof b.sequence === 'number'
-    );
+    // 기본 타입 검증
+    if (
+        typeof b.id !== 'number' ||
+        typeof b.title !== 'string' ||
+        typeof b.imageUrl !== 'string' ||
+        typeof b.linkUrl !== 'string' ||
+        typeof b.sequence !== 'number' ||
+        typeof b.isActivated !== 'boolean'
+    ) {
+        return false;
+    }
+    
+    // URL 안전성 검증 (javascript:, data:, vbscript: 등 차단)
+    const safeImageUrl = sanitizeUrl(b.imageUrl);
+    const safeLinkUrl = sanitizeUrl(b.linkUrl);
+    
+    if (safeImageUrl === '' && b.imageUrl !== '') {
+        console.warn('[Security] 배너 imageUrl이 안전하지 않은 프로토콜을 포함합니다:', b.imageUrl);
+        return false;
+    }
+    
+    if (safeLinkUrl === '' && b.linkUrl !== '') {
+        console.warn('[Security] 배너 linkUrl이 안전하지 않은 프로토콜을 포함합니다:', b.linkUrl);
+        return false;
+    }
+    
+    return true;
 };
 
 /**

@@ -79,7 +79,9 @@ const CourseDetailSidebar = ({
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-slate-400">모집 정원</span>
-                        <span className="font-medium text-slate-900 dark:text-white">30명</span>
+                        <span className="font-medium text-slate-900 dark:text-white">
+                            {course.capacity ? `${course.capacity}명` : '정원 정보 없음'}
+                        </span>
                     </div>
                 </div>
 
@@ -124,7 +126,7 @@ const CourseDetailSidebar = ({
                             {course.academy.logoUrl ? (
                                 <img src={sanitizeUrl(course.academy.logoUrl)} alt={course.academy.name} className="w-full h-full object-cover" />
                             ) : (
-                                course.academy.name[0]
+                                course.academy.name?.length > 0 ? course.academy.name[0] : '?'
                             )}
                         </div>
                         <div>
