@@ -66,7 +66,13 @@ export const fetchBoardPosts = async (
     searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment'
 ): Promise<{ posts: Board[], total: number }> => {
     try {
-        const params: any = { page, limit };
+        const params: {
+            page: number;
+            limit: number;
+            category?: BoardCategory;
+            keyword?: string;
+            searchType?: string;
+        } = { page, limit };
         if (category) params.category = category;
         if (searchKeyword) params.keyword = searchKeyword;
         if (searchType) params.searchType = searchType;
@@ -164,7 +170,6 @@ export const createBoardPost = async (data: {
     category: BoardCategory;
     account: { id: number; userName: string; }; // 사용 안함 (토큰 사용)
     isSecret: boolean;
-    hasAttachment: boolean;
     files?: File[];
 }): Promise<Board> => {
     const formData = new FormData();

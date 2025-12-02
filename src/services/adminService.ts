@@ -422,9 +422,14 @@ export const getInstitutionCourses = async (
         { params }
     );
 
-    const requests = response.data.content.map(mapApiCourseToApprovalRequest);
+    // 응답 데이터 유효성 검사
+    if (!response.data?.content) {
+        console.warn('[adminService] getInstitutionCourses: 예상치 못한 응답 형식', response.data);
+    }
+    const content = response.data?.content || [];
+    const requests = content.map(mapApiCourseToApprovalRequest);
 
-    return { requests, totalCount: response.data.totalElements };
+    return { requests, totalCount: response.data?.totalElements || 0 };
 };
 
 /**
@@ -449,9 +454,14 @@ export const getInstitutionReviews = async (
         { params }
     );
 
-    const requests = response.data.content.map(mapApiReviewToApprovalRequest);
+    // 응답 데이터 유효성 검사
+    if (!response.data?.content) {
+        console.warn('[adminService] getInstitutionReviews: 예상치 못한 응답 형식', response.data);
+    }
+    const content = response.data?.content || [];
+    const requests = content.map(mapApiReviewToApprovalRequest);
 
-    return { requests, totalCount: response.data.totalElements };
+    return { requests, totalCount: response.data?.totalElements || 0 };
 };
 
 /**
