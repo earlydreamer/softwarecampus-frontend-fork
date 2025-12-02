@@ -6,11 +6,58 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      // 백엔드 API 프록시 설정
       '/api': {
         target: 'http://localhost:8081',
         changeOrigin: true,
         secure: false,
-      }
+      },
+      '/admin': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/courses': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/reviews': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/banners': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/academies': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/accounts': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/community': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      // 카테고리별 과정 API (EMPLOYEE, JOB_SEEKER)
+      '/EMPLOYEE': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/JOB_SEEKER': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+      },
     }
   },
   build: {
