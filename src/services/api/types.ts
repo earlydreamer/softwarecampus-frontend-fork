@@ -111,6 +111,12 @@ export interface ApiAcademyResponse {
     businessNumber: string;
     email: string;
     phoneNumber?: string; // 백엔드에서 제공하는 전화번호
+
+    // 기관 추가 정보
+    description?: string;
+    logoUrl?: string;
+    website?: string;
+
     isApproved: 'PENDING' | 'APPROVED' | 'REJECTED'; // 백엔드 필드명
     approvedAt?: string;
     createdAt: string;

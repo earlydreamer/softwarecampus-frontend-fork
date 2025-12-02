@@ -7,6 +7,7 @@ import type { Banner } from '../types';
 interface ApiBannerResponse {
     id: number;
     title: string;
+    description?: string; // 배너 부제목/설명
     imageUrl: string;
     linkUrl: string;
     sequence: number;
@@ -30,7 +31,7 @@ export const fetchActiveBanners = async (): Promise<Banner[]> => {
         return sortedBanners.map(apiBanner => ({
             id: apiBanner.id,
             title: apiBanner.title,
-            subtitle: '', // 백엔드에서 미제공, 빈 문자열로 대체
+            subtitle: apiBanner.description || '', // 백엔드 description → 프론트엔드 subtitle
             imageUrl: apiBanner.imageUrl,
             link: apiBanner.linkUrl,
         }));
