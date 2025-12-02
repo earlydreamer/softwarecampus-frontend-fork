@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DOMPurify from 'dompurify';
 import type { AcademyQA } from '../../types';
 import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import QnAForm from '../common/QnAForm';
@@ -185,7 +186,7 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
                             {expandedQnaId === qna.id && (
                                 <div className="border-t border-slate-100 animate-fadeIn">
                                     <div className="p-6 bg-slate-50/50">
-                                        <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: qna.questionText }} />
+                                        <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(qna.questionText || '') }} />
                                     </div>
 
                                     {qna.answerText && (
@@ -201,7 +202,7 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
                                                             답변
                                                         </span>
                                                     </div>
-                                                    <div className="prose prose-sm max-w-none text-slate-800 bg-white p-4 rounded-xl border border-primary-100 shadow-sm" dangerouslySetInnerHTML={{ __html: qna.answerText }} />
+                                                    <div className="prose prose-sm max-w-none text-slate-800 bg-white p-4 rounded-xl border border-primary-100 shadow-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(qna.answerText || '') }} />
                                                 </div>
                                             </div>
                                         </div>

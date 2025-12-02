@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import DOMPurify from 'dompurify';
 import type { CourseQna } from '../../types';
 import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, Paperclip, Download } from 'lucide-react';
 import QnAForm from '../common/QnAForm';
 import { uploadCourseQnaFile } from '../../services/courseService';
+import { sanitizeUrl } from '../../utils/security';
 
 import { QNA_PER_PAGE } from '../../constants';
 
@@ -189,7 +191,7 @@ const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading,
                             {expandedQnaId === qna.id && (
                                 <div className="border-t border-slate-100 animate-fadeIn">
                                     <div className="p-6 bg-slate-50/50">
-                                        <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: qna.questionText }} />
+                                        <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(qna.questionText || '') }} />
 
                                         {/* 첨부파일 목록 */}
                                         {qna.files && qna.files.length > 0 && (
@@ -202,7 +204,7 @@ const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading,
                                                     {qna.files.map(file => (
                                                         <a
                                                             key={file.id}
-                                                            href={file.fileUrl}
+                                                            href={sanitizeUrl(file.fileUrl) || '#'}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:text-primary-600 hover:border-primary-200 transition-colors"
@@ -230,7 +232,7 @@ const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading,
                                                         </span>
                                                         {/* TODO: 백엔드 미지원 필드 (answeredAt) */}
                                                     </div>
-                                                    <div className="prose prose-sm max-w-none text-slate-800 bg-white p-4 rounded-xl border border-primary-100 shadow-sm" dangerouslySetInnerHTML={{ __html: qna.answerText }} />
+                                                    <div className="prose prose-sm max-w-none text-slate-800 bg-white p-4 rounded-xl border border-primary-100 shadow-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(qna.answerText || '') }} />
                                                 </div>
                                             </div>
                                         </div>
