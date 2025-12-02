@@ -5,11 +5,18 @@ import { Star, MessageSquare } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
 import { getCourseDurationInfo, getCourseStatus, type CourseStatus } from '../../utils/dateUtils';
 
+const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60';
+
 interface CourseCardProps {
     course: Course;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+    // 이미지 로딩 에러 핸들러
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+        e.currentTarget.src = DEFAULT_COURSE_IMAGE;
+    };
+
     // 강의 기간 정보 계산
     const durationInfo = getCourseDurationInfo(
         course.courseStart || '',
@@ -50,8 +57,9 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
                 <div className="relative h-48 overflow-hidden">
                     <img
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        src={sanitizeUrl(course.imageUrl || '')}
+                        src={sanitizeUrl(course.imageUrl || '') || DEFAULT_COURSE_IMAGE}
                         alt={course.name || '과정 이미지'}
+                        onError={handleImageError}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
