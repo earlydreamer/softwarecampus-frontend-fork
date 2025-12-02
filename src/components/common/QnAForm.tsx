@@ -78,10 +78,10 @@ const QnAForm = ({ onSubmit, onCancel, onFileUpload }: QnAFormProps) => {
             return;
         }
 
-        // 현재 첨부된 파일들의 서버 정보 목록 추출
+        // 현재 첨부된 파일들의 서버 정보 목록 추출 (타입 가드로 타입 안전성 보장)
         const fileDetails = attachedFiles
             .map(f => uploadedFileMap[f.id])
-            .filter(detail => detail !== undefined);
+            .filter((detail): detail is { id: number; originName: string; fileUrl: string } => detail !== undefined);
 
         onSubmit(title, content, fileDetails);
     };

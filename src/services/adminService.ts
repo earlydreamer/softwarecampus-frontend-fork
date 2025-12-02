@@ -163,14 +163,21 @@ export const getCourseApprovalRequests = async (
         { params }
     );
 
-    // 응답 데이터 유효성 검사
-    if (!response.data?.content) {
-        console.warn('[adminService] getCourseApprovalRequests: 예상치 못한 응답 형식', response.data);
+    // 응답 데이터 유효성 검사 + 타입 안전성 강화
+    const rawContent = response.data?.content;
+    const content = Array.isArray(rawContent) ? rawContent : [];
+    if (!Array.isArray(rawContent)) {
+        console.warn('[adminService] getCourseApprovalRequests: 예상치 못한 응답 형식', {
+            status: response.status,
+            keys: Object.keys(response.data || {}),
+            contentType: typeof rawContent
+        });
     }
-    const content = response.data?.content || [];
-    const requests = content.map(mapApiCourseToApprovalRequest);
 
-    return { requests, totalCount: response.data?.totalElements || 0 };
+    const requests = content.map(mapApiCourseToApprovalRequest);
+    const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
+
+    return { requests, totalCount: totalElements };
 };
 
 /**
@@ -209,14 +216,21 @@ export const getReviewApprovalRequests = async (
         { params }
     );
 
-    // 응답 데이터 유효성 검사
-    if (!response.data?.content) {
-        console.warn('[adminService] getReviewApprovalRequests: 예상치 못한 응답 형식', response.data);
+    // 응답 데이터 유효성 검사 + 타입 안전성 강화
+    const rawContent = response.data?.content;
+    const content = Array.isArray(rawContent) ? rawContent : [];
+    if (!Array.isArray(rawContent)) {
+        console.warn('[adminService] getReviewApprovalRequests: 예상치 못한 응답 형식', {
+            status: response.status,
+            keys: Object.keys(response.data || {}),
+            contentType: typeof rawContent
+        });
     }
-    const content = response.data?.content || [];
-    const requests = content.map(mapApiReviewToApprovalRequest);
 
-    return { requests, totalCount: response.data?.totalElements || 0 };
+    const requests = content.map(mapApiReviewToApprovalRequest);
+    const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
+
+    return { requests, totalCount: totalElements };
 };
 
 /**
@@ -316,11 +330,17 @@ export const getAdminUsers = async (
         { params }
     );
 
-    // 응답 데이터 유효성 검사
-    if (!response.data?.content) {
-        console.warn('[adminService] getAdminUsers: 예상치 못한 응답 형식', response.data);
+    // 응답 데이터 유효성 검사 + 타입 안전성 강화
+    const rawContent = response.data?.content;
+    const content = Array.isArray(rawContent) ? rawContent : [];
+    if (!Array.isArray(rawContent)) {
+        console.warn('[adminService] getAdminUsers: 예상치 못한 응답 형식', {
+            status: response.status,
+            keys: Object.keys(response.data || {}),
+            contentType: typeof rawContent
+        });
     }
-    const content = response.data?.content || [];
+
     const users = content.map(user => ({
         id: user.id,
         userName: user.userName,
@@ -333,7 +353,9 @@ export const getAdminUsers = async (
         commentCount: user.commentCount
     } as AdminUser));
 
-    return { users, totalCount: response.data?.totalElements || 0 };
+    const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
+
+    return { users, totalCount: totalElements };
 };
 
 /**
@@ -358,11 +380,17 @@ export const getAdminAcademies = async (
         { params }
     );
 
-    // 응답 데이터 유효성 검사
-    if (!response.data?.content) {
-        console.warn('[adminService] getAdminAcademies: 예상치 못한 응답 형식', response.data);
+    // 응답 데이터 유효성 검사 + 타입 안전성 강화
+    const rawContent = response.data?.content;
+    const content = Array.isArray(rawContent) ? rawContent : [];
+    if (!Array.isArray(rawContent)) {
+        console.warn('[adminService] getAdminAcademies: 예상치 못한 응답 형식', {
+            status: response.status,
+            keys: Object.keys(response.data || {}),
+            contentType: typeof rawContent
+        });
     }
-    const content = response.data?.content || [];
+
     const academies = content.map(academy => ({
         id: academy.id,
         name: academy.name,
@@ -375,7 +403,9 @@ export const getAdminAcademies = async (
         courseCount: academy.courseCount || 0,
     } as AdminAcademy));
 
-    return { academies, totalCount: response.data?.totalElements || 0 };
+    const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
+
+    return { academies, totalCount: totalElements };
 };
 
 /**
@@ -422,14 +452,21 @@ export const getInstitutionCourses = async (
         { params }
     );
 
-    // 응답 데이터 유효성 검사
-    if (!response.data?.content) {
-        console.warn('[adminService] getInstitutionCourses: 예상치 못한 응답 형식', response.data);
+    // 응답 데이터 유효성 검사 + 타입 안전성 강화
+    const rawContent = response.data?.content;
+    const content = Array.isArray(rawContent) ? rawContent : [];
+    if (!Array.isArray(rawContent)) {
+        console.warn('[adminService] getInstitutionCourses: 예상치 못한 응답 형식', {
+            status: response.status,
+            keys: Object.keys(response.data || {}),
+            contentType: typeof rawContent
+        });
     }
-    const content = response.data?.content || [];
-    const requests = content.map(mapApiCourseToApprovalRequest);
 
-    return { requests, totalCount: response.data?.totalElements || 0 };
+    const requests = content.map(mapApiCourseToApprovalRequest);
+    const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
+
+    return { requests, totalCount: totalElements };
 };
 
 /**
@@ -454,14 +491,21 @@ export const getInstitutionReviews = async (
         { params }
     );
 
-    // 응답 데이터 유효성 검사
-    if (!response.data?.content) {
-        console.warn('[adminService] getInstitutionReviews: 예상치 못한 응답 형식', response.data);
+    // 응답 데이터 유효성 검사 + 타입 안전성 강화
+    const rawContent = response.data?.content;
+    const content = Array.isArray(rawContent) ? rawContent : [];
+    if (!Array.isArray(rawContent)) {
+        console.warn('[adminService] getInstitutionReviews: 예상치 못한 응답 형식', {
+            status: response.status,
+            keys: Object.keys(response.data || {}),
+            contentType: typeof rawContent
+        });
     }
-    const content = response.data?.content || [];
-    const requests = content.map(mapApiReviewToApprovalRequest);
 
-    return { requests, totalCount: response.data?.totalElements || 0 };
+    const requests = content.map(mapApiReviewToApprovalRequest);
+    const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
+
+    return { requests, totalCount: totalElements };
 };
 
 /**

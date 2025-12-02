@@ -27,11 +27,11 @@ const CommunityWritePage = () => {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
-    // HTML 태그를 제거하고 실제 텍스트 내용만 추출
+    // HTML 태그를 제거하고 실제 텍스트 내용만 추출 (DOMParser 사용으로 안전성 향상)
     const getTextContent = (html: string): string => {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        return div.textContent || div.innerText || '';
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        return doc.body.textContent || '';
     };
 
     // 작성 중인 내용이 있는지 확인

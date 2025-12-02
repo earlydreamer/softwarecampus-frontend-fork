@@ -169,7 +169,7 @@ const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading,
                                             <MessageCircle className="w-5 h-5 text-primary-600 shrink-0" />
                                             {qna.title}
                                             {qna.files && qna.files.length > 0 && (
-                                                <Paperclip className="w-4 h-4 text-slate-400" />
+                                                <Paperclip className="w-4 h-4 text-slate-400" aria-hidden="true" />
                                             )}
                                         </h4>
                                         <div className="flex items-center justify-between mt-3">
@@ -201,18 +201,23 @@ const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading,
                                                     첨부파일 ({qna.files.length})
                                                 </h5>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {qna.files.map(file => (
-                                                        <a
-                                                            key={file.id}
-                                                            href={sanitizeUrl(file.fileUrl) || '#'}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:text-primary-600 hover:border-primary-200 transition-colors"
-                                                        >
-                                                            <Download className="w-4 h-4" />
-                                                            {file.originName}
-                                                        </a>
-                                                    ))}
+                                                    {qna.files.map(file => {
+                                                        const safeUrl = sanitizeUrl(file.fileUrl);
+                                                        // 유효하지 않은 URL은 렌더링하지 않음
+                                                        if (!safeUrl) return null;
+                                                        return (
+                                                            <a
+                                                                key={file.id}
+                                                                href={safeUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:text-primary-600 hover:border-primary-200 transition-colors"
+                                                            >
+                                                                <Download className="w-4 h-4" aria-hidden="true" />
+                                                                {file.originName}
+                                                            </a>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         )}

@@ -185,11 +185,8 @@ export const createBoardPost = async (data: {
         });
     }
 
-    const response = await apiClient.post<ApiBoardResponseDTO>('/api/boards', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    // Content-Type 헤더를 명시하지 않아 axios/브라우저가 multipart boundary를 자동 설정
+    const response = await apiClient.post<ApiBoardResponseDTO>('/api/boards', formData);
     return mapDtoToBoard(response.data);
 };
 
@@ -229,11 +226,8 @@ export const updateBoardPost = async (
         });
     }
 
-    await apiClient.patch(`/api/boards/${postId}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    // Content-Type 헤더를 명시하지 않아 axios/브라우저가 multipart boundary를 자동 설정
+    await apiClient.patch(`/api/boards/${postId}`, formData);
 };
 
 /**
