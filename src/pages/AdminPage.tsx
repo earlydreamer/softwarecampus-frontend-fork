@@ -1169,9 +1169,6 @@ const AdminPage = () => {
                 onConfirm={confirmModal.onConfirm}
                 title={confirmModal.title}
                 message={confirmModal.message}
-                confirmText={confirmModal.confirmText}
-                cancelText={confirmModal.cancelText}
-                type={confirmModal.type}
             />
 
             {/* Reason Input Modal */}
@@ -1180,7 +1177,7 @@ const AdminPage = () => {
                 onClose={() => setReasonModal(prev => ({ ...prev, isOpen: false }))}
                 onConfirm={reasonModal.onConfirm}
                 title={reasonModal.title}
-                placeholder={reasonModal.placeholder}
+                message={reasonModal.message}
             />
         </div>
     );
