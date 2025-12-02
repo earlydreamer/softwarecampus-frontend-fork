@@ -1,14 +1,53 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef, useId, useCallback } from 'react';
-import { X, Edit2, Upload, RefreshCw } from 'lucide-react';
+import { X, Edit2, Upload, RefreshCw, Image as ImageIcon, Trash2 } from 'lucide-react';
 import type { CourseApprovalRequest, CourseTarget, CategoryType, AdminAcademy } from '../../types';
 import { getCourseCategories, getAdminAcademies, type CourseCategoryResponse } from '../../services/adminService';
 import AlertModal from '../ui/AlertModal';
+import TiptapEditor from '../editor/TiptapEditor';
+
+/**
+ * 이미지 상태 관리를 위한 인터페이스
+ * - file: 새로 업로드할 파일 (있으면 업로드 필요)
+ * - previewUrl: 미리보기 URL (blob URL 또는 서버 URL)
+ * - serverUrl: 서버에 저장된 원본 URL (수정 시 기존 이미지)
+ * - isChanged: 이미지가 변경되었는지 여부 (삭제 또는 새 업로드)
+ * - isDeleted: 기존 이미지를 삭제할 것인지 여부
+ */
+export interface ImageState {
+    file?: File;
+    previewUrl?: string;
+    serverUrl?: string;
+    isChanged: boolean;
+    isDeleted: boolean;
+}
 
 export interface CourseFormState extends Partial<CourseApprovalRequest> {
+    thumbnailImage: ImageState;    // 썸네일 이미지 상태
+    headerImage: ImageState;       // 헤더 이미지 상태
+    selectedAcademyId?: number;    // 관리자가 선택한 기관 ID
+    
+    // 하위 호환을 위한 필드 (deprecated, 점진적으로 제거 예정)
+    /** @deprecated thumbnailImage.file 사용 */
     imageFile?: File;
-    selectedAcademyId?: number; // 관리자가 선택한 기관 ID
+    /** @deprecated thumbnailImage.previewUrl 사용 */
+    imageUrl?: string;
+    /** @deprecated headerImage.file 사용 */
+    headerImageFile?: File;
+    /** @deprecated headerImage.previewUrl 사용 */
+    headerImageUrl?: string;
 }
+
+/**
+ * 빈 ImageState 생성 헬퍼 함수
+ */
+const createEmptyImageState = (): ImageState => ({
+    file: undefined,
+    previewUrl: undefined,
+    serverUrl: undefined,
+    isChanged: false,
+    isDeleted: false,
+});
 
 interface CourseRequestModalProps {
     isOpen: boolean;
@@ -47,7 +86,8 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         isOffline: false,
         location: '',
         description: '',
-        imageUrl: '',
+        thumbnailImage: createEmptyImageState(),
+        headerImage: createEmptyImageState(),
         selectedAcademyId: defaultAcademyId
     });
     const [error, setError] = useState<string | null>(null);
@@ -102,8 +142,9 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     const [isLoadingAcademies, setIsLoadingAcademies] = useState(false);
     const [academyLoadError, setAcademyLoadError] = useState<string | null>(null);
 
-    // blob URL을 추적하기 위한 ref
-    const blobUrlRef = useRef<string | null>(null);
+    // blob URL을 추적하기 위한 ref (썸네일, 헤더)
+    const thumbnailBlobUrlRef = useRef<string | null>(null);
+    const headerBlobUrlRef = useRef<string | null>(null);
 
     /**
      * 기관 목록 로드 함수 (관리자용)
@@ -112,11 +153,13 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         setIsLoadingAcademies(true);
         setAcademyLoadError(null);
         try {
-            const { academies } = await getAdminAcademies('APPROVED');
-            setAcademies(academies);
+            const result = await getAdminAcademies('APPROVED');
+            // 배열인지 확인 (API 오류 시 빈 배열 반환됨)
+            const academiesList = Array.isArray(result.academies) ? result.academies : [];
+            setAcademies(academiesList);
             // 첫 번째 기관을 기본값으로 설정 (함수형 업데이트로 stale closure 방지)
-            if (academies.length > 0) {
-                setForm(prev => prev.selectedAcademyId ? prev : { ...prev, selectedAcademyId: academies[0].id });
+            if (academiesList.length > 0) {
+                setForm(prev => prev.selectedAcademyId ? prev : { ...prev, selectedAcademyId: academiesList[0].id });
             }
         } catch (err) {
             console.error('기관 목록 로드 실패:', err);
@@ -144,21 +187,23 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     // form.target은 의존성 배열에 포함되어 있으므로 최신 값을 참조함
                     const categoryType: CategoryType = form.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
                     const data = await getCourseCategories(categoryType);
-                    setCategories(data);
+                    
+                    // 배열인지 확인 (API 오류 시 빈 배열 반환됨)
+                    const categoriesData = Array.isArray(data) ? data : [];
+                    setCategories(categoriesData);
 
                     // 첫 번째 카테고리를 기본값으로 설정 (함수형 업데이트 사용)
-                    setForm(prev => {
-                        // 이미 카테고리가 설정되어 있고, 해당 카테고리가 새 목록에도 존재하면 유지
-                        const currentCategoryExists = data.some(c => c.categoryName === prev.category);
-                        if (prev.category && currentCategoryExists) {
-                            return prev;
-                        }
-                        // 아니면 첫 번째 카테고리로 설정
-                        if (data.length > 0) {
-                            return { ...prev, category: data[0].categoryName };
-                        }
-                        return prev;
-                    });
+                    if (categoriesData.length > 0) {
+                        setForm(prev => {
+                            // 이미 카테고리가 설정되어 있고, 해당 카테고리가 새 목록에도 존재하면 유지
+                            const currentCategoryExists = categoriesData.some(c => c.categoryName === prev.category);
+                            if (prev.category && currentCategoryExists) {
+                                return prev;
+                            }
+                            // 아니면 첫 번째 카테고리로 설정
+                            return { ...prev, category: categoriesData[0].categoryName };
+                        });
+                    }
                 } catch (err) {
                     console.error('카테고리 로드 실패:', err);
                     setCategoryLoadError('카테고리 목록을 불러오는데 실패했습니다.');
@@ -181,9 +226,27 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
             }, 0);
 
             if (initialData) {
-                setForm({ ...initialData, selectedAcademyId: initialData.academyId });
+                // 수정 모드: 기존 데이터로 초기화
+                setForm({
+                    ...initialData,
+                    selectedAcademyId: initialData.academyId,
+                    thumbnailImage: {
+                        file: undefined,
+                        previewUrl: initialData.imageUrl || undefined,
+                        serverUrl: initialData.imageUrl || undefined,
+                        isChanged: false,
+                        isDeleted: false,
+                    },
+                    headerImage: {
+                        file: undefined,
+                        previewUrl: initialData.headerImageUrl || undefined,
+                        serverUrl: initialData.headerImageUrl || undefined,
+                        isChanged: false,
+                        isDeleted: false,
+                    },
+                });
             } else {
-                // 초기화
+                // 신규 등록 모드: 초기화
                 setForm({
                     courseName: '',
                     category: '',
@@ -200,7 +263,8 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     isOffline: false,
                     location: '',
                     description: '',
-                    imageUrl: '',
+                    thumbnailImage: createEmptyImageState(),
+                    headerImage: createEmptyImageState(),
                     selectedAcademyId: defaultAcademyId
                 });
             }
@@ -250,14 +314,21 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     useEffect(() => {
         return () => {
             // unmount 시에만 ref에 저장된 blob URL revoke
-            if (blobUrlRef.current) {
-                URL.revokeObjectURL(blobUrlRef.current);
-                blobUrlRef.current = null;
+            if (thumbnailBlobUrlRef.current) {
+                URL.revokeObjectURL(thumbnailBlobUrlRef.current);
+                thumbnailBlobUrlRef.current = null;
+            }
+            if (headerBlobUrlRef.current) {
+                URL.revokeObjectURL(headerBlobUrlRef.current);
+                headerBlobUrlRef.current = null;
             }
         };
     }, []); // 빈 배열: unmount 시에만 실행
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    /**
+     * 썸네일 이미지 파일 변경 핸들러
+     */
+    const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             // 파일 유효성 검사 (헬퍼 함수 사용)
@@ -269,25 +340,136 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
             }
 
             // 이전 blob URL이 있으면 revoke (ref에 저장된 것만)
-            if (blobUrlRef.current) {
-                URL.revokeObjectURL(blobUrlRef.current);
+            if (thumbnailBlobUrlRef.current) {
+                URL.revokeObjectURL(thumbnailBlobUrlRef.current);
             }
 
-            const imageUrl = URL.createObjectURL(file);
-            blobUrlRef.current = imageUrl; // ref에 새 blob URL 저장
+            const previewUrl = URL.createObjectURL(file);
+            thumbnailBlobUrlRef.current = previewUrl; // ref에 새 blob URL 저장
 
             setForm(prev => ({
                 ...prev,
+                thumbnailImage: {
+                    file,
+                    previewUrl,
+                    serverUrl: prev.thumbnailImage?.serverUrl,
+                    isChanged: true,
+                    isDeleted: false,
+                },
+                // 하위 호환
                 imageFile: file,
-                imageUrl: imageUrl
+                imageUrl: previewUrl,
             }));
         }
     };
+
+    /**
+     * 썸네일 이미지 삭제 핸들러
+     */
+    const handleThumbnailDelete = () => {
+        // blob URL revoke
+        if (thumbnailBlobUrlRef.current) {
+            URL.revokeObjectURL(thumbnailBlobUrlRef.current);
+            thumbnailBlobUrlRef.current = null;
+        }
+
+        setForm(prev => ({
+            ...prev,
+            thumbnailImage: {
+                file: undefined,
+                previewUrl: undefined,
+                serverUrl: prev.thumbnailImage?.serverUrl,
+                isChanged: true,
+                isDeleted: true,
+            },
+            // 하위 호환
+            imageFile: undefined,
+            imageUrl: '',
+        }));
+    };
+
+    /**
+     * 헤더 이미지 파일 변경 핸들러
+     */
+    const handleHeaderImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // 파일 유효성 검사 (헬퍼 함수 사용)
+            const validationError = validateImageFile(file);
+            if (validationError) {
+                showErrorModal(validationError);
+                e.target.value = ''; // 입력 초기화
+                return;
+            }
+
+            // 이전 blob URL이 있으면 revoke (ref에 저장된 것만)
+            if (headerBlobUrlRef.current) {
+                URL.revokeObjectURL(headerBlobUrlRef.current);
+            }
+
+            const previewUrl = URL.createObjectURL(file);
+            headerBlobUrlRef.current = previewUrl; // ref에 새 blob URL 저장
+
+            setForm(prev => ({
+                ...prev,
+                headerImage: {
+                    file,
+                    previewUrl,
+                    serverUrl: prev.headerImage?.serverUrl,
+                    isChanged: true,
+                    isDeleted: false,
+                },
+                // 하위 호환
+                headerImageFile: file,
+                headerImageUrl: previewUrl,
+            }));
+        }
+    };
+
+    /**
+     * 헤더 이미지 삭제 핸들러
+     */
+    const handleHeaderImageDelete = () => {
+        // blob URL revoke
+        if (headerBlobUrlRef.current) {
+            URL.revokeObjectURL(headerBlobUrlRef.current);
+            headerBlobUrlRef.current = null;
+        }
+
+        setForm(prev => ({
+            ...prev,
+            headerImage: {
+                file: undefined,
+                previewUrl: undefined,
+                serverUrl: prev.headerImage?.serverUrl,
+                isChanged: true,
+                isDeleted: true,
+            },
+            // 하위 호환
+            headerImageFile: undefined,
+            headerImageUrl: '',
+        }));
+    };
+
+    /**
+     * 과정 설명(Tiptap 에디터) 변경 핸들러
+     */
+    const handleDescriptionChange = useCallback((content: string) => {
+        setForm(prev => ({ ...prev, description: content }));
+    }, []);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.courseName || form.courseName.trim() === '') {
             setError('과정명을 입력해주세요.');
+            return;
+        }
+        if (!form.category || form.category.trim() === '') {
+            setError('카테고리를 선택해주세요.');
+            return;
+        }
+        if (isAdmin && !form.selectedAcademyId) {
+            setError('기관을 선택해주세요.');
             return;
         }
         setError(null);
@@ -307,7 +489,7 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
             ref={modalRef}
             tabIndex={-1}
         >
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10">
                     <h3
                         id={titleId}
@@ -323,48 +505,131 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    {/* Image Upload */}
+                    {/* Thumbnail Image Upload */}
                     <div className="space-y-2">
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                            과정 대표 이미지
+                            과정 대표 이미지 (썸네일)
                         </label>
-                        <div
-                            className={`relative w-full h-48 rounded-xl border-2 border-dashed transition-colors flex flex-col items-center justify-center cursor-pointer overflow-hidden ${form.imageUrl
-                                ? 'border-primary-500 bg-slate-50'
-                                : 'border-slate-300 hover:border-primary-400 bg-slate-50 hover:bg-slate-100'
-                                }`}
-                            onClick={() => document.getElementById('course-image-input')?.click()}
-                        >
-                            {form.imageUrl ? (
-                                <>
-                                    <img
-                                        src={form.imageUrl}
-                                        alt="Preview"
-                                        className="absolute inset-0 w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                        <p className="text-white font-medium flex items-center gap-2">
-                                            <Edit2 className="w-4 h-4" /> 이미지 변경
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                            목록에서 보이는 대표 이미지입니다.
+                        </p>
+                        <div className="relative">
+                            <div
+                                className={`relative w-full h-48 rounded-xl border-2 border-dashed transition-colors flex flex-col items-center justify-center cursor-pointer overflow-hidden ${form.thumbnailImage?.previewUrl
+                                    ? 'border-primary-500 bg-slate-50'
+                                    : 'border-slate-300 hover:border-primary-400 bg-slate-50 hover:bg-slate-100'
+                                    }`}
+                                onClick={() => document.getElementById('course-thumbnail-input')?.click()}
+                            >
+                                {form.thumbnailImage?.previewUrl ? (
+                                    <>
+                                        <img
+                                            src={form.thumbnailImage.previewUrl}
+                                            alt="Thumbnail Preview"
+                                            className="absolute inset-0 w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                            <p className="text-white font-medium flex items-center gap-2">
+                                                <Edit2 className="w-4 h-4" /> 이미지 변경
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center p-4">
+                                        <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-500 flex items-center justify-center mx-auto mb-3">
+                                            <Upload className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-sm font-medium text-slate-700">
+                                            클릭하여 업로드
                                         </p>
                                     </div>
-                                </>
-                            ) : (
-                                <div className="text-center p-4">
-                                    <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-500 flex items-center justify-center mx-auto mb-3">
-                                        <Upload className="w-6 h-6" />
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-700">
-                                        클릭하여 업로드
-                                    </p>
-                                </div>
+                                )}
+                                <input
+                                    id="course-thumbnail-input"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleThumbnailChange}
+                                />
+                            </div>
+                            {/* 썸네일 삭제 버튼 */}
+                            {form.thumbnailImage?.previewUrl && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleThumbnailDelete();
+                                    }}
+                                    className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors z-10"
+                                    title="이미지 삭제"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
                             )}
-                            <input
-                                id="course-image-input"
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={handleImageChange}
-                            />
+                        </div>
+                    </div>
+
+                    {/* Header Image Upload */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                            헤더 배경 이미지
+                        </label>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                            과정 상세 페이지 상단에 표시되는 배경 이미지입니다. (권장: 1920x400 이상)
+                        </p>
+                        <div className="relative">
+                            <div
+                                className={`relative w-full h-32 rounded-xl border-2 border-dashed transition-colors flex flex-col items-center justify-center cursor-pointer overflow-hidden ${form.headerImage?.previewUrl
+                                    ? 'border-blue-500 bg-slate-50'
+                                    : 'border-slate-300 hover:border-blue-400 bg-slate-50 hover:bg-slate-100'
+                                    }`}
+                                onClick={() => document.getElementById('course-header-image-input')?.click()}
+                            >
+                                {form.headerImage?.previewUrl ? (
+                                    <>
+                                        <img
+                                            src={form.headerImage.previewUrl}
+                                            alt="Header Preview"
+                                            className="absolute inset-0 w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                            <p className="text-white font-medium flex items-center gap-2">
+                                                <Edit2 className="w-4 h-4" /> 헤더 이미지 변경
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center p-4">
+                                        <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-2">
+                                            <ImageIcon className="w-5 h-5" />
+                                        </div>
+                                        <p className="text-sm font-medium text-slate-700">
+                                            헤더 배경 이미지 업로드
+                                        </p>
+                                    </div>
+                                )}
+                                <input
+                                    id="course-header-image-input"
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleHeaderImageChange}
+                                />
+                            </div>
+                            {/* 헤더 이미지 삭제 버튼 */}
+                            {form.headerImage?.previewUrl && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleHeaderImageDelete();
+                                    }}
+                                    className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors z-10"
+                                    title="이미지 삭제"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -468,11 +733,15 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                                 ) : categories.length === 0 ? (
                                     <option value="">카테고리 없음</option>
                                 ) : (
-                                    categories.map(cat => (
-                                        <option key={cat.id} value={cat.categoryName}>
-                                            {cat.categoryName}
-                                        </option>
-                                    ))
+                                    <>
+                                        {/* form.category가 비어있을 때 선택 유도 옵션 표시 */}
+                                        {!form.category && <option value="">카테고리 선택</option>}
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.categoryName}>
+                                                {cat.categoryName}
+                                            </option>
+                                        ))}
+                                    </>
                                 )}
                             </select>
                             {categoryLoadError && (
@@ -610,16 +879,18 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                         )}
                     </div>
 
-                    {/* Description */}
+                    {/* Description - TiptapEditor */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                             과정 설명
                         </label>
-                        <textarea
-                            value={form.description || ''}
-                            onChange={e => setForm({ ...form, description: e.target.value })}
-                            className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none h-32 resize-none"
-                            placeholder="과정에 대한 상세 설명을 입력하세요"
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                            서식, 이미지, 링크 등을 포함한 상세 설명을 작성할 수 있습니다.
+                        </p>
+                        <TiptapEditor
+                            content={form.description || ''}
+                            onChange={handleDescriptionChange}
+                            enableFileAttachment={false}
                         />
                     </div>
 
@@ -633,7 +904,8 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
+                            disabled={isLoadingCategories || categories.length === 0 || (isAdmin && (isLoadingAcademies || academies.length === 0))}
+                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isEditing ? '수정 요청' : '등록 요청'}
                         </button>
