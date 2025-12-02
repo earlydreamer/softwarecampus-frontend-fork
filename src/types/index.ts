@@ -2,6 +2,19 @@
 export type AccountType = 'USER' | 'ACADEMY' | 'ADMIN';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+// ===== 공통 모달 상태 타입 정의 =====
+/**
+ * AlertModal 컴포넌트의 상태를 관리하기 위한 공통 타입
+ * 여러 컴포넌트에서 재사용되어 일관된 알림 UX를 제공합니다.
+ */
+export type AlertModalState = {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'warning' | 'error' | 'info';
+    onCloseCallback?: () => void;
+};
+
 // ===== 사용자(Account) 타입 정의 (백엔드 Account 엔티티 참조) =====
 // 변경: User -> Account
 export interface Account {
