@@ -38,6 +38,10 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         approvalStatus: dto.approvalStatus as ApprovalStatus,
         approvedAt: dto.approvedAt,
 
+        // 과정 등록자 정보 (백엔드에서 제공)
+        requesterId: dto.requesterId,
+        requesterName: dto.requesterName,
+
         // UI fields (Default values or mapped)
         rating: dto.rating ?? 0,
         reviewCount: dto.reviewCount ?? 0,

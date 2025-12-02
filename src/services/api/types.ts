@@ -34,6 +34,10 @@ export interface ApiCourseResponse {
     approvedAt?: string; // LocalDateTime -> ISO string
     rating?: number;
     reviewCount?: number;
+
+    // 과정 등록자 정보
+    requesterId?: number;
+    requesterName?: string;
 }
 
 export interface ApiCourseDetailResponse extends ApiCourseResponse {

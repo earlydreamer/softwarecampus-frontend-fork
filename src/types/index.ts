@@ -121,6 +121,9 @@ export interface Course {
     requirement?: string;
     approvalStatus: ApprovalStatus;
     approvedAt?: string;
+    // 과정 등록자 정보 (백엔드: requester)
+    requesterId?: number;
+    requesterName?: string;
     // 커리큘럼 정보 (백엔드: List<CourseCurriculum> curriculums)
     curriculums?: CourseCurriculum[];
     // UI 표시용 추가 필드 (백엔드에 없음 - 추후 추가 필요)
