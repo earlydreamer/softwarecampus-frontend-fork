@@ -155,6 +155,15 @@ export interface ApiAcademyQAResponse {
 }
 
 /**
+ * 과정 Q&A 첨부파일 응답 DTO
+ */
+export interface ApiCourseQnaFileResponse {
+    id: number;
+    originName: string;
+    fileUrl: string;
+}
+
+/**
  * 과정 Q&A 응답 DTO (QnaResponse)
  */
 export interface ApiCourseQnaResponse {
@@ -169,6 +178,7 @@ export interface ApiCourseQnaResponse {
     isAnswered: boolean;
     createdAt: string;
     updatedAt: string;
+    files?: ApiCourseQnaFileResponse[];
 }
 
 /**
