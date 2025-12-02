@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft, Download, FileIcon, Reply, CornerDownRight } from 'lucide-react';
+import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft, Download, FileIcon, Reply, CornerDownRight, Lock } from 'lucide-react';
+import { AxiosError } from 'axios';
 import type { Comment, BoardAttachment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import {
@@ -19,6 +20,55 @@ import { formatFileSize } from '../utils/formatUtils';
 import { useAuthStore } from '../store/authStore';
 import AlertModal from '../components/ui/AlertModal';
 import ConfirmModal from '../components/common/ConfirmModal';
+
+// 비밀글 접근 에러인지 확인하는 헬퍼 함수
+const isSecretPostError = (error: unknown): boolean => {
+    if (error instanceof AxiosError) {
+        const status = error.response?.status;
+        const data = error.response?.data;
+        // 403 에러이면서 CANNOT_READ_BOARD 에러인 경우
+        // ProblemDetail 형식: title이 에러코드명, detail이 메시지
+        if (status === 403) {
+            const title = data?.title || '';
+            const detail = data?.detail || '';
+            const message = data?.message || '';
+            const allText = `${title} ${detail} ${message}`.toLowerCase();
+            
+            return (
+                title === 'CANNOT_READ_BOARD' ||
+                allText.includes('접근 권한') ||
+                allText.includes('비밀글') ||
+                allText.includes('secret')
+            );
+        }
+    }
+    return false;
+};
+
+// 인증 에러인지 확인하는 헬퍼 함수
+const isAuthError = (error: unknown): boolean => {
+    if (error instanceof AxiosError) {
+        return error.response?.status === 401 || error.response?.status === 403;
+    }
+    if (error instanceof Error) {
+        const msg = error.message?.toLowerCase() || '';
+        return msg.includes('인증') || msg.includes('로그인') || msg.includes('unauthorized');
+    }
+    return false;
+};
+
+// 에러 메시지 추출 헬퍼 함수 (ProblemDetail 형식 지원)
+const getErrorMessage = (error: unknown, defaultMsg: string): string => {
+    if (error instanceof AxiosError) {
+        const data = error.response?.data;
+        // ProblemDetail 형식: detail 필드 우선, 그 다음 message 필드
+        return data?.detail || data?.message || defaultMsg;
+    }
+    if (error instanceof Error) {
+        return error.message || defaultMsg;
+    }
+    return defaultMsg;
+};
 
 const CommunityDetailPage = () => {
     const { postId } = useParams<{ postId?: string }>();
@@ -64,82 +114,246 @@ const CommunityDetailPage = () => {
     const comments = post?.comments || [];
     const commentsLoading = postLoading;
 
-    // 추천 mutation
+    // 추천 mutation (낙관적 업데이트 적용)
     const recommendMutation = useMutation({
         mutationFn: () => {
-            if (!isAuthenticated) {
-                throw new Error('로그인이 필요한 서비스입니다.');
-            }
             return recommendBoardPost(postIdNumber);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
-        },
-        onError: (error: Error) => {
-            setAlertModal({
-                isOpen: true,
-                title: '추천 실패',
-                message: error.message,
-                type: 'error'
+        // 낙관적 업데이트: API 호출 전에 UI를 즉시 업데이트
+        onMutate: async () => {
+            // 진행 중인 refetch 취소 (낙관적 업데이트 덮어쓰기 방지)
+            await queryClient.cancelQueries({ queryKey: ['boardPost', postIdNumber] });
+            
+            // 이전 데이터 스냅샷 저장 (롤백용)
+            const previousPost = queryClient.getQueryData(['boardPost', postIdNumber]);
+            
+            // 캐시를 낙관적으로 업데이트
+            queryClient.setQueryData(['boardPost', postIdNumber], (old: typeof post) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    like: true,
+                    likeCount: (old.likeCount || 0) + 1,
+                };
             });
+            
+            // 컨텍스트로 이전 데이터 반환 (onError에서 롤백에 사용)
+            return { previousPost };
+        },
+        onError: (error: unknown, _variables, context) => {
+            // 에러 발생 시 이전 상태로 롤백
+            if (context?.previousPost) {
+                queryClient.setQueryData(['boardPost', postIdNumber], context.previousPost);
+            }
+            
+            if (isAuthError(error)) {
+                setAlertModal({
+                    isOpen: true,
+                    title: '로그인 필요',
+                    message: '로그인이 필요한 서비스입니다.',
+                    type: 'warning'
+                });
+            } else {
+                setAlertModal({
+                    isOpen: true,
+                    title: '추천 실패',
+                    message: getErrorMessage(error, '추천에 실패했습니다.'),
+                    type: 'error'
+                });
+            }
+        },
+        // 성공/실패 상관없이 서버 데이터로 동기화
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
     });
 
-    // 추천 취소 mutation
+    // 추천 취소 mutation (낙관적 업데이트 적용)
     const cancelRecommendMutation = useMutation({
         mutationFn: () => {
-            if (!isAuthenticated) {
-                throw new Error('로그인이 필요한 서비스입니다.');
-            }
             return cancelRecommendBoardPost(postIdNumber);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
-        },
-        onError: (error: Error) => {
-            setAlertModal({
-                isOpen: true,
-                title: '추천 취소 실패',
-                message: error.message || '추천 취소에 실패했습니다.',
-                type: 'error'
+        // 낙관적 업데이트: API 호출 전에 UI를 즉시 업데이트
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ['boardPost', postIdNumber] });
+            
+            const previousPost = queryClient.getQueryData(['boardPost', postIdNumber]);
+            
+            queryClient.setQueryData(['boardPost', postIdNumber], (old: typeof post) => {
+                if (!old) return old;
+                return {
+                    ...old,
+                    like: false,
+                    likeCount: Math.max((old.likeCount || 1) - 1, 0),
+                };
             });
+            
+            return { previousPost };
+        },
+        onError: (error: unknown, _variables, context) => {
+            if (context?.previousPost) {
+                queryClient.setQueryData(['boardPost', postIdNumber], context.previousPost);
+            }
+            
+            if (isAuthError(error)) {
+                setAlertModal({
+                    isOpen: true,
+                    title: '로그인 필요',
+                    message: '로그인이 필요한 서비스입니다.',
+                    type: 'warning'
+                });
+            } else {
+                setAlertModal({
+                    isOpen: true,
+                    title: '추천 취소 실패',
+                    message: getErrorMessage(error, '추천 취소에 실패했습니다.'),
+                    type: 'error'
+                });
+            }
+        },
+        onSettled: () => {
+            queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
     });
 
-    // 댓글 작성 mutation
+    // 댓글 작성 mutation (낙관적 업데이트)
     const createCommentMutation = useMutation({
         mutationFn: (content: string) => createComment(postIdNumber, content),
+        onMutate: async (content: string) => {
+            // 진행 중인 쿼리 취소
+            await queryClient.cancelQueries({ queryKey: ['boardPost', postIdNumber] });
+
+            // 이전 데이터 스냅샷
+            const previousPost = queryClient.getQueryData(['boardPost', postIdNumber]);
+
+            // 낙관적 업데이트
+            queryClient.setQueryData(['boardPost', postIdNumber], (old: any) => {
+                if (!old) return old;
+
+                const optimisticComment: Comment = {
+                    id: Date.now(), // 임시 ID
+                    text: content,
+                    account: {
+                        id: user?.id || 0,
+                        userName: user?.userName || '사용자',
+                    },
+                    createdAt: new Date().toISOString(),
+                    isDeleted: false,
+                    subComments: [],
+                };
+
+                return {
+                    ...old,
+                    comments: [...(old.comments || []), optimisticComment],
+                    commentCount: (old.commentCount || 0) + 1,
+                };
+            });
+
+            return { previousPost };
+        },
         onSuccess: () => {
-            // 게시글 데이터를 다시 불러와서 댓글 목록 갱신
+            // 서버 데이터로 동기화
             queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
             setCommentContent('');
         },
-        onError: (error: Error) => {
-            setAlertModal({
-                isOpen: true,
-                title: '댓글 작성 실패',
-                message: error.message || '댓글 작성에 실패했습니다.',
-                type: 'error'
-            });
+        onError: (error: unknown, _variables, context) => {
+            // 롤백
+            if (context?.previousPost) {
+                queryClient.setQueryData(['boardPost', postIdNumber], context.previousPost);
+            }
+
+            if (isAuthError(error)) {
+                setAlertModal({
+                    isOpen: true,
+                    title: '로그인 필요',
+                    message: '로그인이 필요한 서비스입니다.',
+                    type: 'warning'
+                });
+            } else {
+                setAlertModal({
+                    isOpen: true,
+                    title: '댓글 작성 실패',
+                    message: getErrorMessage(error, '댓글 작성에 실패했습니다.'),
+                    type: 'error'
+                });
+            }
         },
     });
 
-    // 대댓글 작성 mutation
+    // 대댓글 작성 mutation (낙관적 업데이트)
     const createReplyMutation = useMutation({
         mutationFn: ({ content, topCommentId }: { content: string; topCommentId: number }) => 
             createComment(postIdNumber, content, topCommentId),
+        onMutate: async ({ content, topCommentId }) => {
+            // 진행 중인 쿼리 취소
+            await queryClient.cancelQueries({ queryKey: ['boardPost', postIdNumber] });
+
+            // 이전 데이터 스냅샷
+            const previousPost = queryClient.getQueryData(['boardPost', postIdNumber]);
+
+            // 낙관적 업데이트
+            queryClient.setQueryData(['boardPost', postIdNumber], (old: any) => {
+                if (!old) return old;
+
+                const optimisticReply: Comment = {
+                    id: Date.now(), // 임시 ID
+                    text: content,
+                    account: {
+                        id: user?.id || 0,
+                        userName: user?.userName || '사용자',
+                    },
+                    createdAt: new Date().toISOString(),
+                    isDeleted: false,
+                    topCommentId,
+                };
+
+                // 부모 댓글 찾아서 subComments에 추가
+                const updatedComments = (old.comments || []).map((comment: Comment) => {
+                    if (comment.id === topCommentId) {
+                        return {
+                            ...comment,
+                            subComments: [...(comment.subComments || []), optimisticReply],
+                        };
+                    }
+                    return comment;
+                });
+
+                return {
+                    ...old,
+                    comments: updatedComments,
+                    commentCount: (old.commentCount || 0) + 1,
+                };
+            });
+
+            return { previousPost };
+        },
         onSuccess: () => {
+            // 서버 데이터로 동기화
             queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
             setReplyingToId(null);
             setReplyContent('');
         },
-        onError: (error: Error) => {
-            setAlertModal({
-                isOpen: true,
-                title: '답글 작성 실패',
-                message: error.message || '답글 작성에 실패했습니다.',
-                type: 'error'
-            });
+        onError: (error: unknown, _variables, context) => {
+            // 롤백
+            if (context?.previousPost) {
+                queryClient.setQueryData(['boardPost', postIdNumber], context.previousPost);
+            }
+
+            if (isAuthError(error)) {
+                setAlertModal({
+                    isOpen: true,
+                    title: '로그인 필요',
+                    message: '로그인이 필요한 서비스입니다.',
+                    type: 'warning'
+                });
+            } else {
+                setAlertModal({
+                    isOpen: true,
+                    title: '답글 작성 실패',
+                    message: getErrorMessage(error, '답글 작성에 실패했습니다.'),
+                    type: 'error'
+                });
+            }
         },
     });
 
@@ -152,13 +366,22 @@ const CommunityDetailPage = () => {
             setEditingCommentId(null);
             setEditingContent('');
         },
-        onError: (error: Error) => {
-            setAlertModal({
-                isOpen: true,
-                title: '댓글 수정 실패',
-                message: error.message || '댓글 수정에 실패했습니다.',
-                type: 'error'
-            });
+        onError: (error: unknown) => {
+            if (isAuthError(error)) {
+                setAlertModal({
+                    isOpen: true,
+                    title: '로그인 필요',
+                    message: '로그인이 필요한 서비스입니다.',
+                    type: 'warning'
+                });
+            } else {
+                setAlertModal({
+                    isOpen: true,
+                    title: '댓글 수정 실패',
+                    message: getErrorMessage(error, '댓글 수정에 실패했습니다.'),
+                    type: 'error'
+                });
+            }
         },
     });
 
@@ -170,18 +393,21 @@ const CommunityDetailPage = () => {
         },
     });
 
+    // 게시글 삭제 후 목록 이동 여부 (모달 확인 시 이동)
+    const [shouldNavigateAfterDelete, setShouldNavigateAfterDelete] = useState(false);
+
     // 게시글 삭제 mutation
     const deleteBoardMutation = useMutation({
         mutationFn: () => deleteBoardPost(postIdNumber),
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['boardPosts'] });
+            setShouldNavigateAfterDelete(true);
             setAlertModal({
                 isOpen: true,
                 title: '삭제 완료',
                 message: '게시글이 삭제되었습니다.',
                 type: 'success'
             });
-            // 모달 닫히면 리다이렉트 (버튼 클릭 시)
-            setTimeout(() => navigate('/community'), 1500);
         },
         onError: (error: Error) => {
             setAlertModal({
@@ -228,11 +454,14 @@ const CommunityDetailPage = () => {
         }
     };
 
-    // 현재 사용자가 게시글 작성자인지 확인
+    // 현재 사용자가 게시글 작성자이거나 관리자인지 확인
     const isAuthor = useMemo(() => {
         if (!user || !post) return false;
-        return user.id === post.account.id;
+        return user.id === post.account.id || user.accountType === 'ADMIN';
     }, [user, post]);
+
+    // 관리자 여부 확인
+    const isAdmin = user?.accountType === 'ADMIN';
 
     // 날짜 포맷팅
     const formatDate = (dateString: string) => {
@@ -326,6 +555,47 @@ const CommunityDetailPage = () => {
     }
 
     if (postError) {
+        // 디버깅: 실제 에러 데이터 확인
+        if (postError instanceof AxiosError) {
+            console.log('=== postError 디버깅 ===');
+            console.log('status:', postError.response?.status);
+            console.log('data:', postError.response?.data);
+            console.log('isSecretPostError:', isSecretPostError(postError));
+        }
+        
+        // 비밀글 접근 에러인 경우 전용 UI 표시
+        if (isSecretPostError(postError)) {
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+                    <div className="max-w-md w-full mx-4">
+                        <div className="glass-panel p-8 rounded-2xl border-2 border-amber-200 dark:border-amber-800">
+                            <div className="text-center mb-6">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full mb-4">
+                                    <Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <h3 className="text-xl font-bold text-amber-800 dark:text-amber-200 mb-2">
+                                    비밀글입니다
+                                </h3>
+                                <p className="text-amber-700 dark:text-amber-300 mb-2">
+                                    이 게시글은 비밀글로 설정되어 있습니다.
+                                </p>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    작성자 또는 관리자만 열람할 수 있습니다.
+                                </p>
+                            </div>
+                            <Link
+                                to="/community"
+                                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition-colors font-medium"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                목록으로 돌아가기
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
         const errorMessage = postError instanceof Error
             ? postError.message
             : '게시글을 불러오는 중 오류가 발생했습니다.';
@@ -528,7 +798,7 @@ const CommunityDetailPage = () => {
                 )}
 
                 {/* 추천 버튼 */}
-                <div className="glass-panel p-6 rounded-2xl mb-6 shadow-xl">
+                <div className="glass-panel p-4 rounded-2xl mb-6 shadow-xl">
                     <div className="flex justify-center">
                         <button
                             onClick={() => {
@@ -548,18 +818,16 @@ const CommunityDetailPage = () => {
                                 }
                             }}
                             disabled={recommendMutation.isPending || cancelRecommendMutation.isPending}
-                            className={`group flex flex-col items-center gap-3 px-12 py-6 rounded-2xl transition-all duration-300 cursor-pointer ${post.like
-                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/50 hover:from-blue-600 hover:to-indigo-700'
-                                : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-lg hover:shadow-blue-500/50 hover:scale-105'
+                            className={`group flex items-center gap-3 px-6 py-3 rounded-xl transition-all duration-300 cursor-pointer ${post.like
+                                ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/40 hover:from-blue-600 hover:to-indigo-700'
+                                : 'bg-slate-100 hover:bg-gradient-to-br hover:from-blue-500 hover:to-indigo-600 dark:bg-slate-700 dark:hover:from-blue-600 dark:hover:to-indigo-700 text-slate-700 dark:text-slate-300 hover:text-white dark:hover:text-white hover:shadow-md hover:shadow-blue-500/40 hover:scale-105'
                                 }`}
                         >
-                            <ThumbsUp className={`w-10 h-10 ${!post.like && 'group-hover:animate-bounce'}`} />
-                            <div className="text-center">
-                                <div className="font-bold text-lg">
-                                    {post.like ? '추천 취소' : '추천하기'}
-                                </div>
-                                <div className="text-2xl font-bold mt-1">{post.likeCount || 0}</div>
-                            </div>
+                            <ThumbsUp className={`w-5 h-5 ${!post.like && 'group-hover:animate-bounce'}`} />
+                            <span className="font-semibold">
+                                {post.like ? '추천 취소' : '추천하기'}
+                            </span>
+                            <span className="font-bold text-lg">{post.likeCount || 0}</span>
                         </button>
                     </div>
                 </div>
@@ -708,22 +976,22 @@ const CommunityDetailPage = () => {
                                                                 </button>
                                                             )}
                                                             {user && user.id === comment.account.id && (
-                                                                <>
-                                                                    <button
-                                                                        onClick={() => handleEditStart(comment)}
-                                                                        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
-                                                                    >
-                                                                        <Pencil className="w-3.5 h-3.5" />
-                                                                        수정
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setDeleteConfirmModal({ isOpen: true, commentId: comment.id })}
-                                                                        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                        삭제
-                                                                    </button>
-                                                                </>
+                                                                <button
+                                                                    onClick={() => handleEditStart(comment)}
+                                                                    className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                                                                >
+                                                                    <Pencil className="w-3.5 h-3.5" />
+                                                                    수정
+                                                                </button>
+                                                            )}
+                                                            {user && (user.id === comment.account.id || isAdmin) && (
+                                                                <button
+                                                                    onClick={() => setDeleteConfirmModal({ isOpen: true, commentId: comment.id })}
+                                                                    className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                    삭제
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </>
@@ -833,35 +1101,26 @@ const CommunityDetailPage = () => {
                                                                         {subComment.text}
                                                                     </p>
                                                                     <div className="flex gap-2 mt-2">
-                                                                        {/* 대댓글에도 답글 버튼 - 같은 원댓글에 대댓글로 추가됨 */}
-                                                                        {isAuthenticated && (
+                                                                        {/* 대댓글에는 답글 버튼 없음 (2뎁스 제한) */}
+                                                                        {user && user.id === subComment.account.id && (
                                                                             <button
-                                                                                onClick={() => handleReplyStart(comment.id)}
+                                                                                onClick={() => handleEditStart(subComment)}
                                                                                 className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
                                                                             >
-                                                                                <Reply className="w-3 h-3" />
-                                                                                답글
+                                                                                <Pencil className="w-3 h-3" />
+                                                                                수정
                                                                             </button>
                                                                         )}
-                                                                        {user && user.id === subComment.account.id && (
-                                                                            <>
-                                                                                <button
-                                                                                    onClick={() => handleEditStart(subComment)}
-                                                                                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
-                                                                                >
-                                                                                    <Pencil className="w-3 h-3" />
-                                                                                    수정
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setDeleteReplyConfirmModal({ isOpen: true, replyId: subComment.id });
-                                                                                    }}
-                                                                                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
-                                                                                >
-                                                                                    <Trash2 className="w-3 h-3" />
-                                                                                    삭제
-                                                                                </button>
-                                                                            </>
+                                                                        {user && (user.id === subComment.account.id || isAdmin) && (
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setDeleteReplyConfirmModal({ isOpen: true, replyId: subComment.id });
+                                                                                }}
+                                                                                className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                                삭제
+                                                                            </button>
                                                                         )}
                                                                     </div>
                                                                 </>
@@ -882,7 +1141,14 @@ const CommunityDetailPage = () => {
             {/* 알림 모달 */}
             <AlertModal
                 isOpen={alertModal.isOpen}
-                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                onClose={() => {
+                    setAlertModal(prev => ({ ...prev, isOpen: false }));
+                    // 삭제 완료 후 목록 페이지로 이동
+                    if (shouldNavigateAfterDelete) {
+                        setShouldNavigateAfterDelete(false);
+                        navigate('/community');
+                    }
+                }}
                 title={alertModal.title}
                 message={alertModal.message}
                 type={alertModal.type}

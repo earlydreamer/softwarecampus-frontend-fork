@@ -305,6 +305,7 @@ export interface CourseReview {
     dislikeCount: number;
     myLikeType?: string; // 추가: 내 좋아요 상태 (LIKE, DISLIKE, NONE)
     approvalStatus: ApprovalStatus;
+    rejectionReason?: string | null; // 추가: 거부 사유 (2025-12-02)
     createdAt: string; // 백엔드에서 제공 (ISO 8601)
 }
 
@@ -336,8 +337,9 @@ export interface CourseQna { // 변경: CourseQnA -> CourseQna
     answeredById?: number;
     answeredByName?: string;
 
-    createdAt: string;
-    updatedAt: string;
+    createdAt: string;       // 질문 작성일
+    updatedAt: string;       // 질문 수정일
+    answeredAt?: string;     // 답변 작성일 (2025-12-03 추가)
     viewCount?: number;
 
     /** 첨부파일 목록 */
@@ -436,6 +438,7 @@ export interface CourseApprovalRequest {
     requestType: '등록' | '삭제' | '수정';
     requestDate: string;
     status: '대기' | '승인' | '거부';
+    rejectionReason?: string; // 거부 사유
     recruitStart?: string;
     recruitEnd?: string;
     courseStart?: string;
@@ -460,11 +463,13 @@ export interface ReviewApprovalRequest {
     courseName: string;
     academyId: number;
     writerName: string;
+    writerId?: number;       // 작성자 ID
     rating: number;
     comment: string;
     requestType: '등록' | '삭제';
     requestDate: string;
     status: '대기' | '승인' | '거부';
+    rejectionReason?: string; // 거부 사유
 }
 
 export interface BannerData {

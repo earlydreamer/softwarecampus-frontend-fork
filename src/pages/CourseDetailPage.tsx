@@ -274,6 +274,7 @@ const CourseDetailPage = () => {
                                         ) : (
                                             <CourseQnAs
                                                 courseId={Number(id!)}
+                                                academyId={course?.academy?.id}
                                                 qnas={qnaData?.qnas || []}
                                                 totalCount={qnaData?.totalCount || 0}
                                                 page={qnaPage}
@@ -281,6 +282,7 @@ const CourseDetailPage = () => {
                                                 isLoading={isQnAsLoading}
                                                 onQuestionSubmit={handleQnaSubmit}
                                                 onSearch={handleQnaSearch}
+                                                onQnAsUpdate={() => refetchQnAs()}
                                             />
                                         )}
                                     </>

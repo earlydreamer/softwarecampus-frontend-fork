@@ -171,6 +171,7 @@ export const fetchCourseQnAs = async (
             answeredByName: qna.answeredByName,
             createdAt: qna.createdAt,
             updatedAt: qna.updatedAt,
+            answeredAt: qna.answeredAt, // 추가: 답변 작성일 (2025-12-03)
             viewCount: 0,
             files: qna.files?.map(f => ({
                 id: f.id,
@@ -219,6 +220,7 @@ export const fetchCourseReviews = async (
             dislikeCount: review.dislikeCount,
             myLikeType: review.myLikeType, // 백엔드에서 제공
             approvalStatus: review.approvalStatus as ApprovalStatus,
+            rejectionReason: review.rejectionReason, // 추가: 거부 사유 (2025-12-02)
             createdAt: review.createdAt, // 백엔드에서 제공 (ISO 8601)
         }));
 
@@ -283,10 +285,54 @@ export const createCourseReview = async (
             dislikeCount: review.dislikeCount,
             myLikeType: review.myLikeType,
             approvalStatus: review.approvalStatus as ApprovalStatus,
+            rejectionReason: review.rejectionReason,
             createdAt: review.createdAt,
         };
     } catch (error) {
         console.error(`Failed to create review for course ${courseId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 수강 후기 수정
+ * 거부된 리뷰 수정 시 자동으로 PENDING 상태로 변경됨
+ */
+export const updateCourseReview = async (
+    courseId: number,
+    reviewId: number,
+    data: {
+        comment: string;
+        sections: { sectionType: string; score: number }[];
+    }
+): Promise<CourseReview> => {
+    try {
+        const response = await apiClient.put<ApiCourseReviewResponse>(
+            `/api/courses/${courseId}/reviews/${reviewId}`,
+            data
+        );
+
+        // DTO -> Model 변환
+        const review = response.data;
+        return {
+            id: review.reviewId,
+            courseId: review.courseId,
+            courseName: review.courseName,
+            writerId: review.writerId,
+            writerName: review.writerName,
+            averageScore: review.averageScore,
+            sections: review.sections || [],
+            comment: review.comment,
+            attachments: review.attachments || [],
+            likeCount: review.likeCount,
+            dislikeCount: review.dislikeCount,
+            myLikeType: review.myLikeType,
+            approvalStatus: review.approvalStatus as ApprovalStatus,
+            rejectionReason: review.rejectionReason,
+            createdAt: review.createdAt,
+        };
+    } catch (error) {
+        console.error(`Failed to update review ${reviewId} for course ${courseId}:`, error);
         throw error;
     }
 };
@@ -420,6 +466,114 @@ export const uploadCourseQnaFile = async (
         return response.data;
     } catch (error) {
         console.error(`Failed to upload file for course ${courseId} QnA:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 과정 Q&A 답변 등록
+ * 관리자 또는 해당 과정 기관 담당자만 가능
+ */
+export const answerCourseQnA = async (
+    qnaId: number,
+    answerText: string
+): Promise<CourseQna> => {
+    try {
+        const response = await apiClient.post<ApiCourseQnaResponse>(
+            `/api/courses/qna/${qnaId}/answer`,
+            { answerText }
+        );
+
+        const qna = response.data;
+        return {
+            id: qna.id,
+            accountId: qna.accountId,
+            writerName: qna.writerName,
+            title: qna.title,
+            questionText: qna.questionText,
+            isAnswered: qna.isAnswered,
+            answerText: qna.answerText,
+            answeredById: qna.answeredById,
+            answeredByName: qna.answeredByName,
+            createdAt: qna.createdAt,
+            updatedAt: qna.updatedAt,
+            answeredAt: qna.answeredAt,
+            viewCount: 0,
+            files: qna.files?.map(f => ({
+                id: f.id,
+                originName: f.originName,
+                fileUrl: f.fileUrl,
+            })) || [],
+        };
+    } catch (error) {
+        console.error(`Failed to answer QnA ${qnaId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 과정 Q&A 답변 수정
+ * 관리자 또는 답변 작성자만 가능
+ */
+export const updateCourseQnAAnswer = async (
+    qnaId: number,
+    answerText: string
+): Promise<CourseQna> => {
+    try {
+        const response = await apiClient.put<ApiCourseQnaResponse>(
+            `/api/courses/qna/${qnaId}/answer`,
+            { answerText }
+        );
+
+        const qna = response.data;
+        return {
+            id: qna.id,
+            accountId: qna.accountId,
+            writerName: qna.writerName,
+            title: qna.title,
+            questionText: qna.questionText,
+            isAnswered: qna.isAnswered,
+            answerText: qna.answerText,
+            answeredById: qna.answeredById,
+            answeredByName: qna.answeredByName,
+            createdAt: qna.createdAt,
+            updatedAt: qna.updatedAt,
+            answeredAt: qna.answeredAt,
+            viewCount: 0,
+            files: qna.files?.map(f => ({
+                id: f.id,
+                originName: f.originName,
+                fileUrl: f.fileUrl,
+            })) || [],
+        };
+    } catch (error) {
+        console.error(`Failed to update answer for QnA ${qnaId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 과정 Q&A 답변 삭제
+ * 관리자 또는 답변 작성자만 가능
+ */
+export const deleteCourseQnAAnswer = async (qnaId: number): Promise<void> => {
+    try {
+        await apiClient.delete(`/api/courses/qna/${qnaId}/answer`);
+    } catch (error) {
+        console.error(`Failed to delete answer for QnA ${qnaId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 과정 Q&A 질문 삭제
+ * 질문자 본인 또는 관리자만 가능
+ */
+export const deleteCourseQnA = async (qnaId: number): Promise<void> => {
+    try {
+        await apiClient.delete(`/api/courses/qna/${qnaId}`);
+    } catch (error) {
+        console.error(`Failed to delete QnA ${qnaId}:`, error);
         throw error;
     }
 };

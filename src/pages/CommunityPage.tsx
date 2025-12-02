@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import { fetchBoardPosts } from '../services/communityService';
-import { MessageSquare, ThumbsUp, Eye, PenSquare, Search, SlidersHorizontal, X } from 'lucide-react';
+import { MessageSquare, ThumbsUp, Eye, PenSquare, Search, SlidersHorizontal, X, Lock } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 type SortType = 'latest' | 'popular' | 'views' | 'comments';
 type SearchType = 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment';
@@ -21,6 +23,11 @@ const SEARCH_TYPE_LABELS: Record<SearchType, string> = {
 const CommunityPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchInput, setSearchInput] = useState('');
+    const navigate = useNavigate();
+    const { isAuthenticated, user } = useAuthStore();
+    
+    // 로그인 필요 모달 상태
+    const [loginRequiredModal, setLoginRequiredModal] = useState(false);
 
     const allowedCategories: BoardCategory[] = ['NOTICE', 'QUESTION', 'COURSE_STORY', 'CODING_STORY'];
 
@@ -124,6 +131,22 @@ const CommunityPage = () => {
 
     const categories: (BoardCategory | undefined)[] = [undefined, 'NOTICE', 'QUESTION', 'COURSE_STORY', 'CODING_STORY'];
 
+    // 글쓰기 버튼 클릭 핸들러
+    const handleWriteClick = (e: React.MouseEvent) => {
+        if (!isAuthenticated) {
+            e.preventDefault();
+            setLoginRequiredModal(true);
+        }
+    };
+
+    // 공지사항 탭에서는 ADMIN, ACADEMY만 글쓰기 가능
+    const canWriteInCurrentCategory = () => {
+        if (currentCategory === 'NOTICE') {
+            return user?.accountType === 'ADMIN' || user?.accountType === 'ACADEMY';
+        }
+        return true;
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -134,13 +157,17 @@ const CommunityPage = () => {
                             소프트웨어캠퍼스 수강생들과 소통하고 정보를 공유하세요.
                         </p>
                     </div>
-                    <Link
-                        to={`/community/write${currentCategory ? `?category=${currentCategory}` : ''}`}
-                        className="btn-primary flex items-center gap-2"
-                    >
-                        <PenSquare className="w-4 h-4" />
-                        글쓰기
-                    </Link>
+                    {/* 공지사항 탭에서는 ADMIN/ACADEMY만 글쓰기 버튼 표시 */}
+                    {canWriteInCurrentCategory() && (
+                        <Link
+                            to={`/community/write${currentCategory ? `?category=${currentCategory}` : ''}`}
+                            onClick={handleWriteClick}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            <PenSquare className="w-4 h-4" />
+                            글쓰기
+                        </Link>
+                    )}
                 </div>
 
                 {/* 카테고리 탭 */}
@@ -275,6 +302,9 @@ const CommunityPage = () => {
                                     </div>
                                     <div className="col-span-5">
                                         <div className="flex items-center gap-2">
+                                            {post.secret && (
+                                                <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" title="비밀글" />
+                                            )}
                                             <h3 className="font-medium text-slate-900 dark:text-white hover:text-primary-600 truncate">
                                                 {post.title}
                                             </h3>
@@ -311,7 +341,10 @@ const CommunityPage = () => {
                                         </span>
                                         <span className="text-xs text-slate-400">{formatDate(post.createdAt)}</span>
                                     </div>
-                                    <h3 className="font-medium text-slate-900 mb-2 line-clamp-1">
+                                    <h3 className="font-medium text-slate-900 mb-2 line-clamp-1 flex items-center gap-2">
+                                        {post.secret && (
+                                            <Lock className="w-4 h-4 text-amber-500 flex-shrink-0" title="비밀글" />
+                                        )}
                                         {post.title}
                                     </h3>
                                     <div className="flex items-center justify-between text-sm text-slate-500">
@@ -479,6 +512,22 @@ const CommunityPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* 로그인 필요 모달 */}
+            <ConfirmModal
+                isOpen={loginRequiredModal}
+                onClose={() => setLoginRequiredModal(false)}
+                title="로그인 필요"
+                message="글쓰기는 로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?"
+                onConfirm={() => {
+                    setLoginRequiredModal(false);
+                    navigate('/login', { 
+                        state: { 
+                            from: `/community/write${currentCategory ? `?category=${currentCategory}` : ''}` 
+                        } 
+                    });
+                }}
+            />
         </div>
     );
 };

@@ -1,15 +1,14 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, X, Download, FileIcon } from 'lucide-react';
-import { fetchBoardPost, updateBoardPost, downloadBoardAttachment } from '../services/communityService';
-import type { BoardCategory, BoardAttachment } from '../types';
+import { ArrowLeft, Save } from 'lucide-react';
+import { fetchBoardPost, updateBoardPost } from '../services/communityService';
+import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
-import AlertModal from '../components/ui/AlertModal';
-import FileUpload from '../components/common/FileUpload';
 import { useAuthStore } from '../store/authStore';
-import { formatFileSize, getTextContent } from '../utils/formatUtils';
+import { getTextContent } from '../utils/formatUtils';
+import type { AttachedFile } from '../components/editor/TiptapEditor';
 
 // Tiptap 에디터를 lazy load
 const TiptapEditor = lazy(() => import('../components/editor/TiptapEditor'));
@@ -24,9 +23,7 @@ const CommunityEditPage = () => {
     const [text, setText] = useState('');
     const [category, setCategory] = useState<BoardCategory | null>(null);
     const [isSecret, setIsSecret] = useState(false);
-    const [newFiles, setNewFiles] = useState<File[]>([]);
-    const [existingAttachments, setExistingAttachments] = useState<BoardAttachment[]>([]);
-    const [deleteAttachIds, setDeleteAttachIds] = useState<number[]>([]);
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [titleError, setTitleError] = useState<string | null>(null);
     const [contentError, setContentError] = useState<string | null>(null);
     const [showCancelModal, setShowCancelModal] = useState(false);
@@ -46,7 +43,25 @@ const CommunityEditPage = () => {
             setText(post.text);
             setCategory(post.category);
             setIsSecret(post.secret);
-            setExistingAttachments(post.attachments || []);
+
+            // 기존 첨부파일을 AttachedFile 형식으로 변환
+            if (post.attachments && post.attachments.length > 0) {
+                const converted: AttachedFile[] = post.attachments.map((att) => {
+                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(att.originName);
+                    return {
+                        id: `server-${att.id}`,
+                        serverId: att.id,
+                        name: att.originName,
+                        size: att.fileSize || 0,
+                        type: isImage ? 'image/' + att.originName.split('.').pop() : 'application/octet-stream',
+                        uploadedUrl: att.savedName,
+                        isImage,
+                        isInContent: false, // 초기에는 false, 본문에서 찾으면 true로 설정
+                    };
+                });
+                setAttachedFiles(converted);
+            }
+
             setIsInitialized(true);
         }
     }, [post, isInitialized]);
@@ -54,7 +69,6 @@ const CommunityEditPage = () => {
     // 비로그인 시 로그인 페이지로 리다이렉트
     useEffect(() => {
         if (!isAuthenticated) {
-            // 로그인 페이지로 리다이렉트 (로그인 페이지에서 안내 표시)
             navigate('/login', { state: { from: `/community/${postId}/edit`, message: '로그인이 필요한 서비스입니다.' } });
         }
     }, [isAuthenticated, navigate, postId]);
@@ -62,7 +76,6 @@ const CommunityEditPage = () => {
     // 작성자 본인 확인
     useEffect(() => {
         if (post && user && post.account.id !== user.id) {
-            // 권한 없음 - 상세 페이지로 리다이렉트
             navigate(`/community/${postId}`, { state: { error: '본인이 작성한 글만 수정할 수 있습니다.' } });
         }
     }, [post, user, navigate, postId]);
@@ -72,13 +85,28 @@ const CommunityEditPage = () => {
         if (!post) return false;
         const textContent = getTextContent(text).trim();
         const originalTextContent = getTextContent(post.text).trim();
+
+        // 기존 첨부파일 ID 목록
+        const originalFileIds = new Set((post.attachments || []).map(a => a.id));
+        const currentServerFileIds = new Set(
+            attachedFiles
+                .filter(f => f.serverId)
+                .map(f => f.serverId!)
+        );
+
+        // 새로 추가된 파일이 있는지
+        const hasNewFiles = attachedFiles.some(f => !f.serverId && f.file);
+
+        // 삭제된 파일이 있는지
+        const hasDeletedFiles = [...originalFileIds].some(id => !currentServerFileIds.has(id));
+
         return (
             title !== post.title ||
             textContent !== originalTextContent ||
             category !== post.category ||
             isSecret !== post.secret ||
-            newFiles.length > 0 ||
-            deleteAttachIds.length > 0
+            hasNewFiles ||
+            hasDeletedFiles
         );
     };
 
@@ -93,16 +121,30 @@ const CommunityEditPage = () => {
 
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [title, text, category, isSecret, newFiles, deleteAttachIds, post]);
+    }, [title, text, category, isSecret, attachedFiles, post]);
 
     // 게시글 수정 mutation
     const updatePostMutation = useMutation({
-        mutationFn: () => updateBoardPost(
-            Number(postId),
-            { title, text, category, secret: isSecret },
-            newFiles.length > 0 ? newFiles : undefined,
-            deleteAttachIds.length > 0 ? deleteAttachIds : undefined
-        ),
+        mutationFn: async () => {
+            //새로 추가된 파일들 (file 프로퍼티가 있는 것들)
+            const newFiles = attachedFiles
+                .filter(f => f.file)
+                .map(f => f.file!);
+
+            // 삭제할 첨부파일 ID들 (기존에 있었지만 현재 목록에 없는 것들)
+            const originalFileIds = (post?.attachments || []).map(a => a.id);
+            const currentServerFileIds = attachedFiles
+                .filter(f => f.serverId)
+                .map(f => f.serverId!);
+            const deleteAttachIds = originalFileIds.filter(id => !currentServerFileIds.includes(id));
+
+            return updateBoardPost(
+                Number(postId),
+                { title, text, category: category || undefined, secret: isSecret },
+                newFiles.length > 0 ? newFiles : undefined,
+                deleteAttachIds.length > 0 ? deleteAttachIds : undefined
+            );
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['boardPosts'] });
             queryClient.invalidateQueries({ queryKey: ['boardPost', postId] });
@@ -110,39 +152,10 @@ const CommunityEditPage = () => {
         },
         onError: (error: Error) => {
             console.error('게시글 수정 실패:', error);
-            // 사용자에게 상세한 에러 메시지 표시
             const errorMessage = error.message || '게시글 수정에 실패했습니다.';
             setContentError(`오류: ${errorMessage} 다시 시도해주세요.`);
         },
     });
-
-    // 기존 첨부파일 삭제 표시
-    const handleMarkForDeletion = (attachId: number) => {
-        setDeleteAttachIds(prev => [...prev, attachId]);
-    };
-
-    // 삭제 표시 취소
-    const handleCancelDeletion = (attachId: number) => {
-        setDeleteAttachIds(prev => prev.filter(id => id !== attachId));
-    };
-
-    // 첨부파일 다운로드
-    const handleDownload = async (attachment: BoardAttachment) => {
-        try {
-            const blob = await downloadBoardAttachment(Number(postId), attachment.id);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = attachment.originName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('다운로드 실패:', error);
-            setContentError('파일 다운로드에 실패했습니다. 다시 시도해주세요.');
-        }
-    };
 
     // 폼 제출
     const handleSubmit = (e: React.FormEvent) => {
@@ -174,14 +187,6 @@ const CommunityEditPage = () => {
 
         if (textContent.length < 10) {
             setContentError('내용은 최소 10자 이상 입력해주세요.');
-            return;
-        }
-
-        // 총 첨부파일 개수 확인 (기존 - 삭제 + 새로운)
-        const remainingAttachments = existingAttachments.filter(a => !deleteAttachIds.includes(a.id));
-        const totalFiles = remainingAttachments.length + newFiles.length;
-        if (totalFiles > 5) {
-            setContentError(`첨부파일은 최대 5개까지 가능합니다. (현재: ${totalFiles}개)`);
             return;
         }
 
@@ -222,13 +227,6 @@ const CommunityEditPage = () => {
             </div>
         );
     }
-
-    // 삭제 표시되지 않은 기존 첨부파일
-    const visibleAttachments = existingAttachments.filter(a => !deleteAttachIds.includes(a.id));
-    // 삭제 표시된 첨부파일
-    const markedForDeletion = existingAttachments.filter(a => deleteAttachIds.includes(a.id));
-    // 새 파일 추가 가능 개수
-    const maxNewFiles = 5 - visibleAttachments.length;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 py-8">
@@ -333,6 +331,9 @@ const CommunityEditPage = () => {
                                             setText(value);
                                             if (contentError) setContentError(null);
                                         }}
+                                        enableFileAttachment={true}
+                                        attachedFiles={attachedFiles}
+                                        onFilesChange={setAttachedFiles}
                                     />
                                 </Suspense>
                             </div>
@@ -340,103 +341,6 @@ const CommunityEditPage = () => {
                                 <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
                                     <span className="inline-block w-1 h-1 rounded-full bg-red-500" />
                                     {contentError}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* 기존 첨부파일 */}
-                        {existingAttachments.length > 0 && (
-                            <div className="mb-6">
-                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                                    기존 첨부파일 ({visibleAttachments.length}개)
-                                </label>
-                                <div className="space-y-2">
-                                    {visibleAttachments.map((attachment) => (
-                                        <div
-                                            key={attachment.id}
-                                            className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700"
-                                        >
-                                            <div className="flex items-center gap-3 min-w-0">
-                                                <FileIcon className="w-5 h-5 text-slate-500 flex-shrink-0" />
-                                                <div className="min-w-0">
-                                                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                                                        {attachment.originName}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500">
-                                                        {formatFileSize(attachment.fileSize)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDownload(attachment)}
-                                                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                                                    title="다운로드"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleMarkForDeletion(attachment.id)}
-                                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                                                    title="삭제"
-                                                >
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* 삭제 표시된 파일 */}
-                                {markedForDeletion.length > 0 && (
-                                    <div className="mt-4">
-                                        <p className="text-sm text-red-600 dark:text-red-400 mb-2">
-                                            삭제 예정 ({markedForDeletion.length}개)
-                                        </p>
-                                        <div className="space-y-2">
-                                            {markedForDeletion.map((attachment) => (
-                                                <div
-                                                    key={attachment.id}
-                                                    className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 opacity-60"
-                                                >
-                                                    <div className="flex items-center gap-3 min-w-0">
-                                                        <FileIcon className="w-5 h-5 text-red-500 flex-shrink-0" />
-                                                        <span className="text-sm text-red-700 dark:text-red-300 line-through truncate">
-                                                            {attachment.originName}
-                                                        </span>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleCancelDeletion(attachment.id)}
-                                                        className="text-xs text-blue-600 hover:underline"
-                                                    >
-                                                        취소
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* 새 첨부파일 추가 */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                                새 첨부파일 추가 (최대 {maxNewFiles}개 추가 가능)
-                            </label>
-                            {maxNewFiles > 0 ? (
-                                <FileUpload
-                                    files={newFiles}
-                                    onFilesChange={setNewFiles}
-                                    maxFiles={maxNewFiles}
-                                    maxSizeMB={50}
-                                />
-                            ) : (
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    첨부파일이 최대 개수(5개)에 도달했습니다. 기존 파일을 삭제해야 새 파일을 추가할 수 있습니다.
                                 </p>
                             )}
                         </div>

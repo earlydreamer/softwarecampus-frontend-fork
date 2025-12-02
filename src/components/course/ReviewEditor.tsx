@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -9,15 +9,21 @@ interface ReviewEditorProps {
     onSubmit: (data: { comment: string; sections: ReviewSection[]; file?: File }) => Promise<void>;
     onCancel: () => void;
     isSubmitting?: boolean;
+    initialData?: {
+        comment: string;
+        sections: ReviewSection[];
+    };
 }
 
-const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmitting = false }) => {
-    const [sections, setSections] = useState<ReviewSection[]>([
-        { sectionType: 'CURRICULUM', score: 5 },
-        { sectionType: 'COURSEWARE', score: 5 },
-        { sectionType: 'INSTRUCTOR', score: 5 },
-        { sectionType: 'EQUIPMENT', score: 5 },
-    ]);
+const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmitting = false, initialData }) => {
+    const [sections, setSections] = useState<ReviewSection[]>(
+        initialData?.sections || [
+            { sectionType: 'CURRICULUM', score: 5 },
+            { sectionType: 'COURSEWARE', score: 5 },
+            { sectionType: 'INSTRUCTOR', score: 5 },
+            { sectionType: 'EQUIPMENT', score: 5 },
+        ]
+    );
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -30,13 +36,20 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
                 placeholder: '수강 후기를 자세히 작성해주세요. (최소 10자 이상)',
             }),
         ],
-        content: '',
+        content: initialData?.comment || '',
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none min-h-[200px] p-4 border rounded-md',
             },
         },
     });
+
+    // initialData가 변경되면 에디터 내용 업데이트
+    useEffect(() => {
+        if (editor && initialData?.comment) {
+            editor.commands.setContent(initialData.comment);
+        }
+    }, [editor, initialData?.comment]);
 
     const handleScoreChange = (index: number, score: number) => {
         const newSections = [...sections];
@@ -205,7 +218,7 @@ const ReviewEditor: React.FC<ReviewEditorProps> = ({ onSubmit, onCancel, isSubmi
                     disabled={isSubmitting}
                     className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 bg-slate-900 text-white hover:bg-slate-800"
                 >
-                    {isSubmitting ? '작성 중...' : '작성 완료'}
+                    {isSubmitting ? (initialData ? '수정 중...' : '작성 중...') : (initialData ? '수정 완료' : '작성 완료')}
                 </button>
             </div>
         </div>

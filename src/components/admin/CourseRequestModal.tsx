@@ -243,8 +243,13 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
 
             if (initialData) {
                 // 수정 모드: 기존 데이터로 초기화
+                // 날짜 필드가 배열이나 잘못된 형식일 경우 yyyy-MM-dd로 변환
                 setForm({
                     ...initialData,
+                    recruitStart: formatDateValue(initialData.recruitStart as string | number[] | null | undefined),
+                    recruitEnd: formatDateValue(initialData.recruitEnd as string | number[] | null | undefined),
+                    courseStart: formatDateValue(initialData.courseStart as string | number[] | null | undefined),
+                    courseEnd: formatDateValue(initialData.courseEnd as string | number[] | null | undefined),
                     selectedAcademyId: initialData.academyId,
                     thumbnailImage: {
                         file: undefined,
@@ -478,12 +483,50 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     }, []);
 
     /**
+     * 날짜 값을 yyyy-MM-dd 형식의 문자열로 변환
+     * 백엔드에서 LocalDate가 배열 [year, month, day] 또는 문자열로 올 수 있음
+     * @param dateValue - 날짜 값 (문자열, 배열, null, undefined)
+     * @returns yyyy-MM-dd 형식 문자열 또는 빈 문자열
+     */
+    const formatDateValue = (dateValue: string | number[] | null | undefined): string => {
+        if (dateValue === null || dateValue === undefined) return '';
+        
+        // 배열인 경우: [2025, 12, 31] -> "2025-12-31"
+        if (Array.isArray(dateValue)) {
+            if (dateValue.length >= 3) {
+                const [year, month, day] = dateValue;
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            }
+            return '';
+        }
+        
+        // 문자열인 경우: 이미 올바른 형식이면 그대로, 아니면 변환 시도
+        if (typeof dateValue === 'string') {
+            // 이미 yyyy-MM-dd 형식이면 그대로 반환
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                return dateValue;
+            }
+            // 콤마로 구분된 형식: "2025,12,31" -> "2025-12-31"
+            if (/^\d{4},\d{1,2},\d{1,2}$/.test(dateValue)) {
+                const parts = dateValue.split(',');
+                return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            }
+            return dateValue;
+        }
+        
+        return '';
+    };
+
+    /**
      * 날짜 문자열이 유효한지 검증
      * @param dateStr - 검증할 날짜 문자열 (YYYY-MM-DD 형식)
      * @returns 유효한 날짜면 true, 그렇지 않으면 false
      */
-    const isValidDate = (dateStr: string | undefined): boolean => {
-        if (!dateStr || dateStr.trim() === '') return false;
+    const isValidDate = (dateStr: string | undefined | null): boolean => {
+        // null, undefined, 빈 문자열, 문자열이 아닌 값 체크
+        if (dateStr === null || dateStr === undefined) return false;
+        if (typeof dateStr !== 'string') return false;
+        if (dateStr.trim() === '') return false;
         const timestamp = Date.parse(dateStr);
         return !isNaN(timestamp);
     };

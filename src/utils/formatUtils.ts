@@ -4,11 +4,18 @@
 
 /**
  * 파일 크기를 읽기 쉬운 형식으로 변환
- * @param bytes - 바이트 단위의 파일 크기
+ * @param bytes - 바이트 단위의 파일 크기 (optional)
+ * @param showUnknownForZero - 0일 때 '크기 정보 없음' 표시 여부 (기본: true)
  * @returns 포맷된 문자열 (예: "1.5 MB")
  */
-export const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+export const formatFileSize = (bytes?: number, showUnknownForZero: boolean = true): string => {
+    // bytes가 undefined, null, NaN인 경우 처리
+    if (bytes === undefined || bytes === null || isNaN(bytes)) {
+        return '크기 정보 없음';
+    }
+    // 백엔드에서 에디터 업로드 이미지의 경우 fileSize를 0으로 저장하므로
+    // 0인 경우도 '크기 정보 없음'으로 표시 (옵션으로 제어 가능)
+    if (bytes === 0) return showUnknownForZero ? '크기 정보 없음' : '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
