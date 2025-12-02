@@ -45,7 +45,7 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         // UI fields (Default values or mapped)
         rating: dto.rating ?? 0,
         reviewCount: dto.reviewCount ?? 0,
-        imageUrl: DEFAULT_COURSE_IMAGE, // Placeholder image
+        imageUrl: dto.imageUrl || DEFAULT_COURSE_IMAGE, // 백엔드 이미지 또는 기본 이미지
         description: dto.requirement,
         format: dto.offline ? '오프라인' : '온라인',
         duration: formatCourseDuration(dto.courseStart, dto.courseEnd),

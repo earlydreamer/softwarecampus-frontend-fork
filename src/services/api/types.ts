@@ -38,6 +38,9 @@ export interface ApiCourseResponse {
     // 과정 등록자 정보
     requesterId?: number;
     requesterName?: string;
+
+    // 과정 이미지 (썸네일)
+    imageUrl?: string;
 }
 
 export interface ApiCourseDetailResponse extends ApiCourseResponse {
