@@ -47,8 +47,8 @@ const QnAForm = ({ onSubmit, onCancel, onFileUpload }: QnAFormProps) => {
         // 새 파일 병렬 업로드 (Promise.allSettled로 성능 개선)
         if (newFiles.length > 0) {
             const uploadResults = await Promise.allSettled(
-                newFiles.map(async (file) => {
-                    const result = await onFileUpload(file.file);
+                newFiles.filter((file) => file.file !== undefined).map(async (file) => {
+                    const result = await onFileUpload(file.file!);
                     return { file, result };
                 })
             );

@@ -1189,8 +1189,6 @@ const CommunityDetailPage = () => {
                 onConfirm={confirmDeletePost}
                 title="게시글 삭제"
                 message="정말 이 게시글을 삭제하시겠습니까? 삭제된 게시글은 복구할 수 없습니다."
-                confirmText="삭제"
-                cancelText="취소"
             />
         </div>
     );
