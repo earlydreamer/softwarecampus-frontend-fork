@@ -88,6 +88,12 @@ export const fetchBoardPosts = async (
         // 백엔드는 Spring Page 객체 반환
         const response = await apiClient.get<SpringPage<ApiBoardListResponse>>('/api/boards', { params });
 
+        // 응답이 배열인지 확인 (API 오류 시 HTML 등이 반환될 수 있음)
+        if (!Array.isArray(response.data)) {
+            console.warn('게시판 API 응답이 배열이 아닙니다:', typeof response.data);
+            return { posts: [], total: 0 };
+        }
+
         // 목록 응답 매핑
         const posts = response.data.content.map(dto => ({
             id: dto.id,
@@ -348,4 +354,11 @@ export const uploadEditorImage = async (file: File): Promise<string> => {
     
     // 응답에서 파일 URL 추출
     return response.data.fileUrl || response.data.url;
+};
+
+/**
+ * 첨부파일 다운로드 URL 생성
+ */
+export const getBoardAttachmentDownloadUrl = (boardId: number, attachId: number): string => {
+    return `/api/boards/${boardId}/boardAttachs/${attachId}/download`;
 };

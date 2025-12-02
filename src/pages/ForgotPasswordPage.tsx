@@ -4,6 +4,7 @@ import { AlertCircle, Mail, KeyRound, CheckCircle, ArrowLeft } from 'lucide-reac
 import { sendPasswordResetCode, verifyPasswordResetCode } from '../services/authService';
 import apiClient from '../services/api/client';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '../utils/validation';
+import AlertModal from '../components/ui/AlertModal';
 
 type Step = 'email' | 'verify' | 'newPassword' | 'complete';
 
@@ -16,6 +17,12 @@ const ForgotPasswordPage = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'warning' | 'error' | 'info';
+    }>({ isOpen: false, title: '', message: '', type: 'info' });
 
     const emailId = useId();
     const codeId = useId();
@@ -99,7 +106,12 @@ const ForgotPasswordPage = () => {
         try {
             await sendPasswordResetCode(email);
             setError(''); // 에러 초기화
-            alert('인증 코드가 재발송되었습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '재발송 완료',
+                message: '인증 코드가 재발송되었습니다.',
+                type: 'success'
+            });
         } catch {
             setError('인증 코드 발송에 실패했습니다.');
         } finally {
@@ -313,6 +325,15 @@ const ForgotPasswordPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* 알림 모달 */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };

@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchCourseById, fetchCourseReviews, fetchCourseQnAs } from '../services/courseService';
-import { addCourseFavorite, removeCourseFavorite, checkCourseFavorite } from '../services/favoriteService';
-import { Calendar, MapPin, Clock, Building, CheckCircle2, Share2, Heart } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
+import { DEFAULT_IMAGES } from '../constants';
 import Skeleton from '../components/ui/Skeleton';
+import CourseDetailHeader from '../components/course/CourseDetailHeader';
+import CourseDetailSidebar from '../components/course/CourseDetailSidebar';
+import CourseOverview from '../components/course/CourseOverview';
+import CourseCurriculum from '../components/course/CourseCurriculum';
 import CourseReviews from '../components/course/CourseReviews';
 import CourseQnAs from '../components/course/CourseQnAs';
 import ShareModal from '../components/ui/ShareModal';
-import { QNA_PER_PAGE } from '../constants';
-
+import AlertModal from '../components/ui/AlertModal';
+import { useCourseDetail } from '../hooks/useCourseDetail';
 
 const CourseDetailPage = () => {
     const { courseId } = useParams<{ courseId: string }>();
@@ -21,136 +22,35 @@ const CourseDetailPage = () => {
     const id = isValidId ? parsedId : null;
 
     const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'qna'>('overview');
-    const [qnaPage, setQnaPage] = useState(1);
-    const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
     const [showShareModal, setShowShareModal] = useState(false);
 
-    const queryClient = useQueryClient();
-
+    // 커스텀 훅으로 데이터 페칭 및 mutation 로직 분리
     const {
-        data: course,
+        course,
         isLoading,
-        isError: isCourseError,
-        error: courseError,
-        refetch: refetchCourse
-    } = useQuery({
-        queryKey: ['course', id],
-        queryFn: () => fetchCourseById(id!),
-        enabled: isValidId,
-    });
-
-    const {
-        data: reviews,
-        isLoading: isReviewsLoading,
-        isError: isReviewsError,
-        error: reviewsError,
-        refetch: refetchReviews
-    } = useQuery({
-        queryKey: ['course-reviews', id],
-        queryFn: () => fetchCourseReviews(id!),
-        enabled: isValidId,
-    });
-
-    const {
-        data: qnaData,
-        isLoading: isQnAsLoading,
-        isError: isQnAsError,
-        error: qnasError,
-        refetch: refetchQnAs
-    } = useQuery({
-        queryKey: ['course-qnas', id, qnaPage, qnaSearchKeyword],
-        queryFn: () => fetchCourseQnAs(
-            id!,
-            qnaPage,
-            QNA_PER_PAGE,
-            qnaSearchKeyword
-        ),
-        enabled: isValidId && !!course, // course 정보가 로드된 후에 실행
-    });
-
-    // 찜하기 상태 조회 (인증 토큰으로 사용자 식별)
-    const {
-        data: favoriteCheckResult
-    } = useQuery({
-        queryKey: ['course-favorite', id],
-        queryFn: () => checkCourseFavorite(id!),
-        enabled: isValidId && !!course,
-    });
-
-    // 찜 상태를 query 결과에서 직접 계산
-    const isFavorite = favoriteCheckResult?.favorited ?? false;
-
-    // 찜하기 추가 Mutation
-    const addFavoriteMutation = useMutation({
-        mutationFn: () => addCourseFavorite(id!),
-        onMutate: async () => {
-            // 진행 중인 쿼리 취소
-            await queryClient.cancelQueries({ queryKey: ['course-favorite', id] });
-
-            // 이전 상태 스냅샷 저장
-            const previousFavorite = queryClient.getQueryData(['course-favorite', id]);
-
-            // 낙관적 업데이트: 찜한 상태로 변경
-            queryClient.setQueryData(['course-favorite', id], { favorited: true });
-
-            return { previousFavorite };
-        },
-        onError: (error, _, context) => {
-            console.error('Failed to add favorite:', error);
-            // 에러 시 롤백
-            if (context?.previousFavorite) {
-                queryClient.setQueryData(['course-favorite', id], context.previousFavorite);
-            }
-            alert('찜하기 처리 중 오류가 발생했습니다.');
-        },
-        onSettled: () => {
-            // 성공/실패 여부와 관계없이 쿼리 무효화하여 최신 상태 동기화
-            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
-        }
-    });
-
-    // 찜하기 삭제 Mutation
-    const removeFavoriteMutation = useMutation({
-        mutationFn: () => removeCourseFavorite(id!),
-        onMutate: async () => {
-            // 진행 중인 쿼리 취소
-            await queryClient.cancelQueries({ queryKey: ['course-favorite', id] });
-
-            // 이전 상태 스냅샷 저장
-            const previousFavorite = queryClient.getQueryData(['course-favorite', id]);
-
-            // 낙관적 업데이트: 찜하지 않은 상태로 변경
-            queryClient.setQueryData(['course-favorite', id], { favorited: false });
-
-            return { previousFavorite };
-        },
-        onError: (error, _, context) => {
-            console.error('Failed to remove favorite:', error);
-            // 에러 시 롤백
-            if (context?.previousFavorite) {
-                queryClient.setQueryData(['course-favorite', id], context.previousFavorite);
-            }
-            alert('찜 삭제 처리 중 오류가 발생했습니다.');
-        },
-        onSettled: () => {
-            // 성공/실패 여부와 관계없이 쿼리 무효화하여 최신 상태 동기화
-            queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
-        }
-    });
-
-    const handleFavoriteClick = () => {
-        if (!course) return;
-
-        if (isFavorite) {
-            removeFavoriteMutation.mutate();
-        } else {
-            addFavoriteMutation.mutate();
-        }
-    };
-
-    const handleShareClick = () => {
-        setShowShareModal(true);
-    };
+        isCourseError,
+        courseError,
+        refetchCourse,
+        reviews,
+        isReviewsLoading,
+        isReviewsError,
+        reviewsError,
+        refetchReviews,
+        qnaData,
+        isQnAsLoading,
+        isQnAsError,
+        qnasError,
+        refetchQnAs,
+        qnaPage,
+        setQnaPage,
+        isFavorite,
+        handleFavoriteClick,
+        isFavoritePending,
+        handleQnaSearch,
+        handleQnaSubmit,
+        alertModal,
+        setAlertModal,
+    } = useCourseDetail({ courseId: id, isValidId });
 
     const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
 
@@ -253,65 +153,24 @@ const CourseDetailPage = () => {
         );
     }
 
+    // 헤더 배경 이미지 URL 검증 (empty url() 방지)
+    const sanitizedHeaderImageUrl = course.headerImageUrl ? sanitizeUrl(course.headerImageUrl) : '';
+    const headerBackgroundImage = sanitizedHeaderImageUrl || DEFAULT_IMAGES.COURSE_HEADER;
+
     return (
         <div className="pb-20">
             {/* Header Section */}
-            <div className="bg-slate-900 text-white py-12 lg:py-20 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
-
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        <span className="px-3 py-1 rounded-full bg-primary-600/20 text-primary-300 text-sm font-medium border border-primary-500/30">
-                            {course.category.name}
-                        </span>
-                        <span className="px-3 py-1 rounded-full bg-white/10 text-slate-300 text-sm font-medium backdrop-blur-sm">
-                            {course.format}
-                        </span>
-                    </div>
-                    <h1 className="text-3xl lg:text-4xl font-bold mb-6 leading-tight">{course.name}</h1>
-                    <div className="flex flex-wrap items-center gap-6 text-slate-300 text-sm lg:text-base">
-                        <div className="flex items-center gap-2">
-                            <Building className="w-5 h-5 text-primary-400" />
-                            <span>{course.academy.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <MapPin className="w-5 h-5 text-primary-400" />
-                            <span>{course.location || course.academy.address}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Calendar className="w-5 h-5 text-primary-400" />
-                            <span>{course.courseStart} ~ {course.courseEnd}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <CourseDetailHeader 
+                course={course} 
+                headerBackgroundImage={headerBackgroundImage} 
+            />
 
             <div className="container mx-auto px-4 -mt-10 relative z-20">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-8">
                         {/* Overview Card */}
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-8">
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">과정 소개</h2>
-                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                                {course.description || "과정 상세 설명이 없습니다."}
-                            </p>
-
-                            {course.highlights && (
-                                <div className="mt-8">
-                                    <h3 className="text-lg font-semibold text-slate-900 mb-4">이런 점이 좋아요</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {course.highlights.map((highlight, idx) => (
-                                            <div key={idx} className="flex items-start gap-3">
-                                                <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-                                                <span className="text-slate-700 dark:text-slate-300">{highlight}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <CourseOverview course={course} />
 
                         {/* Tabs Navigation */}
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden">
@@ -352,59 +211,7 @@ const CourseDetailPage = () => {
                                     <div className="space-y-6">
                                         <div>
                                             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">커리큘럼</h2>
-                                            {(() => {
-                                                // 백엔드 필드명: curriculums
-                                                const curriculumData = course?.curriculums;
-
-                                                // null/undefined 체크 및 빈 배열 체크
-                                                if (!curriculumData || curriculumData.length === 0) {
-                                                    return (
-                                                        <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600">
-                                                            <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-200 dark:bg-slate-700 rounded-full mb-4">
-                                                                <svg className="w-8 h-8 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                </svg>
-                                                            </div>
-                                                            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                                                                커리큘럼 정보가 준비 중입니다
-                                                            </h3>
-                                                            <p className="text-sm text-slate-500 dark:text-slate-400">
-                                                                자세한 커리큘럼은 곧 업데이트될 예정입니다.
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <div className="space-y-4">
-                                                        {curriculumData.map((curriculum, index) => (
-                                                            <div
-                                                                key={curriculum.id || `chapter-${index}`}
-                                                                className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-primary-200 dark:hover:border-primary-700 transition-colors bg-white dark:bg-slate-800/50"
-                                                            >
-                                                                <div className="flex justify-between items-center mb-2">
-                                                                    <span className="font-semibold text-primary-600 dark:text-primary-400">
-                                                                        Chapter {curriculum.chapterNumber}
-                                                                    </span>
-                                                                    {curriculum.chapterTime > 0 && (
-                                                                        <span className="text-sm text-slate-500 dark:text-slate-400">
-                                                                            총 {curriculum.chapterTime}시간
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <h3 className="font-medium text-slate-800 dark:text-slate-200 mb-2">
-                                                                    {curriculum.chapterName}
-                                                                </h3>
-                                                                {curriculum.chapterDetail && (
-                                                                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-2 whitespace-pre-line">
-                                                                        {curriculum.chapterDetail}
-                                                                    </p>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                );
-                                            })()}
+                                            <CourseCurriculum course={course} />
                                         </div>
                                     </div>
                                 )}
@@ -466,19 +273,14 @@ const CourseDetailPage = () => {
                                             </div>
                                         ) : (
                                             <CourseQnAs
+                                                courseId={Number(id!)}
                                                 qnas={qnaData?.qnas || []}
                                                 totalCount={qnaData?.totalCount || 0}
                                                 page={qnaPage}
                                                 onPageChange={setQnaPage}
                                                 isLoading={isQnAsLoading}
-                                                onQuestionSubmit={(title, content) => {
-                                                    console.log('Question submitted:', { title, content });
-                                                    alert('질문이 등록되었습니다.');
-                                                }}
-                                                onSearch={(keyword) => {
-                                                    setQnaSearchKeyword(keyword);
-                                                    setQnaPage(1);
-                                                }}
+                                                onQuestionSubmit={handleQnaSubmit}
+                                                onSearch={handleQnaSearch}
                                             />
                                         )}
                                     </>
@@ -488,99 +290,14 @@ const CourseDetailPage = () => {
                     </div>
 
                     {/* Sidebar */}
-                    <div className="lg:col-span-1">
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-6 sticky top-24">
-                            <div className="flex justify-between items-center mb-6">
-                                <div className="text-slate-500 dark:text-slate-400 text-sm">수강료</div>
-                                <div className="text-2xl font-bold text-primary-600">
-                                    {course.cost === 0
-                                        ? "전액무료"
-                                        : course.cost != null
-                                            ? `${course.cost.toLocaleString()}원`
-                                            : "가격 미정"}
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 mb-8">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">모집 기간</span>
-                                    <span className="font-medium text-slate-900 dark:text-white">{course.recruitStart} ~ {course.recruitEnd}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">교육 기간</span>
-                                    <span className="font-medium text-slate-900 dark:text-white">{course.duration}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">수업 시간</span>
-                                    <span className="font-medium text-slate-900 dark:text-white">{course.classDay || "평일 09:00 ~ 18:00"}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">모집 정원</span>
-                                    <span className="font-medium text-slate-900 dark:text-white">30명</span>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    onClick={() => {
-                                        const targetUrl = course.externalLink || course.academy.website;
-                                        if (targetUrl) {
-                                            const safeUrl = sanitizeUrl(targetUrl);
-                                            if (safeUrl) {
-                                                window.open(safeUrl, '_blank', 'noopener,noreferrer');
-                                            } else {
-                                                alert('유효하지 않은 링크입니다.');
-                                            }
-                                        } else {
-                                            alert('자세히 보기 링크가 제공되지 않았습니다.');
-                                        }
-                                    }}
-                                    className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30"
-                                >
-                                    자세히 보기
-                                </button>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={handleFavoriteClick}
-                                        disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
-                                        className={`flex items-center justify-center gap-2 py-3 rounded-xl border font-medium transition-all ${isFavorite
-                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                                                : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                                            }`}
-                                    >
-                                        <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-                                        {isFavorite ? '찜 완료' : '찜하기'}
-                                    </button>
-                                    <button
-                                        onClick={handleShareClick}
-                                        className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                                    >
-                                        <Share2 className="w-5 h-5" />
-                                        공유
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 pt-6 border-t border-slate-100">
-                                <Link to={`/academies/${course.academy.id}`} className="flex items-center gap-3 group">
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 font-bold text-xs overflow-hidden">
-                                        {course.academy.logoUrl ? (
-                                            <img src={sanitizeUrl(course.academy.logoUrl)} alt={course.academy.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            course.academy.name[0]
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{course.academy.name}</div>
-                                        <div className="text-xs text-slate-500 dark:text-slate-400">기관 정보 보기</div>
-                                    </div>
-                                    <div className="ml-auto">
-                                        <Clock className="w-4 h-4 text-slate-400 group-hover:text-primary-600 transition-colors" />
-                                    </div>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                    <CourseDetailSidebar
+                        course={course}
+                        isFavorite={isFavorite}
+                        isFavoritePending={isFavoritePending}
+                        onFavoriteClick={handleFavoriteClick}
+                        onShareClick={() => setShowShareModal(true)}
+                        setAlertModal={setAlertModal}
+                    />
                 </div>
             </div>
 
@@ -592,6 +309,15 @@ const CourseDetailPage = () => {
                     onClose={() => setShowShareModal(false)}
                 />
             )}
+
+            {/* 알림 모달 */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };

@@ -1,10 +1,15 @@
 // ===== API 연동 서비스 =====
-// 배너는 목업 유지 (다른 작업자 작업 중)
 // 과정 섹션: 최적화된 단일 API 사용
 
-import { fetchHomeBanners } from './mockData';
+import { fetchActiveBanners, fetchActiveBannersLegacy, type BannerResult, type BannerError } from './bannerService';
 import apiClient from './api/client';
 import type { Course } from '../types';
+import { categoryTypeToTarget } from '../utils/categoryType';
+import { DEFAULT_IMAGES } from '../constants';
+import { sanitizeUrl } from '../utils/security';
+
+// 배너 관련 타입 re-export
+export type { BannerResult, BannerError };
 
 // API 응답 타입 정의
 interface ApiCourseListResponse {
@@ -34,9 +39,15 @@ interface HomeCoursesResponse {
 }
 
 /**
- * 배너 조회 (목업 유지)
+ * 배너 조회 (Result 패턴 - 에러 유형별 처리 가능)
  */
-export { fetchHomeBanners };
+export const fetchHomeBannersWithResult = fetchActiveBanners;
+
+/**
+ * 배너 조회 (레거시 - 실패 시 빈 배열 반환)
+ * react-query 등 기존 사용처와 호환
+ */
+export const fetchHomeBanners = fetchActiveBannersLegacy;
 
 /**
  * 홈 화면 과정 섹션 데이터 조회 (최적화된 단일 API)
@@ -63,7 +74,7 @@ export const fetchHomeCourseSections = async () => {
                 id: 0,
                 categoryName: apiCourse.categoryName,
                 categoryType: apiCourse.categoryType,
-                name: apiCourse.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
+                name: categoryTypeToTarget(apiCourse.categoryType),
             },
             name: apiCourse.name,
             recruitStart: apiCourse.recruitStart,
@@ -85,7 +96,15 @@ export const fetchHomeCourseSections = async () => {
             rating: apiCourse.rating || 0,
             reviewCount: apiCourse.reviewCount || 0,
             tags: [],
-            imageUrl: apiCourse.imageUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            // imageUrl 검증: 문자열이고 안전한 프로토콜(http/https)인지 확인
+            imageUrl: (() => {
+                if (typeof apiCourse.imageUrl !== 'string' || !apiCourse.imageUrl) {
+                    return DEFAULT_IMAGES.COURSE_THUMBNAIL;
+                }
+                const sanitized = sanitizeUrl(apiCourse.imageUrl);
+                // sanitizeUrl이 빈 문자열을 반환하면 위험한 URL이므로 기본 이미지 사용
+                return sanitized || DEFAULT_IMAGES.COURSE_THUMBNAIL;
+            })(),
             description: `${apiCourse.name} 과정입니다.`,
             highlights: [],
         });

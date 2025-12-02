@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Eye, MessageSquare, ThumbsUp, Paperclip, Send, Pencil, Trash2, ArrowLeft, Download, FileIcon, Reply, CornerDownRight } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
 import type { Comment, BoardAttachment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import {
@@ -16,6 +15,9 @@ import {
     downloadBoardAttachment,
 } from '../services/communityService';
 import { sanitizeInput } from '../utils/security';
+import { useAuthStore } from '../store/authStore';
+import AlertModal from '../components/ui/AlertModal';
+import ConfirmModal from '../components/common/ConfirmModal';
 
 // 파일 크기를 읽기 쉬운 형식으로 변환
 const formatFileSize = (bytes: number): string => {
@@ -33,6 +35,8 @@ const CommunityDetailPage = () => {
 
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+
+    // 인증 스토어에서 사용자 정보 가져오기
     const { user, isAuthenticated } = useAuthStore();
 
     const [commentContent, setCommentContent] = useState('');
@@ -40,6 +44,19 @@ const CommunityDetailPage = () => {
     const [editingContent, setEditingContent] = useState('');
     const [replyingToId, setReplyingToId] = useState<number | null>(null);  // 답글 대상 댓글 ID
     const [replyContent, setReplyContent] = useState('');  // 답글 내용
+    
+    // 모달 상태
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'warning' | 'error' | 'info';
+    }>({ isOpen: false, title: '', message: '', type: 'info' });
+    const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+        isOpen: boolean;
+        commentId: number | null;
+    }>({ isOpen: false, commentId: null });
+
     // 게시글 조회
     const { data: post, isLoading: postLoading, error: postError, refetch: refetchPost } = useQuery({
         queryKey: ['boardPost', postIdNumber],
@@ -63,7 +80,12 @@ const CommunityDetailPage = () => {
             queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
         onError: (error: Error) => {
-            alert(error.message);
+            setAlertModal({
+                isOpen: true,
+                title: '추천 실패',
+                message: error.message,
+                type: 'error'
+            });
         },
     });
 
@@ -92,7 +114,12 @@ const CommunityDetailPage = () => {
             setCommentContent('');
         },
         onError: (error: Error) => {
-            alert(error.message || '댓글 작성에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '댓글 작성 실패',
+                message: error.message || '댓글 작성에 실패했습니다.',
+                type: 'error'
+            });
         },
     });
 
@@ -120,7 +147,12 @@ const CommunityDetailPage = () => {
             setEditingContent('');
         },
         onError: (error: Error) => {
-            alert(error.message || '댓글 수정에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '댓글 수정 실패',
+                message: error.message || '댓글 수정에 실패했습니다.',
+                type: 'error'
+            });
         },
     });
 
@@ -201,7 +233,12 @@ const CommunityDetailPage = () => {
         e.preventDefault();
         if (commentContent.trim()) {
             if (commentContent.length > 500) {
-                alert('댓글은 500자를 초과할 수 없습니다.');
+                setAlertModal({
+                    isOpen: true,
+                    title: '입력 오류',
+                    message: '댓글은 500자를 초과할 수 없습니다.',
+                    type: 'warning'
+                });
                 return;
             }
             createCommentMutation.mutate(commentContent);
@@ -463,8 +500,12 @@ const CommunityDetailPage = () => {
                         <button
                             onClick={() => {
                                 if (!isAuthenticated) {
-                                    alert('로그인이 필요한 서비스입니다.');
-                                    navigate('/login', { state: { from: `/community/${postIdNumber}` } });
+                                    setAlertModal({
+                                        isOpen: true,
+                                        title: '로그인 필요',
+                                        message: '로그인이 필요한 서비스입니다.',
+                                        type: 'warning'
+                                    });
                                     return;
                                 }
                                 if (post.like) {
@@ -643,11 +684,7 @@ const CommunityDetailPage = () => {
                                                                         수정
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => {
-                                                                            if (window.confirm('댓글을 삭제하시겠습니까?')) {
-                                                                                deleteCommentMutation.mutate(comment.id);
-                                                                            }
-                                                                        }}
+                                                                        onClick={() => setDeleteConfirmModal({ isOpen: true, commentId: comment.id })}
                                                                         className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
                                                                     >
                                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -810,6 +847,29 @@ const CommunityDetailPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* 알림 모달 */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
+
+            {/* 댓글 삭제 확인 모달 */}
+            <ConfirmModal
+                isOpen={deleteConfirmModal.isOpen}
+                onClose={() => setDeleteConfirmModal({ isOpen: false, commentId: null })}
+                onConfirm={() => {
+                    if (deleteConfirmModal.commentId) {
+                        deleteCommentMutation.mutate(deleteConfirmModal.commentId);
+                    }
+                    setDeleteConfirmModal({ isOpen: false, commentId: null });
+                }}
+                title="댓글 삭제"
+                message="댓글을 삭제하시겠습니까? 삭제된 댓글은 복구할 수 없습니다."
+            />
         </div>
     );
 };

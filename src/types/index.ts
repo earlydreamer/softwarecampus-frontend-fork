@@ -2,6 +2,19 @@
 export type AccountType = 'USER' | 'ACADEMY' | 'ADMIN';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
+// ===== 공통 모달 상태 타입 정의 =====
+/**
+ * AlertModal 컴포넌트의 상태를 관리하기 위한 공통 타입
+ * 여러 컴포넌트에서 재사용되어 일관된 알림 UX를 제공합니다.
+ */
+export type AlertModalState = {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'warning' | 'error' | 'info';
+    onCloseCallback?: () => void;
+};
+
 // ===== 사용자(Account) 타입 정의 (백엔드 Account 엔티티 참조) =====
 // 변경: User -> Account
 export interface Account {
@@ -113,6 +126,7 @@ export interface Course {
     courseStart?: string; // LocalDate
     courseEnd?: string; // LocalDate
     cost?: number;
+    capacity?: number; // 모집 정원 (기본값: 30)
     classDay?: string;
     location?: string;
     kdt: boolean;
@@ -121,13 +135,19 @@ export interface Course {
     requirement?: string;
     approvalStatus: ApprovalStatus;
     approvedAt?: string;
+    // 과정 등록자 정보 (백엔드: requester)
+    requesterId?: number;
+    requesterName?: string;
     // 커리큘럼 정보 (백엔드: List<CourseCurriculum> curriculums)
     curriculums?: CourseCurriculum[];
     // UI 표시용 추가 필드 (백엔드에 없음 - 추후 추가 필요)
     rating?: number;
     reviewCount?: number;
     tags?: string[];
-    imageUrl?: string;
+    imageUrl?: string; // 썸네일 이미지 (목록용)
+    thumbnailImageId?: number; // 썸네일 이미지 ID (삭제 API용)
+    headerImageUrl?: string; // 헤더 이미지 (상세 페이지 배경)
+    headerImageId?: number; // 헤더 이미지 ID (삭제 API용)
     description?: string;
     highlights?: string[];
     externalLink?: string;
@@ -165,11 +185,16 @@ export interface Academy {
 }
 
 // ===== 게시판(Board) 관련 타입 정의 =====
+
+// 게시판 첨부파일
 export interface BoardAttachment {
     id: number;
     originName: string;  // 원본 파일명
     savedName: string;   // 저장된 파일명 (S3 key)
     fileSize: number;    // 파일 크기 (bytes)
+    isNew?: boolean;       // 프론트엔드에서 새로 추가된 파일인지 여부
+    file?: File;           // 업로드 전 파일 객체
+    previewUrl?: string;   // 이미지 미리보기 URL
 }
 
 export interface Board {
@@ -269,6 +294,7 @@ export interface ReviewAttachment {
 export interface CourseReview {
     id: number;
     courseId: number;
+    courseName?: string; // 백엔드에서 제공하는 과정명
     writerId: number;
     writerName: string; // 백엔드에서 제공
     averageScore: number; // 백엔드: averageScore
@@ -283,6 +309,14 @@ export interface CourseReview {
 }
 
 // ===== 과정 Q&A 관련 타입 정의 =====
+
+/** Course Q&A 첨부파일 정보 */
+export interface CourseQnaFile {
+    id: number;
+    originName: string;
+    fileUrl: string;
+}
+
 export interface CourseQna { // 변경: CourseQnA -> CourseQna
     id: number;
     courseId?: number; // 백엔드 응답에 없지만 프론트엔드에서 필요할 수 있음
@@ -305,6 +339,9 @@ export interface CourseQna { // 변경: CourseQnA -> CourseQna
     createdAt: string;
     updatedAt: string;
     viewCount?: number;
+
+    /** 첨부파일 목록 */
+    files?: CourseQnaFile[];
 }
 
 // ===== 기관 Q&A 관련 타입 정의 =====
@@ -381,4 +418,88 @@ export interface CourseFavorite {
     courseId: number;
     courseName: string;
     isFavorite: boolean;
+}
+
+// ===== 관리자 페이지용 타입 정의 =====
+export type CourseTarget = '취업예정자' | '재직자';
+
+export interface CourseApprovalRequest {
+    id: number;
+    courseName: string;
+    academyId: number;      // 요청 기관 ID
+    academyName: string;    // 요청 기관명
+    requesterId?: number;   // 등록자 ID (기관 담당자)
+    requesterName?: string; // 등록자 이름 (기관 담당자)
+    category: string;
+    target: CourseTarget;
+    format: CourseFormat;
+    requestType: '등록' | '삭제' | '수정';
+    requestDate: string;
+    status: '대기' | '승인' | '거부';
+    recruitStart?: string;
+    recruitEnd?: string;
+    courseStart?: string;
+    courseEnd?: string;
+    cost?: number;
+    capacity?: number;     // 모집 정원
+    classDay?: string;      // 수업 요일
+    isKdt?: boolean;
+    isNailbaeum?: boolean;
+    isOffline?: boolean;
+    location?: string;
+    description?: string;
+    imageUrl?: string;           // 썸네일 이미지
+    thumbnailImageId?: number;   // 썸네일 이미지 ID (삭제 API용)
+    headerImageUrl?: string;     // 헤더 배경 이미지
+    headerImageId?: number;      // 헤더 이미지 ID (삭제 API용)
+}
+
+export interface ReviewApprovalRequest {
+    id: number;
+    reviewId: number;
+    courseName: string;
+    academyId: number;
+    writerName: string;
+    rating: number;
+    comment: string;
+    requestType: '등록' | '삭제';
+    requestDate: string;
+    status: '대기' | '승인' | '거부';
+}
+
+export interface BannerData {
+    id: number;
+    title: string;
+    description?: string;
+    imageUrl: string;
+    linkUrl: string;
+    displayOrder: number;
+    isActive: boolean;
+    startDate?: string;
+    endDate?: string;
+    createdDate: string;
+}
+
+export interface AdminUser {
+    id: number;
+    userName: string;
+    email: string;
+    accountType: 'ADMIN' | 'USER' | 'ACADEMY';
+    registeredDate: string;
+    lastLogin: string;
+    status: '활성' | '정지' | '탈퇴';
+    postCount: number;
+    commentCount: number;
+}
+
+export interface AdminAcademy {
+    id: number;
+    name: string;
+    businessNumber: string;
+    address: string;
+    phone: string;
+    email: string;
+    registeredDate: string;
+    courseCount: number;
+    status: '활성' | '정지' | '대기';
 }

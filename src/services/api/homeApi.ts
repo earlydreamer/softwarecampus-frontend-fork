@@ -2,6 +2,7 @@ import apiClient from './client';
 import type { ApiCourseResponse, ApiHomeCommunityResponse, CommunityPost } from './types';
 import type { Course } from '../../types';
 import { formatCourseDuration } from '../../utils/dateUtils';
+import { categoryTypeToTarget } from '../../utils/categoryType';
 
 /**
  * 과정 목록 조회
@@ -22,7 +23,7 @@ export const fetchCoursesByType = async (
             // 백엔드 필드
             id: apiCourse.id,
             academy: {
-                id: 0, // TODO: 백엔드에서 academy 객체 전체를 주지 않으므로 임시 처리
+                id: apiCourse.academyId,
                 name: apiCourse.academyName,
                 address: '',
                 businessNumber: '',
@@ -31,10 +32,10 @@ export const fetchCoursesByType = async (
                 approvedAt: '',
             },
             category: {
-                id: 0, // TODO: category id는 백엔드에서 제공하지 않음
+                id: apiCourse.categoryId,
                 categoryName: apiCourse.categoryName,
                 categoryType: apiCourse.categoryType,
-                name: apiCourse.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
+                name: categoryTypeToTarget(apiCourse.categoryType),
             },
             name: apiCourse.name,
             recruitStart: apiCourse.recruitStart,
@@ -50,12 +51,12 @@ export const fetchCoursesByType = async (
             requirement: apiCourse.requirement,
             approvalStatus: apiCourse.approvalStatus,
 
-            // 프론트엔드 전용 필드 (기본값 설정)
+            // 프론트엔드 전용 필드
             duration: formatCourseDuration(apiCourse.courseStart, apiCourse.courseEnd),
             format: apiCourse.offline ? '오프라인' : '온라인',
-            rating: 0, // TODO: 리뷰 API 연동 필요
-            reviewCount: 0,
-            tags: [], // TODO: 태그 정보 필요
+            rating: apiCourse.rating ?? 0,
+            reviewCount: apiCourse.reviewCount ?? 0,
+            tags: [],
             imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', // 기본 이미지
             description: `${apiCourse.name} 과정입니다.`,
             highlights: [],
