@@ -177,7 +177,8 @@ const sanitizeStyle = (style: string): string => {
  * @returns 살균된 HTML 문자열
  */
 export const sanitizeTiptapContent = (html: string): string => {
-    // DOMPurify 훅 등록
+    // DOMPurify 훅 등록 (기존 훅 먼저 제거하여 동시 호출 시 중복 등록 방지)
+    DOMPurify.removeHook('afterSanitizeAttributes');
     DOMPurify.addHook('afterSanitizeAttributes', (node) => {
         // 링크 보안 처리
         if (node.tagName === 'A') {
