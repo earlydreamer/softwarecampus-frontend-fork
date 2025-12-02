@@ -1,21 +1,68 @@
 import { useState } from 'react';
 import TiptapEditor from '../editor/TiptapEditor';
+import type { AttachedFile } from '../editor/TiptapEditor';
 import AlertModal from '../ui/AlertModal';
 
 interface QnAFormProps {
-    onSubmit: (title: string, content: string) => void;
+    onSubmit: (title: string, content: string, fileDetails: { id: number; originName: string; fileUrl: string }[]) => void;
     onCancel: () => void;
+    onFileUpload?: (file: File) => Promise<{ id: number; originName: string; fileUrl: string }>;
 }
 
-const QnAForm = ({ onSubmit, onCancel }: QnAFormProps) => {
+const QnAForm = ({ onSubmit, onCancel, onFileUpload }: QnAFormProps) => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+    // 실제 서버에 업로드된 파일의 정보 매핑 (임시 ID -> 서버 파일 정보)
+    const [uploadedFileMap, setUploadedFileMap] = useState<Record<string, { id: number; originName: string; fileUrl: string }>>({});
+
     const [alertModal, setAlertModal] = useState<{
         isOpen: boolean;
         title: string;
         message: string;
         type: 'success' | 'warning' | 'error' | 'info';
     }>({ isOpen: false, title: '', message: '', type: 'info' });
+
+    const handleFilesChange = async (files: AttachedFile[]) => {
+        if (!onFileUpload) return;
+
+        // 새로 추가된 파일 찾기 (아직 업로드되지 않은 파일)
+        const newFiles = files.filter(f => !attachedFiles.find(prev => prev.id === f.id));
+
+        // 삭제된 파일 처리
+        const removedFiles = attachedFiles.filter(prev => !files.find(curr => curr.id === prev.id));
+        if (removedFiles.length > 0) {
+            const newMap = { ...uploadedFileMap };
+            removedFiles.forEach(f => {
+                delete newMap[f.id];
+            });
+            setUploadedFileMap(newMap);
+        }
+
+        // 상태 업데이트 (UI 반영)
+        setAttachedFiles(files);
+
+        // 새 파일 업로드
+        for (const file of newFiles) {
+            try {
+                const result = await onFileUpload(file.file);
+                setUploadedFileMap(prev => ({
+                    ...prev,
+                    [file.id]: result
+                }));
+            } catch (error) {
+                console.error('File upload failed:', error);
+                setAlertModal({
+                    isOpen: true,
+                    title: '업로드 실패',
+                    message: `파일 '${file.name}' 업로드에 실패했습니다.`,
+                    type: 'error'
+                });
+                // 실패한 파일 제거
+                setAttachedFiles(prev => prev.filter(f => f.id !== file.id));
+            }
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,7 +75,13 @@ const QnAForm = ({ onSubmit, onCancel }: QnAFormProps) => {
             });
             return;
         }
-        onSubmit(title, content);
+
+        // 현재 첨부된 파일들의 서버 정보 목록 추출
+        const fileDetails = attachedFiles
+            .map(f => uploadedFileMap[f.id])
+            .filter(detail => detail !== undefined);
+
+        onSubmit(title, content, fileDetails);
     };
 
     return (
@@ -51,7 +104,13 @@ const QnAForm = ({ onSubmit, onCancel }: QnAFormProps) => {
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                         내용
                     </label>
-                    <TiptapEditor content={content} onChange={setContent} />
+                    <TiptapEditor
+                        content={content}
+                        onChange={setContent}
+                        enableFileAttachment={!!onFileUpload}
+                        attachedFiles={attachedFiles}
+                        onFilesChange={handleFilesChange}
+                    />
                 </div>
                 <div className="flex justify-end gap-2">
                     <button
