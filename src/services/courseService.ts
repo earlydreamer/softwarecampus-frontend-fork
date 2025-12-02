@@ -4,6 +4,7 @@ import type { ApiCourseResponse, ApiCourseDetailResponse, ApiCourseQnaResponse, 
 import { formatCourseDuration } from '../utils/dateUtils';
 
 const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60';
+const DEFAULT_HEADER_IMAGE = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80';
 
 // Helper to map DTO to Course (Frontend Type)
 const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
@@ -45,7 +46,8 @@ const mapDtoToCourse = (dto: ApiCourseResponse): Course => {
         // UI fields (Default values or mapped)
         rating: dto.rating ?? 0,
         reviewCount: dto.reviewCount ?? 0,
-        imageUrl: dto.imageUrl || DEFAULT_COURSE_IMAGE, // 백엔드 이미지 또는 기본 이미지
+        imageUrl: dto.imageUrl && dto.imageUrl.trim() !== '' ? dto.imageUrl : DEFAULT_COURSE_IMAGE, // 썸네일 이미지
+        headerImageUrl: dto.headerImageUrl && dto.headerImageUrl.trim() !== '' ? dto.headerImageUrl : DEFAULT_HEADER_IMAGE, // 헤더 이미지
         description: dto.requirement,
         format: dto.offline ? '오프라인' : '온라인',
         duration: formatCourseDuration(dto.courseStart, dto.courseEnd),
