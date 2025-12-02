@@ -16,10 +16,11 @@ import {
   Bold, Italic, Strikethrough, Code, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Undo, Redo, Link as LinkIcon, Image as ImageIcon,
   Highlighter, AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  Underline as UnderlineIcon, ListTodo, X, Check, Upload, Loader2, Paperclip, Trash2,
+  Underline as UnderlineIcon, ListTodo, X, Check, Upload, Loader2, Paperclip, Trash2, GripVertical,
   type LucideIcon
 } from 'lucide-react';
 import { uploadEditorImage } from '../../services/communityService';
+import { FILE_UPLOAD_CONFIG } from '../../constants';
 import '../../styles/tiptap.css';
 
 // URL Input Modal Component
@@ -113,13 +114,13 @@ const UrlInputModal = ({ isOpen, onClose, onSubmit, title, placeholder, validate
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId.current}
     >
-      <div 
+      <div
         ref={modalRef}
         className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
       >
@@ -215,13 +216,13 @@ const ImageUploadModal = ({ isOpen, onClose, onImageInsert }: ImageUploadModalPr
     if (!ALLOWED_TYPES.includes(file.type)) {
       return '지원하지 않는 이미지 형식입니다. (jpg, png, gif, webp만 가능)';
     }
-    
+
     // 파일 확장자 검증 (MIME 타입 스푸핑 방지)
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(extension)) {
       return '지원하지 않는 파일 확장자입니다. (jpg, png, gif, webp만 가능)';
     }
-    
+
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       return `파일 크기는 ${MAX_SIZE_MB}MB를 초과할 수 없습니다.`;
     }
@@ -314,22 +315,20 @@ const ImageUploadModal = ({ isOpen, onClose, onImageInsert }: ImageUploadModalPr
         <div className="flex border-b border-slate-200 dark:border-slate-700">
           <button
             onClick={() => setActiveTab('upload')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'upload'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'upload'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             <Upload className="w-4 h-4 inline mr-2" />
             파일 업로드
           </button>
           <button
             onClick={() => setActiveTab('url')}
-            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'url'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === 'url'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             <LinkIcon className="w-4 h-4 inline mr-2" />
             URL 입력
@@ -345,11 +344,10 @@ const ImageUploadModal = ({ isOpen, onClose, onImageInsert }: ImageUploadModalPr
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                  dragOver
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-                }`}
+                className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragOver
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                  }`}
               >
                 {isUploading ? (
                   <div className="flex flex-col items-center gap-3">
@@ -399,11 +397,10 @@ const ImageUploadModal = ({ isOpen, onClose, onImageInsert }: ImageUploadModalPr
                     }
                   }}
                   placeholder="https://example.com/image.jpg"
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    urlError
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-slate-200 dark:border-slate-700 focus:ring-blue-500'
-                  } bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none transition-all`}
+                  className={`w-full px-4 py-2 rounded-lg border ${urlError
+                    ? 'border-red-500 focus:ring-red-500'
+                    : 'border-slate-200 dark:border-slate-700 focus:ring-blue-500'
+                    } bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none transition-all`}
                   autoFocus
                 />
                 {urlError && (
@@ -645,13 +642,18 @@ const TiptapToolbar = ({ editor, onAddImage, onAddLink, onAddFile, showFileButto
 };
 
 // 에디터/폼 공통에서 사용하는 첨부파일 타입
-interface AttachedFile {
-  id: string;           // 임시 ID (UUID)
-  file: File;
+export interface AttachedFile {
+  id: string;              // 임시 ID (UUID) 또는 "server-{id}"
+  file?: File;             // 새 파일인 경우에만 있음 (기존 서버 파일은 없음)
   name: string;
   size: number;
   type: string;
-  previewUrl?: string;  // 이미지인 경우 미리보기 URL
+  previewUrl?: string;     // 이미지인 경우 미리보기 URL (blob:)
+  uploadedUrl?: string;    // S3 업로드 후 실제 URL 또는 기존 첨부파일 URL
+  isImage: boolean;        // 이미지 파일 여부
+  isInContent: boolean;    // 본문에 삽입되어 있는지 여부
+  isUploading?: boolean;   // 업로드 진행 중 여부
+  serverId?: number;       // 서버에 저장된 첨부파일 ID (기존 첨부파일인 경우)
 }
 
 /**
@@ -660,7 +662,8 @@ interface AttachedFile {
  * @remarks
  * 파일 첨부 기능 사용 시 (`enableFileAttachment: true`):
  * - `attachedFiles`와 `onFilesChange`가 함께 제공되어야 합니다.
- * - `onFilesChange`가 없으면 파일 첨부 UI는 표시되지만 파일 추가가 동작하지 않습니다.
+ * - 에디터 이미지도 첨부파일로 통합 관리됩니다.
+ * - 첨부파일 삭제 시 본문의 해당 이미지도 제거됩니다.
  */
 interface TiptapEditorProps {
   /** 에디터 내용 (HTML) */
@@ -673,9 +676,9 @@ interface TiptapEditorProps {
   attachedFiles?: AttachedFile[];
   /** 파일 목록 변경 핸들러 (enableFileAttachment가 true일 때 필수) */
   onFilesChange?: (files: AttachedFile[]) => void;
-  /** 최대 파일 크기 (bytes, 기본: 10MB) */
+  /** 최대 파일 크기 (bytes, 기본: FILE_UPLOAD_CONFIG.MAX_FILE_SIZE) */
   maxFileSize?: number;
-  /** 최대 파일 수 (기본: 5) */
+  /** 최대 파일 수 (기본: FILE_UPLOAD_CONFIG.MAX_FILE_COUNT) */
   maxFileCount?: number;
   /** 허용 확장자 목록 */
   allowedExtensions?: string[];
@@ -693,20 +696,29 @@ const generateId = (): string => {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 };
 
+// 파일 확장자로 이미지 여부 판단
+const isImageFile = (fileName: string): boolean => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  return (FILE_UPLOAD_CONFIG.IMAGE_EXTENSIONS as readonly string[]).includes(ext);
+};
+
 const TiptapEditor = ({
   content,
   onChange,
   enableFileAttachment = false,
   attachedFiles = [],
   onFilesChange,
-  maxFileSize = 10 * 1024 * 1024,  // 10MB
-  maxFileCount = 5,
-  allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar'],
+  maxFileSize = FILE_UPLOAD_CONFIG.MAX_FILE_SIZE,
+  maxFileCount = FILE_UPLOAD_CONFIG.MAX_FILE_COUNT,
+  allowedExtensions = FILE_UPLOAD_CONFIG.ALLOWED_EXTENSIONS as unknown as string[],
 }: TiptapEditorProps) => {
   const [modalType, setModalType] = useState<'link' | 'image' | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [draggedFileId, setDraggedFileId] = useState<string | null>(null);
   const errorTimeoutRef = useRef<number | null>(null);
   const prevAttachedFilesRef = useRef<AttachedFile[]>([]);
+  const editorRef = useRef<Editor | null>(null);
+  const draggedFileIdRef = useRef<string | null>(null); // 내부 드래그 감지용 ref
 
   // 에러 타임아웃 클린업
   useEffect(() => {
@@ -720,7 +732,7 @@ const TiptapEditor = ({
   // previewUrl 해제: 삭제된 파일만 해제 + 언마운트 시 전체 해제
   useEffect(() => {
     const prevFiles = prevAttachedFilesRef.current;
-    
+
     // 삭제된 파일들의 previewUrl 해제
     const currentIds = new Set(attachedFiles.map(f => f.id));
     prevFiles.forEach((file) => {
@@ -728,10 +740,10 @@ const TiptapEditor = ({
         URL.revokeObjectURL(file.previewUrl);
       }
     });
-    
+
     // 현재 목록을 이전 목록으로 저장
     prevAttachedFilesRef.current = attachedFiles;
-    
+
     // 언마운트 시 남아있는 모든 previewUrl 해제
     return () => {
       attachedFiles.forEach((file) => {
@@ -768,7 +780,7 @@ const TiptapEditor = ({
 
     // 최대 파일 수 검사 (음수 방지)
     const remainingSlots = Math.max(0, maxFileCount - attachedFiles.length);
-    
+
     // 추가 가능한 슬롯이 없으면 에러 메시지 후 조기 반환
     if (remainingSlots === 0) {
       setFileError(`최대 ${maxFileCount}개의 파일만 첨부할 수 있습니다.`);
@@ -779,7 +791,7 @@ const TiptapEditor = ({
       }, 5000);
       return;
     }
-    
+
     if (fileArray.length > remainingSlots) {
       errors.push(`최대 ${maxFileCount}개의 파일만 첨부할 수 있습니다. (${remainingSlots}개 추가 가능)`);
     }
@@ -793,7 +805,7 @@ const TiptapEditor = ({
         continue;
       }
 
-      const isImage = file.type.startsWith('image/');
+      const isImage = isImageFile(file.name);
       const attachedFile: AttachedFile = {
         id: generateId(),
         file,
@@ -801,6 +813,9 @@ const TiptapEditor = ({
         size: file.size,
         type: file.type,
         previewUrl: isImage ? URL.createObjectURL(file) : undefined,
+        isImage,
+        isInContent: false,
+        isUploading: false,
       };
 
       newFiles.push(attachedFile);
@@ -820,17 +835,134 @@ const TiptapEditor = ({
     }
   }, [enableFileAttachment, onFilesChange, attachedFiles, maxFileCount, validateFile]);
 
-  // 파일 삭제 처리
+  // 이미지 업로드 및 에디터 삽입
+  const uploadAndInsertImage = useCallback(async (file: File, tempId: string) => {
+    if (!onFilesChange || !editorRef.current) return;
+
+    try {
+      const imageUrl = await uploadEditorImage(file);
+
+      // 업로드 완료 후 파일 정보 업데이트
+      onFilesChange(attachedFiles.map(f =>
+        f.id === tempId
+          ? { ...f, uploadedUrl: imageUrl, isUploading: false, isInContent: true }
+          : f
+      ));
+
+      // 에디터에 이미지 삽입
+      editorRef.current.chain().focus().setImage({ src: imageUrl }).run();
+    } catch (error) {
+      console.error('이미지 업로드 실패:', error);
+      // 업로드 실패 시 파일 목록에서 제거
+      onFilesChange(attachedFiles.filter(f => f.id !== tempId));
+      setFileError('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = window.setTimeout(() => {
+        setFileError(null);
+        errorTimeoutRef.current = null;
+      }, 5000);
+    }
+  }, [attachedFiles, onFilesChange]);
+
+  // 파일 삭제 처리 (본문의 이미지도 함께 제거)
   const handleRemoveFile = useCallback((fileId: string) => {
     if (!onFilesChange) return;
 
     const fileToRemove = attachedFiles.find(f => f.id === fileId);
-    if (fileToRemove?.previewUrl) {
+    if (!fileToRemove) return;
+
+    console.log('🗑️ 첨부파일 삭제:', fileToRemove);
+
+    // previewUrl 해제
+    if (fileToRemove.previewUrl) {
       URL.revokeObjectURL(fileToRemove.previewUrl);
     }
 
+    // 본문에서 이미지 제거 (uploadedUrl이나 previewUrl이 있는 경우)
+    if (fileToRemove.isImage && editorRef.current) {
+      const currentContent = editorRef.current.getHTML();
+      console.log('📄 본문 HTML 길이:', currentContent.length);
+
+      const urlsToRemove = [
+        fileToRemove.uploadedUrl,
+        fileToRemove.previewUrl
+      ].filter(Boolean);
+
+      console.log('🔍 제거할 URL들:', urlsToRemove);
+
+      let newContent = currentContent;
+      let modified = false;
+
+      urlsToRemove.forEach(url => {
+        if (url) {
+          // DOM 파서로 정확하게 찾기
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(newContent, 'text/html');
+          const images = doc.querySelectorAll('img');
+
+          console.log(`  이미지 태그 개수: ${images.length}`);
+
+          images.forEach((img, index) => {
+            const src = img.getAttribute('src');
+            console.log(`    이미지 ${index + 1} src:`, src);
+
+            if (src && src.includes(url)) {
+              console.log(`    ✅ 이미지 ${index + 1} 제거됨`);
+              const parent = img.parentElement;
+              if (parent && parent.tagName === 'P' && parent.childNodes.length === 1) {
+                parent.remove();
+              } else {
+                img.remove();
+              }
+              modified = true;
+            }
+          });
+
+          if (modified) {
+            newContent = doc.body.innerHTML;
+          }
+        }
+      });
+
+      if (modified) {
+        console.log('✅ 본문 업데이트됨');
+        editorRef.current.commands.setContent(newContent);
+        onChange(newContent);
+      } else {
+        console.log('⚠️ 본문에서 일치하는 이미지를 찾지 못함');
+      }
+    }
+
     onFilesChange(attachedFiles.filter(f => f.id !== fileId));
-  }, [attachedFiles, onFilesChange]);
+  }, [attachedFiles, onFilesChange, onChange]);
+
+  // 이미지 첨부파일을 에디터에 삽입 (드래그앤드롭 또는 클릭)
+  const handleInsertImageToEditor = useCallback(async (fileId: string) => {
+    if (!onFilesChange || !editorRef.current) return;
+
+    const file = attachedFiles.find(f => f.id === fileId);
+    if (!file || !file.isImage) return;
+
+    console.log('📌 에디터에 이미지 삽입:', file);
+
+    // 이미 업로드된 경우 바로 삽입
+    if (file.uploadedUrl) {
+      console.log('✅ 기존 URL 재사용:', file.uploadedUrl);
+      editorRef.current.chain().focus().setImage({ src: file.uploadedUrl }).run();
+      onFilesChange(attachedFiles.map(f =>
+        f.id === fileId ? { ...f, isInContent: true } : f
+      ));
+    } else {
+      console.log('⏳ 새로 업로드 시작');
+      // 업로드 후 삽입
+      onFilesChange(attachedFiles.map(f =>
+        f.id === fileId ? { ...f, isUploading: true } : f
+      ));
+      if (file.file) {
+        await uploadAndInsertImage(file.file, fileId);
+      }
+    }
+  }, [attachedFiles, onFilesChange, uploadAndInsertImage]);
 
   // handleAddFiles를 ref로 저장하여 useEditor 의존성에서 제외
   const handleAddFilesRef = useRef(handleAddFiles);
@@ -899,15 +1031,29 @@ const TiptapEditor = ({
       handleDrop: (_view, event) => {
         if (!enableFileAttachment) return false;
 
-        const files = event.dataTransfer?.files;
-        if (!files || files.length === 0) return false;
+        // 내부 첨부파일 드래그인 경우 무시 (handleEditorDrop에서 처리됨)
+        if (draggedFileIdRef.current) {
+          return true; // true 반환하여 이벤트 처리 완료 표시
+        }
 
-        event.preventDefault();
-        handleAddFilesRef.current(Array.from(files));
-        return true;
+        // enableFileAttachment 모드에서는 일반 파일 드롭 차단
+        // 파일은 하단의 첨부파일 영역을 통해서만 추가 가능
+        const files = event.dataTransfer?.files;
+        if (files && files.length > 0) {
+          console.log('⚠️ 파일은 하단의 첨부파일 영역에 추가한 후 드래그하여 삽입해주세요.');
+          event.preventDefault();
+          return true; // 기본 동작 차단
+        }
+
+        return false;
       },
     },
   }, [enableFileAttachment]); // handleAddFiles 의존성 제거
+
+  // editor ref 저장
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
@@ -923,7 +1069,7 @@ const TiptapEditor = ({
         return 'http 또는 https URL만 사용할 수 있습니다.';
       }
       return null;
-    } catch (error) {
+    } catch {
       return '올바른 URL 형식이 아닙니다. (예: https://example.com)';
     }
   };
@@ -934,7 +1080,8 @@ const TiptapEditor = ({
     }
   };
 
-  const handleAddImage = (url: string) => {
+  // 이미지 URL 직접 입력 (외부 URL)
+  const handleAddImageUrl = (url: string) => {
     if (editor) {
       editor.chain().focus().setImage({ src: url }).run();
     }
@@ -942,14 +1089,8 @@ const TiptapEditor = ({
 
   // 파일 선택 다이얼로그 열기
   const openFileDialog = useCallback(() => {
-    // 파일 핸들러가 없으면 조기 반환
-    if (!onFilesChange) {
-      if (import.meta.env.DEV) {
-        console.warn('[TiptapEditor] openFileDialog called but onFilesChange is not defined');
-      }
-      return;
-    }
-    
+    if (!onFilesChange) return;
+
     const input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
@@ -963,16 +1104,137 @@ const TiptapEditor = ({
     input.click();
   }, [onFilesChange, allowedExtensions, handleAddFiles]);
 
+  // 이미지 업로드 다이얼로그 (툴바에서 이미지 버튼 클릭 시)
+  const openImageUploadDialog = useCallback(() => {
+    if (!enableFileAttachment || !onFilesChange) {
+      // 파일 첨부 비활성화 시 URL 입력 모달만 표시
+      setModalType('image');
+      return;
+    }
+
+    // 파일 개수 체크
+    if (attachedFiles.length >= maxFileCount) {
+      setFileError(`최대 ${maxFileCount}개의 파일만 첨부할 수 있습니다.`);
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+      errorTimeoutRef.current = window.setTimeout(() => {
+        setFileError(null);
+        errorTimeoutRef.current = null;
+      }, 5000);
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = (FILE_UPLOAD_CONFIG.IMAGE_EXTENSIONS as readonly string[]).map(ext => `.${ext}`).join(',');
+    input.onchange = async (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.files && target.files.length > 0) {
+        // 이미지 파일들을 첨부하고 바로 업로드해서 에디터에 삽입
+        const imageFiles = Array.from(target.files);
+        const remainingSlots = Math.max(0, maxFileCount - attachedFiles.length);
+        const filesToAdd = imageFiles.slice(0, remainingSlots);
+
+        // 파일들을 순차적으로 처리
+        let currentFiles = [...attachedFiles];
+
+        for (const file of filesToAdd) {
+          if (!isImageFile(file.name)) continue;
+
+          const tempId = generateId();
+          const newFile: AttachedFile = {
+            id: tempId,
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            previewUrl: URL.createObjectURL(file),
+            isImage: true,
+            isInContent: false,
+            isUploading: true,
+          };
+
+          // 파일 목록에 추가
+          currentFiles = [...currentFiles, newFile];
+          onFilesChange(currentFiles);
+
+          // 업로드 후 삽입
+          try {
+            const imageUrl = await uploadEditorImage(file);
+            // 업로드 성공 시 파일 정보 업데이트
+            currentFiles = currentFiles.map(f =>
+              f.id === tempId
+                ? { ...f, uploadedUrl: imageUrl, isUploading: false, isInContent: true }
+                : f
+            );
+            onFilesChange(currentFiles);
+
+            if (editorRef.current) {
+              editorRef.current.chain().focus().setImage({ src: imageUrl }).run();
+            }
+          } catch (error) {
+            console.error('이미지 업로드 실패:', error);
+            // 업로드 실패 시 파일 제거
+            currentFiles = currentFiles.filter(f => f.id !== tempId);
+            onFilesChange(currentFiles);
+            setFileError('이미지 업로드에 실패했습니다.');
+          }
+        }
+      }
+    };
+    input.click();
+  }, [enableFileAttachment, onFilesChange, attachedFiles, maxFileCount]);
+
+  // 첨부파일 드래그 시작
+  const handleFileDragStart = useCallback((e: React.DragEvent, fileId: string) => {
+    const file = attachedFiles.find(f => f.id === fileId);
+    if (!file?.isImage) {
+      e.preventDefault();
+      return;
+    }
+
+    setDraggedFileId(fileId);
+    draggedFileIdRef.current = fileId; // ref도 업데이트 (에디터 내부 handleDrop에서 체크용)
+    e.dataTransfer.setData('text/plain', `attached-file:${fileId}`);
+    e.dataTransfer.effectAllowed = 'copy';
+  }, [attachedFiles]);
+
+  // 에디터 영역에 드롭
+  const handleEditorDrop = useCallback((e: React.DragEvent) => {
+    const dragData = e.dataTransfer.getData('text/plain');
+    if (!dragData?.startsWith('attached-file:')) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const fileId = dragData.replace('attached-file:', '');
+    handleInsertImageToEditor(fileId);
+    setDraggedFileId(null);
+    draggedFileIdRef.current = null;
+  }, [handleInsertImageToEditor]);
+
   return (
     <div className="border-2 border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg relative">
       <TiptapToolbar
         editor={editor}
         onAddLink={() => setModalType('link')}
-        onAddImage={() => setModalType('image')}
+        onAddImage={enableFileAttachment ? openImageUploadDialog : () => setModalType('image')}
         onAddFile={openFileDialog}
         showFileButton={enableFileAttachment}
       />
-      <EditorContent editor={editor} className="tiptap-editor" />
+      <div
+        className="max-h-[500px] overflow-y-auto"
+        onDragOver={(e) => {
+          // 첨부파일에서 드래그된 이미지만 허용
+          if (draggedFileId) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+          }
+        }}
+        onDrop={handleEditorDrop}
+      >
+        <EditorContent editor={editor} className="tiptap-editor" />
+      </div>
 
       {/* 파일 첨부 영역 */}
       {enableFileAttachment && (
@@ -1004,8 +1266,24 @@ const TiptapEditor = ({
                 {attachedFiles.map((file) => (
                   <div
                     key={file.id}
-                    className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700"
+                    className={`flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border transition-colors ${file.isInContent
+                      ? 'border-blue-300 dark:border-blue-600 bg-blue-50/50 dark:bg-blue-900/20'
+                      : 'border-slate-200 dark:border-slate-700'
+                      } ${file.isUploading ? 'opacity-60' : ''}`}
+                    draggable={file.isImage && !!file.uploadedUrl && !file.isUploading}
+                    onDragStart={(e) => handleFileDragStart(e, file.id)}
+                    onDragEnd={() => setDraggedFileId(null)}
                   >
+                    {/* 드래그 핸들 (이미지 파일만) */}
+                    {file.isImage && file.uploadedUrl && !file.isUploading && (
+                      <div
+                        className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        title="에디터에 드래그하여 이미지 삽입"
+                      >
+                        <GripVertical className="w-4 h-4" />
+                      </div>
+                    )}
+
                     {/* 이미지 미리보기 */}
                     {file.previewUrl ? (
                       <img
@@ -1021,19 +1299,47 @@ const TiptapEditor = ({
 
                     {/* 파일 정보 */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
-                        {file.name}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">
+                          {file.name}
+                        </p>
+                        {file.isUploading && (
+                          <span className="text-xs text-blue-500 animate-pulse">업로드 중...</span>
+                        )}
+                        {file.isInContent && !file.isUploading && (
+                          <span className="text-xs text-blue-500 bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded">본문 삽입됨</span>
+                        )}
+                      </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {formatFileSize(file.size)}
+                        {file.isImage && file.uploadedUrl && !file.isInContent && (
+                          <span className="ml-2 text-blue-500">• 드래그하여 본문에 삽입</span>
+                        )}
                       </p>
                     </div>
+
+                    {/* 본문 삽입/제거 버튼 (이미지만) */}
+                    {file.isImage && file.uploadedUrl && !file.isUploading && (
+                      <button
+                        type="button"
+                        onClick={() => handleInsertImageToEditor(file.id)}
+                        className={`p-2 transition-colors ${file.isInContent
+                          ? 'text-blue-500 hover:text-blue-600'
+                          : 'text-slate-400 hover:text-blue-500'
+                          }`}
+                        title={file.isInContent ? '본문에서 제거' : '본문에 삽입'}
+                        aria-label={file.isInContent ? `${file.name} 본문에서 제거` : `${file.name} 본문에 삽입`}
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                      </button>
+                    )}
 
                     {/* 삭제 버튼 */}
                     <button
                       type="button"
                       onClick={() => handleRemoveFile(file.id)}
-                      className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                      disabled={file.isUploading}
+                      className="p-2 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="파일 삭제"
                       aria-label={`${file.name} 파일 삭제`}
                     >
@@ -1089,13 +1395,10 @@ const TiptapEditor = ({
       <ImageUploadModal
         isOpen={modalType === 'image'}
         onClose={() => setModalType(null)}
-        onImageInsert={handleAddImage}
+        onImageInsert={handleAddImageUrl}
       />
     </div>
   );
 };
-
-// AttachedFile 타입 export
-export type { AttachedFile };
 
 export default TiptapEditor;

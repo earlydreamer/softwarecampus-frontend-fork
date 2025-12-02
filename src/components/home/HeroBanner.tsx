@@ -11,18 +11,27 @@ interface HeroBannerProps {
 }
 
 /**
- * 기본 배너 컴포넌트 - 배너가 없거나 로드 실패 시 표시
+ * 기본 그라데이션 배경 - 이미지가 없거나 로드 실패 시 표시
  */
-const DefaultBanner: React.FC = () => (
-    <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-3xl shadow-2xl">
+const DefaultGradientBackground: React.FC<{ className?: string }> = ({ className = '' }) => (
+    <>
         {/* 그라디언트 배경 */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500" />
+        <div className={`absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 ${className}`} />
         
         {/* 장식 요소 */}
         <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
             <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
         </div>
+    </>
+);
+
+/**
+ * 기본 배너 컴포넌트 - 배너가 없거나 로드 실패 시 표시
+ */
+const DefaultBanner: React.FC = () => (
+    <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-3xl shadow-2xl">
+        <DefaultGradientBackground />
         
         {/* 콘텐츠 */}
         <div className="relative h-full flex items-center justify-center">
@@ -37,6 +46,43 @@ const DefaultBanner: React.FC = () => (
         </div>
     </div>
 );
+
+/**
+ * 배너 이미지 배경 - 이미지 로드 실패 시 그라데이션으로 폴백
+ */
+const BannerBackground: React.FC<{ imageUrl: string | undefined }> = ({ imageUrl }) => {
+    const [imageError, setImageError] = useState(false);
+    const sanitizedUrl = imageUrl ? sanitizeUrl(imageUrl) : '';
+
+    // imageUrl이 변경되면 에러 상태 리셋
+    useEffect(() => {
+        setImageError(false);
+    }, [imageUrl]);
+
+    // 이미지가 없거나 로드 실패 시 그라데이션 배경
+    if (!sanitizedUrl || imageError) {
+        return <DefaultGradientBackground />;
+    }
+
+    return (
+        <>
+            {/* 실제 이미지 배경 */}
+            <div
+                style={{ backgroundImage: `url(${sanitizedUrl})` }}
+                className="absolute inset-0 w-full h-full bg-center bg-cover transition-all duration-700 ease-in-out transform scale-105"
+            >
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+            </div>
+            {/* 이미지 로드 체크용 숨겨진 img 태그 */}
+            <img
+                src={sanitizedUrl}
+                alt=""
+                className="hidden"
+                onError={() => setImageError(true)}
+            />
+        </>
+    );
+};
 
 const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -87,13 +133,8 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
 
     return (
         <div className="relative w-full h-[400px] md:h-[500px] group overflow-hidden rounded-3xl shadow-2xl">
-            {/* Background Image with Overlay */}
-            <div
-                style={{ backgroundImage: `url(${sanitizeUrl(currentBanner.imageUrl)})` }}
-                className="absolute inset-0 w-full h-full bg-center bg-cover transition-all duration-700 ease-in-out transform scale-105"
-            >
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-            </div>
+            {/* Background Image with Overlay (이미지 로드 실패 시 그라데이션으로 폴백) */}
+            <BannerBackground imageUrl={currentBanner.imageUrl} />
 
             {/* Content */}
             <div className="relative h-full container mx-auto px-16 md:px-24 flex items-center">
