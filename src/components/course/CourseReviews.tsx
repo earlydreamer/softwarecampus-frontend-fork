@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CourseReview, ReviewSection } from '../../types';
-import { Star, ThumbsUp, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
+import { Star, ThumbsUp, ChevronDown, ChevronUp, User, Calendar, Pencil, AlertCircle } from 'lucide-react';
 import { REVIEW_SECTION_LABELS } from '../../types';
-import { toggleReviewLike, createCourseReview, uploadReviewFile } from '../../services/courseService';
+import { toggleReviewLike, createCourseReview, updateCourseReview, uploadReviewFile } from '../../services/courseService';
 import { sanitizeUrl } from '../../utils/security';
 import AlertModal from '../ui/AlertModal';
 import { useAuthStore } from '../../store/authStore';
@@ -38,6 +38,13 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
         message: '',
         type: 'info'
     });
+    // 거부 사유 모달 상태 (2025-12-02 추가)
+    const [rejectionReasonModal, setRejectionReasonModal] = useState<{ isOpen: boolean; reason: string }>({
+        isOpen: false,
+        reason: ''
+    });
+    // 리뷰 수정 모드 상태 (2025-12-02 추가)
+    const [editingReview, setEditingReview] = useState<CourseReview | null>(null);
 
     // 리뷰 데이터가 변경되면 로컬 상태 초기화
     useEffect(() => {
@@ -158,6 +165,55 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
     // 내 리뷰의 승인 상태
     const myReviewStatus = myReview?.approvalStatus;
 
+    // 거부 사유 보기 (2025-12-02 추가)
+    const handleShowRejectionReason = (reason: string | null | undefined) => {
+        setRejectionReasonModal({
+            isOpen: true,
+            reason: reason || '거부 사유가 기록되지 않았습니다.'
+        });
+    };
+
+    // 리뷰 수정 시작 (2025-12-02 추가)
+    const handleEditReview = (review: CourseReview) => {
+        setEditingReview(review);
+    };
+
+    // 리뷰 수정 제출 (2025-12-02 추가)
+    const handleReviewUpdate = async (data: { comment: string; sections: ReviewSection[]; file?: File }) => {
+        if (!user || !editingReview) return;
+
+        setIsSubmitting(true);
+        try {
+            // 1. 리뷰 수정
+            await updateCourseReview(courseId, editingReview.id, {
+                comment: data.comment,
+                sections: data.sections,
+            });
+
+            // 2. 파일 업로드 (있을 경우)
+            if (data.file) {
+                await uploadReviewFile(courseId, editingReview.id, data.file);
+            }
+
+            // 3. 성공 처리
+            setEditingReview(null);
+            const wasRejected = editingReview.approvalStatus === 'REJECTED';
+            showAlert(
+                '수정 완료',
+                wasRejected
+                    ? '후기가 수정되어 재심사 대기 상태로 변경되었습니다.'
+                    : '후기가 수정되었습니다.',
+                'info'
+            );
+            onReviewsUpdate?.();
+        } catch (error) {
+            console.error('Review update failed:', error);
+            showAlert('오류 발생', '후기 수정 중 오류가 발생했습니다.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleWriteClick = () => {
         if (!isAuthenticated) {
             showAlert('로그인 필요', '후기를 작성하려면 로그인이 필요합니다.', 'warning');
@@ -224,6 +280,40 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                     onSubmit={handleReviewSubmit}
                     onCancel={() => setIsWritingReview(false)}
                     isSubmitting={isSubmitting}
+                />
+            </div>
+        );
+    }
+
+    // 리뷰 수정 중일 때 (2025-12-02 추가)
+    if (editingReview) {
+        return (
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">수강 후기 수정</h3>
+                {editingReview.approvalStatus === 'REJECTED' && (
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <div className="flex items-start gap-2">
+                            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+                            <div>
+                                <p className="font-medium text-red-700 dark:text-red-400">거부된 후기입니다</p>
+                                <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                                    거부 사유: {editingReview.rejectionReason || '사유가 기록되지 않았습니다.'}
+                                </p>
+                                <p className="text-sm text-red-600 dark:text-red-300 mt-1">
+                                    수정 후 제출하면 재심사 요청됩니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                <ReviewEditor
+                    onSubmit={handleReviewUpdate}
+                    onCancel={() => setEditingReview(null)}
+                    isSubmitting={isSubmitting}
+                    initialData={{
+                        comment: editingReview.comment,
+                        sections: editingReview.sections,
+                    }}
                 />
             </div>
         );
@@ -342,14 +432,19 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                     const isExpanded = expandedReviews.has(review.id);
                     const isLiked = localLikeTypes.get(review.id) === 'LIKE'; // 좋아요 여부 확인
                     const isPending = review.approvalStatus === 'PENDING';
+                    const isRejected = review.approvalStatus === 'REJECTED';
+                    const isMyReview = review.writerId === user?.id;
 
                     return (
                         <div
                             key={review.id}
-                            className={`bg-white dark:bg-slate-800 rounded-xl border transition-all overflow-hidden ${isPending
-                                ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-900/50 dark:bg-yellow-900/10'
-                                : 'border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-700'
-                                }`}
+                            className={`bg-white dark:bg-slate-800 rounded-xl border transition-all overflow-hidden ${
+                                isRejected
+                                    ? 'border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-900/10'
+                                    : isPending
+                                        ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-900/50 dark:bg-yellow-900/10'
+                                        : 'border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-700'
+                            }`}
                         >
                             {/* 헤더 (항상 표시) */}
                             <button
@@ -365,11 +460,21 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
 
                                         {/* 작성자 정보 및 평점 */}
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-2">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
                                                 <span className="font-semibold text-slate-900 dark:text-white">{review.writerName}</span>
+                                                {isMyReview && (
+                                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
+                                                        내 후기
+                                                    </span>
+                                                )}
                                                 {isPending && (
                                                     <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800">
                                                         승인 대기 중
+                                                    </span>
+                                                )}
+                                                {isRejected && (
+                                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-200 dark:border-red-800">
+                                                        거부됨
                                                     </span>
                                                 )}
                                                 <div className="flex items-center gap-1 ml-auto sm:ml-2">
@@ -470,8 +575,8 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                         </div>
                                     )}
 
-                                    {/* 도움이 돼요 버튼 */}
-                                    <div className="flex items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                    {/* 도움이 돼요 버튼 및 액션 버튼 */}
+                                    <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex-wrap">
                                         <button
                                             onClick={() => handleLike(review.id)}
                                             disabled={likingReviews.has(review.id)}
@@ -484,6 +589,34 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                             <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
                                             도움이 돼요 ({localLikeCounts.get(review.id) ?? review.likeCount ?? 0})
                                         </button>
+
+                                        {/* 본인 리뷰인 경우 수정/거부사유 버튼 (2025-12-02 추가) */}
+                                        {isMyReview && (isPending || isRejected) && (
+                                            <div className="flex items-center gap-2">
+                                                {isRejected && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleShowRejectionReason(review.rejectionReason);
+                                                        }}
+                                                        className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                    >
+                                                        <AlertCircle className="w-4 h-4" />
+                                                        거부 사유
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditReview(review);
+                                                    }}
+                                                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                    수정하기
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -499,6 +632,15 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                 title={alertModal.title}
                 message={alertModal.message}
                 type={alertModal.type}
+            />
+
+            {/* 거부 사유 모달 (2025-12-02 추가) */}
+            <AlertModal
+                isOpen={rejectionReasonModal.isOpen}
+                onClose={() => setRejectionReasonModal({ isOpen: false, reason: '' })}
+                title="거부 사유"
+                message={rejectionReasonModal.reason}
+                type="error"
             />
         </div>
     );
