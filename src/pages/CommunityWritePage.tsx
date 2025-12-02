@@ -7,6 +7,7 @@ import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
 import { useAuthStore } from '../store/authStore';
+import type { AttachedFile } from '../components/editor/TiptapEditor';
 
 // Tiptap 에디터를 lazy load
 const TiptapEditor = lazy(() => import('../components/editor/TiptapEditor'));
@@ -24,6 +25,7 @@ const CommunityWritePage = () => {
     const [titleError, setTitleError] = useState<string | null>(null);
     const [contentError, setContentError] = useState<string | null>(null);
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
     // HTML 태그를 제거하고 실제 텍스트 내용만 추출
     const getTextContent = (html: string): string => {
@@ -35,7 +37,7 @@ const CommunityWritePage = () => {
     // 작성 중인 내용이 있는지 확인
     const hasUnsavedChanges = () => {
         const textContent = getTextContent(text).trim();
-        return title.trim() !== '' || textContent !== '';
+        return title.trim() !== '' || textContent !== '' || attachedFiles.length > 0;
     };
 
     // 브라우저 새로고침/탭 닫기 시 경고
@@ -101,6 +103,9 @@ const CommunityWritePage = () => {
             return;
         }
 
+        // 첨부파일에서 File 객체만 추출
+        const files = attachedFiles.map(f => f.file);
+
         createPostMutation.mutate({
             title,
             text,
@@ -110,7 +115,8 @@ const CommunityWritePage = () => {
                 userName: user.userName,
             },
             isSecret: false,
-            hasAttachment: false,
+            hasAttachment: files.length > 0,
+            files: files.length > 0 ? files : undefined,
         });
     };
 
@@ -217,6 +223,9 @@ const CommunityWritePage = () => {
                                             setText(value);
                                             if (contentError) setContentError(null);
                                         }}
+                                        enableFileAttachment={true}
+                                        attachedFiles={attachedFiles}
+                                        onFilesChange={setAttachedFiles}
                                     />
                                 </Suspense>
                             </div>
