@@ -6,7 +6,6 @@ import { createBoardPost } from '../services/communityService';
 import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
-import AlertModal from '../components/ui/AlertModal';
 import { useAuthStore } from '../store/authStore';
 import { getTextContent } from '../utils/formatUtils';
 import type { AttachedFile } from '../components/editor/TiptapEditor';
@@ -21,11 +20,28 @@ const CommunityWritePage = () => {
     const [searchParams] = useSearchParams();
 
     // URL에서 카테고리 읽기, 유효하지 않으면 기본값 'CODING_STORY'
+    // 일반회원(USER)은 공지사항(NOTICE)에 글쓰기 불가
     const getInitialCategory = (): BoardCategory => {
         const urlCategory = searchParams.get('category') as BoardCategory;
         const validCategories: BoardCategory[] = ['NOTICE', 'QUESTION', 'COURSE_STORY', 'CODING_STORY'];
+
+        // 일반회원이 NOTICE로 접근 시 기본 카테고리로 변경
+        if (urlCategory === 'NOTICE' && user?.accountType === 'USER') {
+            return 'CODING_STORY';
+        }
+
         return validCategories.includes(urlCategory) ? urlCategory : 'CODING_STORY';
     };
+
+    // 사용자 권한에 따라 선택 가능한 카테고리 필터링
+    // ADMIN, ACADEMY: 모든 카테고리 가능
+    // USER: 공지사항(NOTICE) 제외
+    const availableCategories = (Object.keys(BOARD_CATEGORY_LABELS) as BoardCategory[]).filter((cat) => {
+        if (cat === 'NOTICE') {
+            return user?.accountType === 'ADMIN' || user?.accountType === 'ACADEMY';
+        }
+        return true;
+    });
 
     // 비로그인 시 로그인 페이지로 리다이렉트
     useEffect(() => {
@@ -72,6 +88,7 @@ const CommunityWritePage = () => {
                 account?: { id: number; userName: string; };
                 isSecret: boolean;
                 hasAttachment?: boolean;
+                uploadedFileUrls?: string[];  // 이미 업로드된 URL들
             };
             files?: File[];
         }) => createBoardPost(data, files),
@@ -122,8 +139,19 @@ const CommunityWritePage = () => {
             return;
         }
 
-        // 첨부파일에서 File 객체만 추출
-        const files = attachedFiles.map(f => f.file);
+        // 첨부파일 분리: 이미 업로드된 파일 vs 새로 업로드할 파일
+        const uploadedFileUrls: string[] = [];
+        const newFiles: File[] = [];
+
+        attachedFiles.forEach(f => {
+            if (f.uploadedUrl) {
+                // 이미 S3에 업로드된 경우 (file 객체가 있더라도 URL 사용하여 중복 업로드 방지)
+                uploadedFileUrls.push(f.uploadedUrl);
+            } else if (f.file) {
+                // S3 URL이 없고 file 객체만 있는 경우 (새로 업로드 필요)
+                newFiles.push(f.file);
+            }
+        });
 
         createPostMutation.mutate({
             data: {
@@ -135,9 +163,10 @@ const CommunityWritePage = () => {
                     userName: user.userName,
                 },
                 isSecret: false,
-                hasAttachment: files.length > 0,
+                hasAttachment: (uploadedFileUrls.length + newFiles.length) > 0,
+                uploadedFileUrls,  // 이미 업로드된 URL들
             },
-            files: files.length > 0 ? files : undefined,
+            files: newFiles.length > 0 ? newFiles : undefined,  // 새로 업로드할 파일들
         });
     };
 
@@ -175,8 +204,8 @@ const CommunityWritePage = () => {
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
                                 카테고리
                             </label>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                {(Object.keys(BOARD_CATEGORY_LABELS) as BoardCategory[]).map((cat) => (
+                            <div className={`grid gap-3 ${availableCategories.length === 4 ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-3'}`}>
+                                {availableCategories.map((cat) => (
                                     <button
                                         key={cat}
                                         type="button"
@@ -257,19 +286,6 @@ const CommunityWritePage = () => {
                                     {contentError}
                                 </p>
                             )}
-                        </div>
-
-                        {/* 첨부파일 */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-                                첨부파일
-                            </label>
-                            <FileUpload
-                                files={files}
-                                onFilesChange={setFiles}
-                                maxFiles={5}
-                                maxSizeMB={50}
-                            />
                         </div>
                     </div>
 

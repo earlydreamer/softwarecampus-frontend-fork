@@ -29,7 +29,7 @@ const mapDtoToBoard = (dto: ApiBoardResponseDTO): Board => {
 
         // 상세 조회 시 댓글 포함
         comments: dto.boardComments.map(mapDtoToComment),
-        
+
         // 첨부파일 매핑
         attachments: dto.boardAttachs.map(mapDtoToAttachment),
     };
@@ -52,12 +52,21 @@ const mapDtoToComment = (dto: ApiCommentDTO): Comment => {
 };
 
 // DTO -> BoardAttachment 매핑
+// 방어적 처리: 백엔드에서 값이 누락된 경우 기본값 제공
 const mapDtoToAttachment = (dto: ApiBoardAttachDTO): BoardAttachment => {
+    // 원본 파일명이 없는 경우 savedName에서 추출 시도
+    let originName = dto.originalFilename || '';
+    if (!originName && dto.realFilename) {
+        // S3 URL에서 파일명 추출 (마지막 / 이후 부분)
+        const urlParts = dto.realFilename.split('/');
+        originName = urlParts[urlParts.length - 1] || '첨부파일';
+    }
+    
     return {
         id: dto.id,
-        originName: dto.originalFile,
-        savedName: dto.savedFile,
-        fileSize: dto.fileSize,
+        originName: originName || '첨부파일',
+        savedName: dto.realFilename || '',
+        fileSize: typeof dto.fileSize === 'number' ? dto.fileSize : 0,
     };
 };
 
@@ -79,7 +88,7 @@ export const fetchBoardPosts = async (
         if (category) params.category = category;
         if (searchKeyword) params.searchText = searchKeyword;
         if (sortType) params.sortType = sortType;  // 정렬 타입 전달
-        
+
         // searchType 매핑: 프론트 → 백엔드
         if (searchType) {
             params.searchType = searchType;  // all, title, content, title_content, author, comment 그대로 전달
@@ -88,10 +97,10 @@ export const fetchBoardPosts = async (
         // 백엔드는 Spring Page 객체 반환
         const response = await apiClient.get<SpringPage<ApiBoardListResponse>>('/api/boards', { params });
 
-        // 응답이 배열인지 확인 (API 오류 시 HTML 등이 반환될 수 있음)
-        if (!Array.isArray(response.data)) {
-            console.warn('게시판 API 응답이 배열이 아닙니다:', typeof response.data);
-            return { posts: [], total: 0 };
+        // Spring Page 객체인지 확인 (content 배열이 있어야 함)
+        if (!response.data || !Array.isArray(response.data.content)) {
+            console.warn('게시판 API 응답이 유효한 Page 객체가 아닙니다:', typeof response.data);
+            return { posts: [], total: 0, totalPages: 0 };
         }
 
         // 목록 응답 매핑
@@ -112,10 +121,10 @@ export const fetchBoardPosts = async (
             commentCount: dto.commentsCount,  // commentsCount로 변경
         } as Board));
 
-        return { 
-            posts, 
+        return {
+            posts,
             total: response.data.totalElements,
-            totalPages: response.data.totalPages 
+            totalPages: response.data.totalPages
         };
     } catch (error) {
         console.error('Failed to fetch board posts:', error);
@@ -163,13 +172,13 @@ export const recommendBoardPost = async (postId: number): Promise<void> => {
  * @param topCommentId 대댓글인 경우 상위 댓글 ID
  */
 export const createComment = async (
-    postId: number, 
-    text: string, 
+    postId: number,
+    text: string,
     topCommentId?: number
 ): Promise<Comment> => {
-    const body: { boardId: number; text: string; topCommentId?: number } = { 
+    const body: { boardId: number; text: string; topCommentId?: number } = {
         boardId: postId,
-        text 
+        text
     };
     if (topCommentId) {
         body.topCommentId = topCommentId;
@@ -183,9 +192,9 @@ export const createComment = async (
  * 백엔드 DTO에서 id가 @NotNull이므로 요청 본문에 포함 필요
  */
 export const updateComment = async (commentId: number, postId: number, text: string): Promise<Comment> => {
-    const response = await apiClient.patch<ApiCommentDTO>(`/api/boards/${postId}/comments/${commentId}`, { 
+    const response = await apiClient.patch<ApiCommentDTO>(`/api/boards/${postId}/comments/${commentId}`, {
         id: commentId,  // 백엔드 @NotNull 필드
-        text 
+        text
     });
     return mapDtoToComment(response.data);
 };
@@ -210,6 +219,7 @@ export const createBoardPost = async (data: {
     account?: { id: number; userName: string; }; // 사용 안함 (토큰 사용)
     isSecret: boolean;
     hasAttachment?: boolean;
+    uploadedFileUrls?: string[];  // 이미 S3에 업로드된 파일의 URL 목록
 }, files?: File[]): Promise<Board> => {
     try {
         const formData = new FormData();
@@ -217,15 +227,21 @@ export const createBoardPost = async (data: {
         formData.append('text', data.text);
         formData.append('category', data.category);
         formData.append('secret', String(data.isSecret));  // isSecret → secret
-        
+
+        // 이미 업로드된 파일 URL 추가
+        if (data.uploadedFileUrls && data.uploadedFileUrls.length > 0) {
+            // FormData에서 배열은 JSON 문자열로 전달
+            formData.append('uploadedFileUrls', JSON.stringify(data.uploadedFileUrls));
+        }
+
         // 첨부파일 추가 (파일 타입 및 크기 검증)
         if (files && files.length > 0) {
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
                 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'text/plain', 'application/zip', 'application/x-zip-compressed'];
             const maxSize = 10 * 1024 * 1024; // 10MB
-            
+
             files.forEach(file => {
                 if (!allowedTypes.includes(file.type)) {
                     throw new Error(`허용되지 않는 파일 형식입니다: ${file.name}`);
@@ -237,8 +253,13 @@ export const createBoardPost = async (data: {
             });
         }
 
-        const response = await apiClient.post('/api/boards', formData);
-        
+        // FormData 전송 시 Content-Type을 undefined로 설정하여 브라우저가 자동으로 boundary 포함한 multipart/form-data 설정
+        const response = await apiClient.post('/api/boards', formData, {
+            headers: {
+                'Content-Type': undefined,
+            },
+        });
+
         // 백엔드는 201 Created + Location 헤더만 반환 (본문 없음)
         // Location 헤더에서 생성된 게시글 ID 추출
         const locationHeader = response.headers['location'] || response.headers['Location'];
@@ -249,7 +270,7 @@ export const createBoardPost = async (data: {
                 return fetchBoardPost(newPostId);
             }
         }
-        
+
         // Location 헤더가 없으면 기본 Board 객체 반환
         return {
             id: 0,
@@ -290,20 +311,20 @@ export const updateBoardPost = async (
     if (data.text) formData.append('text', data.text);
     if (data.category) formData.append('category', data.category);
     formData.append('secret', String(data.secret ?? false));
-    
+
     // 삭제할 첨부파일 ID들 추가
     if (deleteAttachIds && deleteAttachIds.length > 0) {
         deleteAttachIds.forEach(id => formData.append('deleteAttachIds', String(id)));
     }
-    
+
     // 새로 추가할 첨부파일 추가 (파일 타입 및 크기 검증)
     if (files && files.length > 0) {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
             'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'text/plain', 'application/zip', 'application/x-zip-compressed'];
         const maxSize = 10 * 1024 * 1024; // 10MB
-        
+
         files.forEach(file => {
             if (!allowedTypes.includes(file.type)) {
                 throw new Error(`허용되지 않는 파일 형식입니다: ${file.name}`);
@@ -315,8 +336,13 @@ export const updateBoardPost = async (
         });
     }
 
-    await apiClient.patch(`/api/boards/${postId}`, formData);
-    
+    // FormData 전송 시 Content-Type을 undefined로 설정하여 브라우저가 자동으로 boundary 포함한 multipart/form-data 설정
+    await apiClient.patch(`/api/boards/${postId}`, formData, {
+        headers: {
+            'Content-Type': undefined,
+        },
+    });
+
     // 백엔드가 204 No Content 반환하므로 수정된 게시글 다시 조회
     return fetchBoardPost(postId);
 };
@@ -374,21 +400,27 @@ export const uploadEditorImage = async (file: File): Promise<string> => {
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
         throw new Error('지원하지 않는 이미지 형식입니다. (jpg, png, gif, webp만 가능)');
     }
-    
+
     // 파일 크기 검증 (10MB)
     const MAX_SIZE_BYTES = 10 * 1024 * 1024;
     if (file.size > MAX_SIZE_BYTES) {
         throw new Error('파일 크기는 10MB를 초과할 수 없습니다.');
     }
-    
+
     try {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('folder', 'board');  // S3Folder enum에 정의된 허용 폴더
         formData.append('fileType', 'BOARD_ATTACH');
-        
-        const response = await apiClient.post('/api/files/upload', formData);
-        
+
+        // FormData 전송 시 Content-Type 헤더를 제거해야 브라우저가 자동으로 
+        // multipart/form-data와 boundary를 설정함
+        const response = await apiClient.post('/api/files/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
         // 응답에서 파일 URL 추출
         const imageUrl = response.data.fileUrl || response.data.url;
         if (!imageUrl) {
