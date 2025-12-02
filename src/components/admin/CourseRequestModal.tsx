@@ -50,12 +50,12 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         selectedAcademyId: defaultAcademyId
     });
     const [error, setError] = useState<string | null>(null);
-    
+
     // 카테고리 목록 상태
     const [categories, setCategories] = useState<CourseCategoryResponse[]>([]);
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
     const [categoryLoadError, setCategoryLoadError] = useState<string | null>(null);
-    
+
     // 기관 목록 상태 (관리자용)
     const [academies, setAcademies] = useState<AdminAcademy[]>([]);
     const [isLoadingAcademies, setIsLoadingAcademies] = useState(false);
@@ -96,13 +96,24 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                 setCategoryLoadError(null);
                 try {
                     // 대상(target)에 따라 카테고리 타입 결정
+                    // form.target은 의존성 배열에 포함되어 있으므로 최신 값을 참조함
                     const categoryType: CategoryType = form.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
                     const data = await getCourseCategories(categoryType);
                     setCategories(data);
-                    // 첫 번째 카테고리를 기본값으로 설정
-                    if (data.length > 0 && !form.category) {
-                        setForm(prev => ({ ...prev, category: data[0].categoryName }));
-                    }
+
+                    // 첫 번째 카테고리를 기본값으로 설정 (함수형 업데이트 사용)
+                    setForm(prev => {
+                        // 이미 카테고리가 설정되어 있고, 해당 카테고리가 새 목록에도 존재하면 유지
+                        const currentCategoryExists = data.some(c => c.categoryName === prev.category);
+                        if (prev.category && currentCategoryExists) {
+                            return prev;
+                        }
+                        // 아니면 첫 번째 카테고리로 설정
+                        if (data.length > 0) {
+                            return { ...prev, category: data[0].categoryName };
+                        }
+                        return prev;
+                    });
                 } catch (err) {
                     console.error('카테고리 로드 실패:', err);
                     setCategoryLoadError('카테고리 목록을 불러오는데 실패했습니다.');
@@ -204,6 +215,19 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // 파일 유효성 검사
+            if (!file.type.startsWith('image/')) {
+                alert('이미지 파일만 업로드 가능합니다.');
+                e.target.value = ''; // 입력 초기화
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                alert('파일 크기는 5MB를 초과할 수 없습니다.');
+                e.target.value = ''; // 입력 초기화
+                return;
+            }
+
             // 이전 blob URL이 있으면 revoke (ref에 저장된 것만)
             if (blobUrlRef.current) {
                 URL.revokeObjectURL(blobUrlRef.current);
