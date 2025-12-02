@@ -118,6 +118,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
 
             {/* Navigation Buttons */}
             <button
+                type="button"
                 onClick={goToPrevious}
                 aria-label="이전 배너"
                 className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/20"
@@ -125,6 +126,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
                 <ChevronLeft className="w-6 h-6" />
             </button>
             <button
+                type="button"
                 onClick={goToNext}
                 aria-label="다음 배너"
                 className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/20"
@@ -136,6 +138,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3">
                 {banners.map((_, index) => (
                     <button
+                        type="button"
                         key={index}
                         onClick={() => setCurrentIndex(index)}
                         aria-label={`배너 ${index + 1}번으로 이동`}

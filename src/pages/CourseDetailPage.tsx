@@ -48,7 +48,6 @@ const CourseDetailPage = () => {
         isFavoritePending,
         handleQnaSearch,
         handleQnaSubmit,
-        isQnaSubmitting,
         alertModal,
         setAlertModal,
     } = useCourseDetail({ courseId: id, isValidId });
@@ -280,13 +279,8 @@ const CourseDetailPage = () => {
                                                 page={qnaPage}
                                                 onPageChange={setQnaPage}
                                                 isLoading={isQnAsLoading}
-                                                onQuestionSubmit={(title: string, content: string, fileDetails?: { id: number; originName: string; fileUrl: string }[]) => {
-                                                    if (isQnaSubmitting) return;
-                                                    handleQnaSubmit(title, content, fileDetails);
-                                                }}
-                                                onSearch={(keyword: string) => {
-                                                    handleQnaSearch(keyword);
-                                                }}
+                                                onQuestionSubmit={handleQnaSubmit}
+                                                onSearch={handleQnaSearch}
                                             />
                                         )}
                                     </>

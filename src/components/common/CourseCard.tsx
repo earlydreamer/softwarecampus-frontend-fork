@@ -4,8 +4,9 @@ import type { Course } from '../../types';
 import { Star, MessageSquare } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
 import { getCourseDurationInfo, getCourseStatus, type CourseStatus } from '../../utils/dateUtils';
+import { DEFAULT_IMAGES } from '../../constants';
 
-const DEFAULT_COURSE_IMAGE = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60';
+const DEFAULT_COURSE_IMAGE = DEFAULT_IMAGES.COURSE_THUMBNAIL;
 
 interface CourseCardProps {
     course: Course;

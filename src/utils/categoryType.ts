@@ -42,14 +42,18 @@ export const targetToCategoryType = (
     defaultValue: CategoryType = 'JOB_SEEKER'
 ): CategoryType => {
     if (!target) {
-        console.warn('[targetToCategoryType] target이 비어있음, 기본값 사용:', defaultValue);
+        if (import.meta.env.DEV) {
+            console.warn('[targetToCategoryType] target이 비어있음, 기본값 사용:', defaultValue);
+        }
         return defaultValue;
     }
     
     const categoryType = TARGET_TO_CATEGORY_TYPE[target];
     
     if (!categoryType) {
-        console.warn('[targetToCategoryType] 알 수 없는 target 값:', target, ', 기본값 사용:', defaultValue);
+        if (import.meta.env.DEV) {
+            console.warn('[targetToCategoryType] 알 수 없는 target 값:', target, ', 기본값 사용:', defaultValue);
+        }
         return defaultValue;
     }
     
@@ -100,7 +104,9 @@ export const categoryTypeToTarget = (
         return CATEGORY_TYPE_TO_TARGET[categoryType];
     }
     
-    console.warn('[categoryTypeToTarget] 알 수 없는 categoryType 값:', categoryType);
+    if (import.meta.env.DEV) {
+        console.warn('[categoryTypeToTarget] 알 수 없는 categoryType 값:', categoryType);
+    }
     return '취업예정자';
 };
 

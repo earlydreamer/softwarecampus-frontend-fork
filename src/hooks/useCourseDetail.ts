@@ -69,7 +69,7 @@ export const useCourseDetail = ({ courseId, isValidId }: UseCourseDetailOptions)
     });
 
     // 찜하기 상태 조회
-    const { data: favoriteCheckResult } = useQuery({
+    const { data: favoriteCheckResult, isError: isFavoriteError } = useQuery({
         queryKey: ['course-favorite', courseId],
         queryFn: () => checkCourseFavorite(courseId!),
         enabled: isValidId && !!course && isAuthenticated,
@@ -216,6 +216,7 @@ export const useCourseDetail = ({ courseId, isValidId }: UseCourseDetailOptions)
         
         // 찜하기
         isFavorite,
+        isFavoriteError,
         handleFavoriteClick,
         isFavoritePending: addFavoriteMutation.isPending || removeFavoriteMutation.isPending,
         

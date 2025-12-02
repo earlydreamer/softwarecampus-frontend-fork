@@ -37,7 +37,7 @@ const CourseCurriculum = ({ course }: CourseCurriculumProps) => {
                         <span className="font-semibold text-primary-600 dark:text-primary-400">
                             Chapter {curriculum.chapterNumber}
                         </span>
-                        {curriculum.chapterTime > 0 && (
+                        {curriculum.chapterTime != null && curriculum.chapterTime > 0 && (
                             <span className="text-sm text-slate-500 dark:text-slate-400">
                                 총 {curriculum.chapterTime}시간
                             </span>

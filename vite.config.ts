@@ -22,10 +22,10 @@ const baseProxyOptions = {
   secure: false,
 };
 
-// 프록시 맵 생성 (각 경로에 동일한 설정 적용)
+// 프록시 맵 생성 (각 경로에 독립적인 설정 객체 적용)
 const proxyConfig = proxyRoutes.reduce<Record<string, typeof baseProxyOptions>>(
   (acc, route) => {
-    acc[route] = baseProxyOptions;
+    acc[route] = { ...baseProxyOptions };
     return acc;
   },
   {}

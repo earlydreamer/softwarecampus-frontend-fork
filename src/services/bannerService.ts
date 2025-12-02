@@ -150,7 +150,6 @@ export const fetchActiveBanners = async (): Promise<BannerResult> => {
             // 서버 오류 (5xx)
             const status = error.response?.status;
             if (status && status >= 500) {
-                // TODO: Sentry 또는 모니터링 시스템으로 전송
                 console.error('배너 조회 서버 오류:', {
                     status,
                     message: error.message,
@@ -168,7 +167,6 @@ export const fetchActiveBanners = async (): Promise<BannerResult> => {
         }
         
         // 알 수 없는 오류
-        // TODO: Sentry 또는 모니터링 시스템으로 전송
         console.error('배너 조회 알 수 없는 오류:', error);
         return {
             ok: false,

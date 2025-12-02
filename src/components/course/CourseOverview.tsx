@@ -24,7 +24,7 @@ const CourseOverview = ({ course }: CourseOverviewProps) => {
             )}
 
             {/* 하이라이트 */}
-            {course.highlights && (
+            {Array.isArray(course.highlights) && course.highlights.length > 0 && (
                 <div className="mt-8">
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">이런 점이 좋아요</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

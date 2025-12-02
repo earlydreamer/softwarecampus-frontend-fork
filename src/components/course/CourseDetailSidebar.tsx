@@ -63,11 +63,15 @@ const CourseDetailSidebar = ({
                 <div className="space-y-4 mb-8">
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-slate-400">모집 기간</span>
-                        <span className="font-medium text-slate-900 dark:text-white">{course.recruitStart} ~ {course.recruitEnd}</span>
+                        <span className="font-medium text-slate-900 dark:text-white">
+                            {course.recruitStart && course.recruitEnd
+                                ? `${course.recruitStart} ~ ${course.recruitEnd}`
+                                : '모집 기간 미정'}
+                        </span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-slate-400">교육 기간</span>
-                        <span className="font-medium text-slate-900 dark:text-white">{course.duration}</span>
+                        <span className="font-medium text-slate-900 dark:text-white">{course.duration ?? '교육 기간 미정'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                         <span className="text-slate-500 dark:text-slate-400">수업 시간</span>
@@ -82,6 +86,7 @@ const CourseDetailSidebar = ({
                 {/* 버튼 그룹 */}
                 <div className="flex flex-col gap-3">
                     <button
+                        type="button"
                         onClick={handleExternalLinkClick}
                         className="w-full py-3.5 rounded-xl bg-primary-600 text-white font-bold text-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-600/30"
                     >
@@ -89,8 +94,10 @@ const CourseDetailSidebar = ({
                     </button>
                     <div className="grid grid-cols-2 gap-3">
                         <button
+                            type="button"
                             onClick={onFavoriteClick}
                             disabled={isFavoritePending}
+                            aria-pressed={isFavorite}
                             className={`flex items-center justify-center gap-2 py-3 rounded-xl border font-medium transition-all ${isFavorite
                                 ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
                                 : 'border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -100,6 +107,7 @@ const CourseDetailSidebar = ({
                             {isFavorite ? '찜 완료' : '찜하기'}
                         </button>
                         <button
+                            type="button"
                             onClick={onShareClick}
                             className="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 dark:border-slate-600 font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                         >

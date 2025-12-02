@@ -32,11 +32,15 @@ const CourseDetailHeader = ({ course, headerBackgroundImage }: CourseDetailHeade
                     </div>
                     <div className="flex items-center gap-2">
                         <MapPin className="w-5 h-5 text-primary-400" />
-                        <span>{course.location || course.academy.address}</span>
+                        <span>{course.location || course.academy.address || '지역 미정'}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-primary-400" />
-                        <span>{course.courseStart} ~ {course.courseEnd}</span>
+                        <span>
+                            {course.courseStart && course.courseEnd
+                                ? `${course.courseStart} ~ ${course.courseEnd}`
+                                : '교육 기간 미정'}
+                        </span>
                     </div>
                 </div>
             </div>

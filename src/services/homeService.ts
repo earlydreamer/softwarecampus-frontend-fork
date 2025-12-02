@@ -5,6 +5,7 @@ import { fetchActiveBanners, fetchActiveBannersLegacy, type BannerResult, type B
 import apiClient from './api/client';
 import type { Course } from '../types';
 import { categoryTypeToTarget } from '../utils/categoryType';
+import { DEFAULT_IMAGES } from '../constants';
 
 // 배너 관련 타입 re-export
 export type { BannerResult, BannerError };
@@ -94,7 +95,7 @@ export const fetchHomeCourseSections = async () => {
             rating: apiCourse.rating || 0,
             reviewCount: apiCourse.reviewCount || 0,
             tags: [],
-            imageUrl: apiCourse.imageUrl || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+            imageUrl: apiCourse.imageUrl || DEFAULT_IMAGES.COURSE_THUMBNAIL,
             description: `${apiCourse.name} 과정입니다.`,
             highlights: [],
         });
