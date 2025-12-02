@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
 import { fetchCourseById, fetchCourseReviews, fetchCourseQnAs, createCourseQnA } from '../services/courseService';
 import { addCourseFavorite, removeCourseFavorite, checkCourseFavorite } from '../services/favoriteService';
 import { useAuthStore } from '../store/authStore';
@@ -315,7 +316,10 @@ const CourseDetailPage = () => {
         <div className="pb-20">
             {/* Header Section */}
             <div className="bg-slate-900 text-white py-12 lg:py-20 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1517694712202-14dd9538aa97?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80')] bg-cover bg-center" />
+                <div 
+                    className="absolute inset-0 opacity-40 bg-cover bg-center"
+                    style={{ backgroundImage: `url('${sanitizeUrl(course.headerImageUrl || '')}')` }}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent" />
 
                 <div className="container mx-auto px-4 relative z-10">
@@ -352,9 +356,20 @@ const CourseDetailPage = () => {
                         {/* Overview Card */}
                         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 p-8">
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-4">과정 소개</h2>
-                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                                {course.description || "과정 상세 설명이 없습니다."}
-                            </p>
+                            {course.description ? (
+                                <div 
+                                    className="text-slate-600 dark:text-slate-300 leading-relaxed prose prose-slate dark:prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ 
+                                        __html: DOMPurify.sanitize(course.description, {
+                                            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'img', 'blockquote', 'pre', 'code', 'span', 'div', 'mark'],
+                                            ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'style', 'target', 'rel'],
+                                            ALLOW_DATA_ATTR: false
+                                        })
+                                    }}
+                                />
+                            ) : (
+                                <p className="text-slate-500 dark:text-slate-400">과정 상세 설명이 없습니다.</p>
+                            )}
 
                             {course.highlights && (
                                 <div className="mt-8">
