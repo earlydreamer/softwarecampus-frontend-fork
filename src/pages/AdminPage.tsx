@@ -42,7 +42,7 @@ import {
     rejectCourse,
     approveReview,
     rejectReview,
-    updateBannerOrder,
+    swapBannerOrder,
     toggleBannerActivation,
     deleteBanner,
     approveAcademy,
@@ -58,6 +58,9 @@ import {
 } from '../services/adminService';
 import CourseRequestModal, { type CourseFormState } from '../components/admin/CourseRequestModal';
 import BannerModal, { type BannerFormState } from '../components/admin/BannerModal';
+import AlertModal from '../components/ui/AlertModal';
+import ConfirmModal from '../components/common/ConfirmModal';
+import ReasonInputModal from '../components/common/ReasonInputModal';
 
 const AdminPage = () => {
     const navigate = useNavigate();
@@ -85,6 +88,45 @@ const AdminPage = () => {
     // 과정 모달 상태
     const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
     const [editingCourse, setEditingCourse] = useState<CourseApprovalRequest | null>(null);
+
+    // AlertModal 상태 (알림 메시지 표시)
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'error' | 'warning' | 'info';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
+
+    // ConfirmModal 상태 (확인 대화상자)
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {}
+    });
+
+    // ReasonInputModal 상태 (거부 사유 입력)
+    const [reasonModal, setReasonModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: (reason: string) => void;
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {}
+    });
 
     // 데이터 필터링 (ACADEMY 회원은 본인 기관 데이터만)
     const filteredCourseRequests = user?.accountType === 'ACADEMY' && user.academyId
@@ -174,34 +216,52 @@ const AdminPage = () => {
         loadData();
     }, [isAuthenticated, user, navigate]);
 
-    // 기관 승인/거부 핸들러
-    const handleApproveAcademy = async (academyId: number) => {
-        if (!window.confirm('해당 기관을 승인하시겠습니까?')) return;
-        try {
-            await approveAcademy(academyId);
-            alert('기관이 승인되었습니다.');
-            // 목록 갱신
-            const { academies } = await getAdminAcademies();
-            setAcademies(academies);
-        } catch (error) {
-            console.error('Failed to approve academy:', error);
-            alert('기관 승인에 실패했습니다.');
-        }
+    // 알림 모달 표시 헬퍼 함수
+    const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+        setAlertModal({ isOpen: true, title, message, type });
     };
 
-    const handleRejectAcademy = async (academyId: number) => {
-        const reason = window.prompt('거부 사유를 입력해주세요:');
-        if (reason === null) return; // 취소
-        try {
-            await rejectAcademy(academyId, reason);
-            alert('기관 승인이 거부되었습니다.');
-            // 목록 갱신
-            const { academies } = await getAdminAcademies();
-            setAcademies(academies);
-        } catch (error) {
-            console.error('Failed to reject academy:', error);
-            alert('기관 거부에 실패했습니다.');
-        }
+    // 확인 모달 표시 헬퍼 함수
+    const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+        setConfirmModal({ isOpen: true, title, message, onConfirm });
+    };
+
+    // 사유 입력 모달 표시 헬퍼 함수
+    const showReasonInput = (title: string, message: string, onConfirm: (reason: string) => void) => {
+        setReasonModal({ isOpen: true, title, message, onConfirm });
+    };
+
+    // 기관 승인/거부 핸들러
+    const handleApproveAcademy = (academyId: number) => {
+        showConfirm('기관 승인', '해당 기관을 승인하시겠습니까?', async () => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
+            try {
+                await approveAcademy(academyId);
+                showAlert('승인 완료', '기관이 승인되었습니다.', 'success');
+                // 목록 갱신
+                const { academies } = await getAdminAcademies();
+                setAcademies(academies);
+            } catch (error) {
+                console.error('Failed to approve academy:', error);
+                showAlert('승인 실패', '기관 승인에 실패했습니다.', 'error');
+            }
+        });
+    };
+
+    const handleRejectAcademy = (academyId: number) => {
+        showReasonInput('기관 승인 거부', '거부 사유를 입력해주세요:', async (reason) => {
+            setReasonModal(prev => ({ ...prev, isOpen: false }));
+            try {
+                await rejectAcademy(academyId, reason);
+                showAlert('거부 완료', '기관 승인이 거부되었습니다.', 'success');
+                // 목록 갱신
+                const { academies } = await getAdminAcademies();
+                setAcademies(academies);
+            } catch (error) {
+                console.error('Failed to reject academy:', error);
+                showAlert('거부 실패', '기관 거부에 실패했습니다.', 'error');
+            }
+        });
     };
 
     if (!isAuthenticated || (user?.accountType !== 'ADMIN' && user?.accountType !== 'ACADEMY')) {
@@ -223,62 +283,91 @@ const AdminPage = () => {
     ];
 
     // 과정 승인 처리
-    const handleCourseApproval = async (requestId: number, action: '승인' | '거부') => {
-        try {
-            if (action === '승인') {
-                await approveCourse(requestId);
-            } else {
-                const reason = prompt('거부 사유를 입력하세요:');
-                if (!reason) return;
-                await rejectCourse(requestId, reason);
-            }
-
-            // 목록 및 통계 갱신
-            const { requests } = await getCourseApprovalRequests();
-            setCourseRequests(requests);
-            const newStats = await getDashboardStats();
-            setServerStats(newStats);
-
-        } catch (error) {
-            console.error('Failed to update course status:', error);
-            alert('처리 중 오류가 발생했습니다.');
+    const handleCourseApproval = (requestId: number, action: '승인' | '거부') => {
+        if (action === '승인') {
+            showConfirm('과정 승인', '해당 과정을 승인하시겠습니까?', async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                try {
+                    await approveCourse(requestId);
+                    showAlert('승인 완료', '과정이 승인되었습니다.', 'success');
+                    // 목록 및 통계 갱신
+                    const { requests } = await getCourseApprovalRequests();
+                    setCourseRequests(requests);
+                    const newStats = await getDashboardStats();
+                    setServerStats(newStats);
+                } catch (error) {
+                    console.error('Failed to approve course:', error);
+                    showAlert('승인 실패', '과정 승인 중 오류가 발생했습니다.', 'error');
+                }
+            });
+        } else {
+            showReasonInput('과정 거부', '거부 사유를 입력해주세요:', async (reason) => {
+                setReasonModal(prev => ({ ...prev, isOpen: false }));
+                try {
+                    await rejectCourse(requestId, reason);
+                    showAlert('거부 완료', '과정이 거부되었습니다.', 'success');
+                    // 목록 및 통계 갱신
+                    const { requests } = await getCourseApprovalRequests();
+                    setCourseRequests(requests);
+                    const newStats = await getDashboardStats();
+                    setServerStats(newStats);
+                } catch (error) {
+                    console.error('Failed to reject course:', error);
+                    showAlert('거부 실패', '과정 거부 중 오류가 발생했습니다.', 'error');
+                }
+            });
         }
     };
 
     // 리뷰 승인 처리
-    const handleReviewApproval = async (requestId: number, action: '승인' | '거부') => {
-        try {
-            if (action === '승인') {
-                await approveReview(requestId);
-            } else {
-                const reason = prompt('거부 사유를 입력하세요:');
-                if (!reason) return;
-                await rejectReview(requestId, reason);
-            }
-
-            const { requests } = await getReviewApprovalRequests();
-            setReviewRequests(requests);
-            const newStats = await getDashboardStats();
-            setServerStats(newStats);
-
-        } catch (error) {
-            console.error('Failed to update review status:', error);
-            alert('처리 중 오류가 발생했습니다.');
+    const handleReviewApproval = (requestId: number, action: '승인' | '거부') => {
+        if (action === '승인') {
+            showConfirm('리뷰 승인', '해당 리뷰를 승인하시겠습니까?', async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                try {
+                    await approveReview(requestId);
+                    showAlert('승인 완료', '리뷰가 승인되었습니다.', 'success');
+                    const { requests } = await getReviewApprovalRequests();
+                    setReviewRequests(requests);
+                    const newStats = await getDashboardStats();
+                    setServerStats(newStats);
+                } catch (error) {
+                    console.error('Failed to approve review:', error);
+                    showAlert('승인 실패', '리뷰 승인 중 오류가 발생했습니다.', 'error');
+                }
+            });
+        } else {
+            showReasonInput('리뷰 거부', '거부 사유를 입력해주세요:', async (reason) => {
+                setReasonModal(prev => ({ ...prev, isOpen: false }));
+                try {
+                    await rejectReview(requestId, reason);
+                    showAlert('거부 완료', '리뷰가 거부되었습니다.', 'success');
+                    const { requests } = await getReviewApprovalRequests();
+                    setReviewRequests(requests);
+                    const newStats = await getDashboardStats();
+                    setServerStats(newStats);
+                } catch (error) {
+                    console.error('Failed to reject review:', error);
+                    showAlert('거부 실패', '리뷰 거부 중 오류가 발생했습니다.', 'error');
+                }
+            });
         }
     };
 
     // 배너 관련 핸들러
-    const handleBannerDelete = async (id: number) => {
-        if (confirm('정말 이 배너를 삭제하시겠습니까?')) {
+    const handleBannerDelete = (id: number) => {
+        showConfirm('배너 삭제', '정말 이 배너를 삭제하시겠습니까?', async () => {
+            setConfirmModal(prev => ({ ...prev, isOpen: false }));
             try {
                 await deleteBanner(id);
                 const newBanners = await getAdminBanners();
                 setBanners(newBanners);
+                showAlert('삭제 완료', '배너가 삭제되었습니다.', 'success');
             } catch (error) {
                 console.error("Failed to delete banner", error);
-                alert("배너 삭제 중 오류가 발생했습니다.");
+                showAlert('삭제 실패', '배너 삭제 중 오류가 발생했습니다.', 'error');
             }
-        }
+        });
     };
 
     const handleBannerToggle = async (id: number) => {
@@ -288,46 +377,31 @@ const AdminPage = () => {
             setBanners(newBanners);
         } catch (error) {
             console.error("Failed to toggle banner", error);
-            alert("배너 상태 변경 중 오류가 발생했습니다.");
+            showAlert('상태 변경 실패', '배너 상태 변경 중 오류가 발생했습니다.', 'error');
         }
     };
 
+    // 배너 순서 변경 (원자적 교환 API 사용)
     const handleBannerMove = async (id: number, direction: 'up' | 'down') => {
-        const index = banners.findIndex(b => b.id === id);
+        // displayOrder 기준으로 정렬된 배너 목록 사용
+        const sortedBanners = [...banners].sort((a, b) => a.displayOrder - b.displayOrder);
+        const index = sortedBanners.findIndex(b => b.id === id);
         if (index === -1) return;
         if (direction === 'up' && index === 0) return;
-        if (direction === 'down' && index === banners.length - 1) return;
+        if (direction === 'down' && index === sortedBanners.length - 1) return;
 
         const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        const currentBanner = banners[index];
-        const targetBanner = banners[targetIndex];
-
-        // 원본 순서 저장 (롤백용)
-        const originalCurrentOrder = currentBanner.displayOrder;
-        const originalTargetOrder = targetBanner.displayOrder;
+        const currentBanner = sortedBanners[index];
+        const targetBanner = sortedBanners[targetIndex];
 
         try {
-            // 두 배너의 순서를 서로 교환
-            await updateBannerOrder(currentBanner.id, originalTargetOrder);
-            try {
-                await updateBannerOrder(targetBanner.id, originalCurrentOrder);
-            } catch (secondError) {
-                // 두 번째 호출 실패 시 첫 번째 변경 롤백
-                console.error("Second order update failed, rolling back:", secondError);
-                try {
-                    await updateBannerOrder(currentBanner.id, originalCurrentOrder);
-                } catch (rollbackError) {
-                    console.error("Rollback also failed:", rollbackError);
-                    alert("배너 순서 복구에 실패했습니다. 새로고침해주세요.");
-                }
-                throw secondError;
-            }
-
+            // 두 배너의 순서를 원자적으로 교환 (백엔드에서 트랜잭션으로 처리)
+            await swapBannerOrder(currentBanner.id, targetBanner.id);
             const newBanners = await getAdminBanners();
             setBanners(newBanners);
         } catch (error) {
             console.error("Failed to reorder banners", error);
-            alert("배너 순서 변경 중 오류가 발생했습니다. 변경 사항이 롤백되었습니다.");
+            showAlert('순서 변경 실패', '배너 순서 변경 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -357,16 +431,16 @@ const AdminPage = () => {
                 setBanners(prev => prev.map(b =>
                     b.id === editingBanner.id ? updatedBanner : b
                 ));
-                alert('배너가 수정되었습니다.');
+                showAlert('수정 완료', '배너가 수정되었습니다.', 'success');
             } else {
                 const newBanner = await createBanner(formData);
                 setBanners(prev => [...prev, newBanner]);
-                alert('배너가 생성되었습니다.');
+                showAlert('등록 완료', '배너가 생성되었습니다.', 'success');
             }
             setIsBannerModalOpen(false);
         } catch (error) {
             console.error('Banner submit failed:', error);
-            alert('배너 저장 중 오류가 발생했습니다.');
+            showAlert('저장 실패', '배너 저장 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -385,13 +459,13 @@ const AdminPage = () => {
             if (data.selectedAcademyId) {
                 academyId = data.selectedAcademyId;
             } else {
-                alert('기관을 선택해주세요.');
+                showAlert('입력 오류', '기관을 선택해주세요.', 'warning');
                 return;
             }
         } else {
             // 기관 회원은 본인 기관 사용
             if (!user?.academyId) {
-                alert('기관 정보가 없습니다. 관리자에게 문의하세요.');
+                showAlert('입력 오류', '기관 정보가 없습니다. 관리자에게 문의하세요.', 'warning');
                 return;
             }
             academyId = user.academyId;
@@ -425,16 +499,16 @@ const AdminPage = () => {
                     await uploadCourseImage(categoryType, newRequest.id, data.imageFile, true);
                 } catch (imageError) {
                     console.error('이미지 업로드 실패:', imageError);
-                    alert('과정은 등록되었지만 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.');
+                    showAlert('이미지 업로드 실패', '과정은 등록되었지만 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
                 }
             }
 
             if (editingCourse) {
-                alert('과정이 수정되었습니다.');
+                showAlert('수정 완료', '과정이 수정되었습니다.', 'success');
             } else if (user?.accountType === 'ADMIN') {
-                alert('과정이 등록되었습니다.');
+                showAlert('등록 완료', '과정이 등록되었습니다.', 'success');
             } else {
-                alert('과정 등록 요청이 접수되었습니다. 관리자 승인 후 반영됩니다.');
+                showAlert('요청 접수', '과정 등록 요청이 접수되었습니다. 관리자 승인 후 반영됩니다.', 'info');
             }
 
             // 통계 갱신
@@ -464,7 +538,7 @@ const AdminPage = () => {
                 message = error.message;
             }
             
-            alert(message);
+            showAlert('처리 실패', message, 'error');
         }
     };
 
@@ -767,7 +841,7 @@ const AdminPage = () => {
                         </div>
 
                         <div className="grid gap-4">
-                            {banners.map((banner) => (
+                            {[...banners].sort((a, b) => a.displayOrder - b.displayOrder).map((banner) => (
                                 <div key={banner.id} className="glass-panel p-4 rounded-xl flex items-center gap-4">
                                     <div className="w-8 flex flex-col items-center gap-1">
                                         <button
@@ -1058,6 +1132,36 @@ const AdminPage = () => {
                 onSubmit={handleCourseSubmit}
                 initialData={editingCourse}
                 isAdmin={user?.accountType === 'ADMIN'}
+            />
+
+            {/* Alert Modal */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                cancelText={confirmModal.cancelText}
+                type={confirmModal.type}
+            />
+
+            {/* Reason Input Modal */}
+            <ReasonInputModal
+                isOpen={reasonModal.isOpen}
+                onClose={() => setReasonModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={reasonModal.onConfirm}
+                title={reasonModal.title}
+                placeholder={reasonModal.placeholder}
             />
         </div>
     );
