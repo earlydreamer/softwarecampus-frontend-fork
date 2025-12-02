@@ -13,14 +13,24 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
-    // 이미지 로딩 에러 핸들러 (무한 루프 방지)
+    /**
+     * 이미지 로딩 에러 핸들러 (무한 루프 방지)
+     * - data-fallback 속성으로 폴백 적용 여부 추적 (URL 비교보다 안정적)
+     * - 브라우저 URL 정규화로 인한 비교 실패 방지
+     * - SSR 환경에서 dataset 접근 안전성 확보
+     */
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
         const img = e.currentTarget;
-        // 이미 폴백 이미지인 경우 핸들러 제거하여 무한 루프 방지
-        if (img.src === DEFAULT_COURSE_IMAGE) {
+        
+        // SSR 환경 체크 및 이미 폴백이 적용된 경우 핸들러 제거
+        if (typeof window === 'undefined' || img.dataset?.fallback === 'true') {
             img.onerror = null;
             return;
         }
+        
+        // 폴백 마커 설정 및 핸들러 제거로 무한 루프 방지
+        img.dataset.fallback = 'true';
+        img.onerror = null;
         img.src = DEFAULT_COURSE_IMAGE;
     };
 
