@@ -10,7 +10,8 @@ interface FileUploadProps {
     files: File[];
     onFilesChange: (files: File[]) => void;
     maxFiles?: number;
-    maxSize?: number;
+    /** 최대 파일 크기 (바이트 단위) */
+    maxSizeBytes?: number;
     disabled?: boolean;
 }
 
@@ -42,7 +43,7 @@ const FileUpload = ({
     files,
     onFilesChange,
     maxFiles = MAX_FILE_COUNT,
-    maxSize = MAX_FILE_SIZE,
+    maxSizeBytes = MAX_FILE_SIZE,
     disabled = false,
 }: FileUploadProps) => {
     const [dragOver, setDragOver] = useState(false);
@@ -57,12 +58,12 @@ const FileUpload = ({
             return `허용되지 않은 파일 형식입니다: ${ext}`;
         }
         
-        if (file.size > maxSize) {
-            return `파일 크기가 ${formatFileSize(maxSize)}를 초과합니다: ${file.name}`;
+        if (file.size > maxSizeBytes) {
+            return `파일 크기가 ${formatFileSize(maxSizeBytes)}를 초과합니다: ${file.name}`;
         }
         
         return null;
-    }, [maxSize]);
+    }, [maxSizeBytes]);
 
     // 파일 추가
     const addFiles = useCallback((newFiles: FileList | File[]) => {
@@ -163,7 +164,7 @@ const FileUpload = ({
                     클릭하거나 파일을 드래그하여 업로드
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-500">
-                    최대 {maxFiles}개, 파일당 {formatFileSize(maxSize)}까지
+                    최대 {maxFiles}개, 파일당 {formatFileSize(maxSizeBytes)}까지
                 </p>
                 <p className="text-xs text-slate-400 dark:text-slate-600 mt-1">
                     이미지, 문서, 압축파일 지원

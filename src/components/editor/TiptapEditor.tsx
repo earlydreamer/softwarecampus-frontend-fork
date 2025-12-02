@@ -196,6 +196,7 @@ const ImageUploadModal = ({ isOpen, onClose, onImageInsert }: ImageUploadModalPr
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
   const MAX_SIZE_MB = 10;
 
   useEffect(() => {
@@ -210,9 +211,17 @@ const ImageUploadModal = ({ isOpen, onClose, onImageInsert }: ImageUploadModalPr
   if (!isOpen) return null;
 
   const validateFile = (file: File): string | null => {
+    // MIME 타입 검증
     if (!ALLOWED_TYPES.includes(file.type)) {
       return '지원하지 않는 이미지 형식입니다. (jpg, png, gif, webp만 가능)';
     }
+    
+    // 파일 확장자 검증 (MIME 타입 스푸핑 방지)
+    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(extension)) {
+      return '지원하지 않는 파일 확장자입니다. (jpg, png, gif, webp만 가능)';
+    }
+    
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       return `파일 크기는 ${MAX_SIZE_MB}MB를 초과할 수 없습니다.`;
     }

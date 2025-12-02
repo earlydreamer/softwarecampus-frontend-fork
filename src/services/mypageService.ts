@@ -63,16 +63,13 @@ export const getFavorites = async (): Promise<CourseFavorite[]> => {
 };
 
 // 파일 업로드
+// FormData 사용 시 Content-Type 헤더는 브라우저가 자동으로 boundary와 함께 설정하므로 명시하지 않음
 export const uploadFile = async (file: File, folder: string = 'profile', fileType: string = 'PROFILE'): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', folder);
     formData.append('fileType', fileType);
 
-    const response = await apiClient.post<{ fileUrl: string; message: string }>('/api/files/upload', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const response = await apiClient.post<{ fileUrl: string; message: string }>('/api/files/upload', formData);
     return response.data.fileUrl;
 };

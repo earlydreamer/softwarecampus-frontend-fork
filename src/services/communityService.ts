@@ -75,7 +75,7 @@ export const fetchBoardPosts = async (
 ): Promise<{ posts: Board[], total: number, totalPages: number }> => {
     try {
         // 백엔드 파라미터명에 맞춤: pageNo, searchText, sortType
-        const params: Record<string, any> = { pageNo: page };
+        const params: Record<string, string | number | boolean> = { pageNo: page };
         if (category) params.category = category;
         if (searchKeyword) params.searchText = searchKeyword;
         if (sortType) params.sortType = sortType;  // 정렬 타입 전달
@@ -201,6 +201,7 @@ export const deleteComment = async (commentId: number, postId: number): Promise<
  * 게시글 작성
  * 백엔드는 multipart/form-data 형식 요구 (JSON 아님!)
  * 필드명: secret (isSecret 아님!)
+ * FormData 사용 시 Content-Type 헤더는 브라우저가 자동으로 boundary와 함께 설정하므로 명시하지 않음
  */
 export const createBoardPost = async (data: {
     title: string;
@@ -210,51 +211,67 @@ export const createBoardPost = async (data: {
     isSecret: boolean;
     hasAttachment?: boolean;
 }, files?: File[]): Promise<Board> => {
-    const formData = new FormData();
-    formData.append('title', data.title);
-    formData.append('text', data.text);
-    formData.append('category', data.category);
-    formData.append('secret', String(data.isSecret));  // isSecret → secret
-    
-    // 첨부파일 추가
-    if (files && files.length > 0) {
-        files.forEach(file => formData.append('files', file));
-    }
-
-    const response = await apiClient.post('/api/boards', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
-    
-    // 백엔드는 201 Created + Location 헤더만 반환 (본문 없음)
-    // Location 헤더에서 생성된 게시글 ID 추출
-    const locationHeader = response.headers['location'] || response.headers['Location'];
-    if (locationHeader) {
-        const match = locationHeader.match(/\/api\/boards\/(\d+)/);
-        if (match) {
-            const newPostId = parseInt(match[1], 10);
-            return fetchBoardPost(newPostId);
+    try {
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('text', data.text);
+        formData.append('category', data.category);
+        formData.append('secret', String(data.isSecret));  // isSecret → secret
+        
+        // 첨부파일 추가 (파일 타입 및 크기 검증)
+        if (files && files.length > 0) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 
+                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'text/plain', 'application/zip', 'application/x-zip-compressed'];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            files.forEach(file => {
+                if (!allowedTypes.includes(file.type)) {
+                    throw new Error(`허용되지 않는 파일 형식입니다: ${file.name}`);
+                }
+                if (file.size > maxSize) {
+                    throw new Error(`파일 크기가 10MB를 초과합니다: ${file.name}`);
+                }
+                formData.append('files', file);
+            });
         }
+
+        const response = await apiClient.post('/api/boards', formData);
+        
+        // 백엔드는 201 Created + Location 헤더만 반환 (본문 없음)
+        // Location 헤더에서 생성된 게시글 ID 추출
+        const locationHeader = response.headers['location'] || response.headers['Location'];
+        if (locationHeader) {
+            const match = locationHeader.match(/\/api\/boards\/(\d+)/);
+            if (match) {
+                const newPostId = parseInt(match[1], 10);
+                return fetchBoardPost(newPostId);
+            }
+        }
+        
+        // Location 헤더가 없으면 기본 Board 객체 반환
+        return {
+            id: 0,
+            title: data.title,
+            text: data.text,
+            category: data.category,
+            account: { id: 0, userName: '' },
+            hits: 0,
+            secret: data.isSecret,
+            createdAt: new Date().toISOString(),
+            likeCount: 0,
+        };
+    } catch (error) {
+        console.error('게시글 작성 실패:', error);
+        throw new Error('게시글 작성에 실패했습니다. 다시 시도해주세요.');
     }
-    
-    // Location 헤더가 없으면 기본 Board 객체 반환
-    return {
-        id: 0,
-        title: data.title,
-        text: data.text,
-        category: data.category,
-        account: { id: 0, userName: '' },
-        hits: 0,
-        secret: data.isSecret,
-        createdAt: new Date().toISOString(),
-        likeCount: 0,
-    };
 };
 
 /**
  * 게시글 수정
  * 백엔드는 204 No Content 반환 (본문 없음)
+ * FormData 사용 시 Content-Type 헤더는 브라우저가 자동으로 boundary와 함께 설정하므로 명시하지 않음
  */
 export const updateBoardPost = async (
     postId: number,
@@ -279,16 +296,26 @@ export const updateBoardPost = async (
         deleteAttachIds.forEach(id => formData.append('deleteAttachIds', String(id)));
     }
     
-    // 새로 추가할 첨부파일 추가
+    // 새로 추가할 첨부파일 추가 (파일 타입 및 크기 검증)
     if (files && files.length > 0) {
-        files.forEach(file => formData.append('files', file));
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 
+            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain', 'application/zip', 'application/x-zip-compressed'];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        files.forEach(file => {
+            if (!allowedTypes.includes(file.type)) {
+                throw new Error(`허용되지 않는 파일 형식입니다: ${file.name}`);
+            }
+            if (file.size > maxSize) {
+                throw new Error(`파일 크기가 10MB를 초과합니다: ${file.name}`);
+            }
+            formData.append('files', file);
+        });
     }
 
-    await apiClient.patch(`/api/boards/${postId}`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    await apiClient.patch(`/api/boards/${postId}`, formData);
     
     // 백엔드가 204 No Content 반환하므로 수정된 게시글 다시 조회
     return fetchBoardPost(postId);
@@ -339,21 +366,42 @@ export const cancelRecommendComment = async (boardId: number, commentId: number)
 /**
  * 에디터 이미지 업로드
  * 본문에 삽입할 이미지를 S3에 업로드하고 URL을 반환
+ * FormData 사용 시 Content-Type 헤더는 브라우저가 자동으로 boundary와 함께 설정하므로 명시하지 않음
  */
 export const uploadEditorImage = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'board');  // S3Folder enum에 정의된 허용 폴더
-    formData.append('fileType', 'BOARD_ATTACH');
+    // 허용된 MIME 타입 검증
+    const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        throw new Error('지원하지 않는 이미지 형식입니다. (jpg, png, gif, webp만 가능)');
+    }
     
-    const response = await apiClient.post('/api/files/upload', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    // 파일 크기 검증 (10MB)
+    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+        throw new Error('파일 크기는 10MB를 초과할 수 없습니다.');
+    }
     
-    // 응답에서 파일 URL 추출
-    return response.data.fileUrl || response.data.url;
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'board');  // S3Folder enum에 정의된 허용 폴더
+        formData.append('fileType', 'BOARD_ATTACH');
+        
+        const response = await apiClient.post('/api/files/upload', formData);
+        
+        // 응답에서 파일 URL 추출
+        const imageUrl = response.data.fileUrl || response.data.url;
+        if (!imageUrl) {
+            throw new Error('서버에서 이미지 URL을 반환하지 않았습니다.');
+        }
+        return imageUrl;
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('10MB')) {
+            throw error; // 크기 검증 오류는 그대로 전달
+        }
+        console.error('이미지 업로드 실패:', error);
+        throw new Error('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+    }
 };
 
 /**
