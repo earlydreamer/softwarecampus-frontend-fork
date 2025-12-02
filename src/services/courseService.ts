@@ -60,6 +60,15 @@ export interface CourseFilterParams {
     status?: 'RECRUITING' | 'IN_PROGRESS' | 'ENDED';
 }
 
+// 과정 목록 조회 파라미터 타입
+interface FetchCoursesParams {
+    keyword?: string;
+    categoryId?: number;
+    categoryType?: string;
+    isOffline?: boolean;
+    status?: string;
+}
+
 export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course[]> => {
     const { categoryType, categoryId, keyword, isOffline, status } = filters || {};
 
@@ -67,7 +76,7 @@ export const fetchCourses = async (filters?: CourseFilterParams): Promise<Course
 
     try {
         // 백엔드 리팩토링: /api/courses with query params (Page 응답)
-        const params: any = {};
+        const params: FetchCoursesParams = {};
         if (keyword) params.keyword = keyword;
         if (categoryId) params.categoryId = categoryId;
         if (categoryType && categoryType !== 'ALL') params.categoryType = categoryType;
@@ -113,6 +122,19 @@ export const fetchCourseById = async (courseId: number): Promise<Course | null> 
     }
 };
 
+// Q&A 목록 조회 파라미터 타입
+interface FetchQnAsParams {
+    page: number;
+    size: number;
+    keyword?: string;
+}
+
+// Q&A 페이지네이션 응답 타입
+interface PaginatedQnAResponse {
+    content: ApiCourseQnaResponse[];
+    totalElements: number;
+}
+
 export const fetchCourseQnAs = async (
     courseId: number,
     page: number = 1,
@@ -121,7 +143,7 @@ export const fetchCourseQnAs = async (
 ): Promise<{ qnas: CourseQna[], totalCount: number }> => {
     try {
         // 백엔드 API 파라미터 준비
-        const params: any = {
+        const params: FetchQnAsParams = {
             page: page - 1,
             size: limit,
         };
@@ -130,9 +152,9 @@ export const fetchCourseQnAs = async (
         }
 
         // 백엔드 리팩토링: /api/courses/{courseId}/qna
-        const response = await apiClient.get<any>(`/api/courses/${courseId}/qna`, { params });
+        const response = await apiClient.get<PaginatedQnAResponse>(`/api/courses/${courseId}/qna`, { params });
 
-        const content = response.data.content as ApiCourseQnaResponse[];
+        const content = response.data.content;
         const totalElements = response.data.totalElements;
 
         const qnas = content.map(qna => ({
@@ -311,6 +333,11 @@ export const deleteReviewFile = async (
  * 관리자 또는 과정 등록자만 삭제 가능
  */
 export const deleteCourse = async (courseId: number): Promise<void> => {
+    // 유효하지 않은 courseId 검증
+    if (!courseId || courseId <= 0) {
+        throw new Error('유효하지 않은 과정 ID입니다.');
+    }
+
     try {
         await apiClient.delete(`/api/courses/${courseId}`);
     } catch (error) {
