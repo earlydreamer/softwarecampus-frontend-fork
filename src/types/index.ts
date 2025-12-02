@@ -325,3 +325,83 @@ export interface AcademyQA { // 변경: AcademyQnA -> AcademyQA
     updatedAt: string;
     viewCount?: number;
 }
+
+// ===== 관리자 페이지용 타입 정의 =====
+export type CourseTarget = '취업예정자' | '재직자';
+
+export interface CourseApprovalRequest {
+    id: number;
+    courseName: string;
+    academyId: number;      // 요청 기관 ID
+    academyName: string;    // 요청 기관명
+    requesterId?: number;   // 등록자 ID (기관 담당자)
+    requesterName?: string; // 등록자 이름 (기관 담당자)
+    category: string;
+    target: CourseTarget;
+    format: CourseFormat;
+    requestType: '등록' | '삭제' | '수정';
+    requestDate: string;
+    status: '대기' | '승인' | '거부';
+    recruitStart?: string;
+    recruitEnd?: string;
+    courseStart?: string;
+    courseEnd?: string;
+    cost?: number;
+    classDay?: string;      // 수업 요일
+    isKdt?: boolean;
+    isNailbaeum?: boolean;
+    isOffline?: boolean;
+    location?: string;
+    description?: string;
+    imageUrl?: string;
+}
+
+export interface ReviewApprovalRequest {
+    id: number;
+    reviewId: number;
+    courseName: string;
+    academyId: number;
+    writerName: string;
+    rating: number;
+    comment: string;
+    requestType: '등록' | '삭제';
+    requestDate: string;
+    status: '대기' | '승인' | '거부';
+}
+
+export interface BannerData {
+    id: number;
+    title: string;
+    description?: string;
+    imageUrl: string;
+    linkUrl: string;
+    displayOrder: number;
+    isActive: boolean;
+    startDate?: string;
+    endDate?: string;
+    createdDate: string;
+}
+
+export interface AdminUser {
+    id: number;
+    userName: string;
+    email: string;
+    accountType: 'ADMIN' | 'USER' | 'ACADEMY';
+    registeredDate: string;
+    lastLogin: string;
+    status: '활성' | '정지' | '탈퇴';
+    postCount: number;
+    commentCount: number;
+}
+
+export interface AdminAcademy {
+    id: number;
+    name: string;
+    businessNumber: string;
+    address: string;
+    phone: string;
+    email: string;
+    registeredDate: string;
+    courseCount: number;
+    status: '활성' | '정지' | '대기';
+}

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { CourseReview } from '../../types';
+import type { CourseReview, ReviewSection } from '../../types';
 import { Star, ThumbsUp, ChevronDown, ChevronUp, User, Calendar } from 'lucide-react';
 import { REVIEW_SECTION_LABELS } from '../../types';
-import { toggleReviewLike } from '../../services/courseService';
+import { toggleReviewLike, createCourseReview, uploadReviewFile } from '../../services/courseService';
 import { sanitizeUrl } from '../../utils/security';
 import AlertModal from '../ui/AlertModal';
+import { useAuthStore } from '../../store/authStore';
+import ReviewEditor from './ReviewEditor';
+import DOMPurify from 'dompurify';
 
 type ApiErrorResponse = {
     response?: {
@@ -146,6 +149,53 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
         likeMutation.mutate({ reviewId });
     };
 
+    const { user, isAuthenticated } = useAuthStore();
+    const [isWritingReview, setIsWritingReview] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // 이미 작성한 리뷰가 있는지 확인
+    const myReview = reviews.find(r => r.writerId === user?.id);
+
+    const handleWriteClick = () => {
+        if (!isAuthenticated) {
+            showAlert('로그인 필요', '후기를 작성하려면 로그인이 필요합니다.', 'warning');
+            return;
+        }
+        if (myReview) {
+            showAlert('작성 불가', '이미 이 과정에 대한 후기를 작성하셨습니다.', 'info');
+            return;
+        }
+        setIsWritingReview(true);
+    };
+
+    const handleReviewSubmit = async (data: { comment: string; sections: ReviewSection[]; file?: File }) => {
+        if (!user) return;
+
+        setIsSubmitting(true);
+        try {
+            // 1. 리뷰 생성
+            const newReview = await createCourseReview(courseId, {
+                comment: data.comment,
+                sections: data.sections,
+            });
+
+            // 2. 파일 업로드 (있을 경우)
+            if (data.file) {
+                await uploadReviewFile(courseId, newReview.id, data.file);
+            }
+
+            // 3. 성공 처리
+            setIsWritingReview(false);
+            showAlert('작성 완료', '후기가 등록되었습니다. 관리자 승인 후 공개됩니다.', 'info');
+            onReviewsUpdate?.();
+        } catch (error) {
+            console.error('Review submission failed:', error);
+            showAlert('오류 발생', '후기 작성 중 오류가 발생했습니다.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="space-y-4">
@@ -159,13 +209,47 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
         );
     }
 
+    // 리뷰 작성 중일 때
+    if (isWritingReview) {
+        return (
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">수강 후기 작성</h3>
+                <ReviewEditor
+                    onSubmit={handleReviewSubmit}
+                    onCancel={() => setIsWritingReview(false)}
+                    isSubmitting={isSubmitting}
+                />
+            </div>
+        );
+    }
+
     if (!reviews || reviews.length === 0) {
         return (
-            <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-200 dark:bg-slate-700 rounded-full mb-4">
-                    <Star className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+            <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">수강 후기</h3>
+                    <button
+                        onClick={handleWriteClick}
+                        className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                        후기 작성하기
+                    </button>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400">아직 작성된 수강 후기가 없습니다.</p>
+                <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-200 dark:bg-slate-700 rounded-full mb-4">
+                        <Star className="w-8 h-8 text-slate-400 dark:text-slate-500" />
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400">아직 작성된 수강 후기가 없습니다.</p>
+                    <p className="text-sm text-slate-400 mt-2">첫 번째 후기를 작성해보세요!</p>
+                </div>
+                {/* Alert Modal */}
+                <AlertModal
+                    isOpen={alertModal.isOpen}
+                    onClose={closeAlert}
+                    title={alertModal.title}
+                    message={alertModal.message}
+                    type={alertModal.type}
+                />
             </div>
         );
     }
@@ -215,17 +299,27 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                 </div>
             </div>
 
-            {/* 정렬 */}
+            {/* 정렬 및 작성 버튼 */}
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">수강 후기</h3>
-                <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'recent' | 'rating')}
-                    className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                    <option value="recent">최신순</option>
-                    <option value="rating">평점순</option>
-                </select>
+                <div className="flex items-center gap-3">
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'recent' | 'rating')}
+                        className="px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                        <option value="recent">최신순</option>
+                        <option value="rating">평점순</option>
+                    </select>
+                    {!myReview && (
+                        <button
+                            onClick={handleWriteClick}
+                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                            후기 작성
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* 리뷰 목록 */}
@@ -233,11 +327,15 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                 {sortedReviews.map(review => {
                     const isExpanded = expandedReviews.has(review.id);
                     const isLiked = localLikeTypes.get(review.id) === 'LIKE'; // 좋아요 여부 확인
+                    const isPending = review.approvalStatus === 'PENDING';
 
                     return (
                         <div
                             key={review.id}
-                            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-700 transition-all overflow-hidden"
+                            className={`bg-white dark:bg-slate-800 rounded-xl border transition-all overflow-hidden ${isPending
+                                ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-900/50 dark:bg-yellow-900/10'
+                                : 'border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-700'
+                                }`}
                         >
                             {/* 헤더 (항상 표시) */}
                             <button
@@ -255,7 +353,12 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="font-semibold text-slate-900 dark:text-white">{review.writerName}</span>
-                                                <div className="flex items-center gap-1">
+                                                {isPending && (
+                                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800">
+                                                        승인 대기 중
+                                                    </span>
+                                                )}
+                                                <div className="flex items-center gap-1 ml-auto sm:ml-2">
                                                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                                                     <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
                                                         {review.averageScore.toFixed(1)}
@@ -323,9 +426,10 @@ const CourseReviews = ({ reviews, courseId, isLoading, onReviewsUpdate }: Course
                                     {review.comment && (
                                         <div className="mb-4">
                                             <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">후기</h4>
-                                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                                                {review.comment}
-                                            </p>
+                                            <div
+                                                className="text-slate-600 dark:text-slate-300 leading-relaxed prose prose-sm max-w-none dark:prose-invert"
+                                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(review.comment) }}
+                                            />
                                         </div>
                                     )}
 

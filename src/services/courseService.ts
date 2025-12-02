@@ -217,3 +217,85 @@ export const toggleReviewLike = async (
         throw error;
     }
 };
+
+/**
+ * 수강 후기 작성
+ */
+export const createCourseReview = async (
+    courseId: number,
+    data: {
+        comment: string;
+        sections: { sectionType: string; score: number }[];
+    }
+): Promise<CourseReview> => {
+    try {
+        const response = await apiClient.post<ApiCourseReviewResponse>(
+            `/api/courses/${courseId}/reviews`,
+            data
+        );
+
+        // DTO -> Model 변환
+        const review = response.data;
+        return {
+            id: review.reviewId,
+            courseId: review.courseId,
+            writerId: review.writerId,
+            writerName: review.writerName,
+            averageScore: review.averageScore,
+            sections: review.sections || [],
+            comment: review.comment,
+            attachments: review.attachments || [],
+            likeCount: review.likeCount,
+            dislikeCount: review.dislikeCount,
+            myLikeType: review.myLikeType,
+            approvalStatus: review.approvalStatus as ApprovalStatus,
+            createdAt: review.createdAt,
+        };
+    } catch (error) {
+        console.error(`Failed to create review for course ${courseId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 수강 후기 파일 업로드 (수료증 등)
+ */
+export const uploadReviewFile = async (
+    courseId: number,
+    reviewId: number,
+    file: File
+): Promise<void> => {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        await apiClient.post(
+            `/api/courses/${courseId}/reviews/${reviewId}/file`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+    } catch (error) {
+        console.error(`Failed to upload file for review ${reviewId}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 수강 후기 파일 삭제
+ */
+export const deleteReviewFile = async (
+    courseId: number,
+    reviewId: number,
+    fileId: number
+): Promise<void> => {
+    try {
+        await apiClient.delete(`/api/courses/${courseId}/reviews/${reviewId}/file/${fileId}`);
+    } catch (error) {
+        console.error(`Failed to delete file ${fileId} for review ${reviewId}:`, error);
+        throw error;
+    }
+};
