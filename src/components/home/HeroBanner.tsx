@@ -45,13 +45,62 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ banners, loading }) => {
         return <Skeleton className="w-full h-[400px] md:h-[500px] rounded-2xl" />;
     }
 
-    if (banners.length === 0) return null;
+    // 배너가 없을 경우 기본 배너 표시
+    if (banners.length === 0) {
+        return (
+            <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-3xl shadow-2xl">
+                {/* 그라디언트 배경 */}
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500" />
+                
+                {/* 장식 요소 */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+                </div>
+                
+                {/* 콘텐츠 */}
+                <div className="relative h-full flex items-center justify-center">
+                    <div className="text-center text-white space-y-4">
+                        <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight">
+                            Softwarecampus
+                        </h2>
+                        <p className="text-lg md:text-xl text-white/80 font-light">
+                            최고의 교육 과정으로 여러분의 커리어를 시작하세요
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const currentBanner = banners[currentIndex];
 
-    // 추가 안전장치: currentIndex가 여전히 범위를 벗어난 경우
+    // 추가 안전장치: currentIndex가 여전히 범위를 벗어난 경우 기본 배너 표시
     if (!currentBanner) {
-        return null;
+        return (
+            <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden rounded-3xl shadow-2xl">
+                {/* 그라디언트 배경 */}
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500" />
+                
+                {/* 장식 요소 */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+                </div>
+                
+                {/* 콘텐츠 */}
+                <div className="relative h-full flex items-center justify-center">
+                    <div className="text-center text-white space-y-4">
+                        <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight">
+                            Softwarecampus
+                        </h2>
+                        <p className="text-lg md:text-xl text-white/80 font-light">
+                            최고의 교육 과정으로 여러분의 커리어를 시작하세요
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (
