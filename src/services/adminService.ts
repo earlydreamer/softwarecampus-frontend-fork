@@ -159,13 +159,18 @@ export const getCourseApprovalRequests = async (
     if (keyword) params.keyword = keyword;
 
     const response = await apiClient.get<{ content: ApiCourseResponse[]; totalElements: number }>(
-        '/admin/courses',
+        '/admin/courses/approval-requests',
         { params }
     );
 
-    const requests = response.data.content.map(mapApiCourseToApprovalRequest);
+    // 응답 데이터 유효성 검사
+    if (!response.data?.content) {
+        console.warn('[adminService] getCourseApprovalRequests: 예상치 못한 응답 형식', response.data);
+    }
+    const content = response.data?.content || [];
+    const requests = content.map(mapApiCourseToApprovalRequest);
 
-    return { requests, totalCount: response.data.totalElements };
+    return { requests, totalCount: response.data?.totalElements || 0 };
 };
 
 /**
@@ -200,13 +205,18 @@ export const getReviewApprovalRequests = async (
     if (keyword) params.keyword = keyword;
 
     const response = await apiClient.get<{ content: ApiReviewResponse[]; totalElements: number }>(
-        '/admin/reviews',
+        '/admin/reviews/approval-requests',
         { params }
     );
 
-    const requests = response.data.content.map(mapApiReviewToApprovalRequest);
+    // 응답 데이터 유효성 검사
+    if (!response.data?.content) {
+        console.warn('[adminService] getReviewApprovalRequests: 예상치 못한 응답 형식', response.data);
+    }
+    const content = response.data?.content || [];
+    const requests = content.map(mapApiReviewToApprovalRequest);
 
-    return { requests, totalCount: response.data.totalElements };
+    return { requests, totalCount: response.data?.totalElements || 0 };
 };
 
 /**
@@ -228,7 +238,12 @@ export const rejectReview = async (reviewId: number, reason: string): Promise<vo
  */
 export const getAdminBanners = async (): Promise<BannerData[]> => {
     const response = await apiClient.get<ApiBannerResponse[]>('/admin/banners');
-    return response.data.map(banner => ({
+    // 응답 데이터 유효성 검사
+    if (!Array.isArray(response.data)) {
+        console.warn('[adminService] getAdminBanners: 예상치 못한 응답 형식', response.data);
+    }
+    const banners = Array.isArray(response.data) ? response.data : [];
+    return banners.map(banner => ({
         id: banner.id,
         title: banner.title,
         imageUrl: banner.imageUrl,
@@ -301,7 +316,12 @@ export const getAdminUsers = async (
         { params }
     );
 
-    const users = response.data.content.map(user => ({
+    // 응답 데이터 유효성 검사
+    if (!response.data?.content) {
+        console.warn('[adminService] getAdminUsers: 예상치 못한 응답 형식', response.data);
+    }
+    const content = response.data?.content || [];
+    const users = content.map(user => ({
         id: user.id,
         userName: user.userName,
         email: user.email,
@@ -313,7 +333,7 @@ export const getAdminUsers = async (
         commentCount: user.commentCount
     } as AdminUser));
 
-    return { users, totalCount: response.data.totalElements };
+    return { users, totalCount: response.data?.totalElements || 0 };
 };
 
 /**
@@ -338,7 +358,12 @@ export const getAdminAcademies = async (
         { params }
     );
 
-    const academies = response.data.content.map(academy => ({
+    // 응답 데이터 유효성 검사
+    if (!response.data?.content) {
+        console.warn('[adminService] getAdminAcademies: 예상치 못한 응답 형식', response.data);
+    }
+    const content = response.data?.content || [];
+    const academies = content.map(academy => ({
         id: academy.id,
         name: academy.name,
         businessNumber: academy.businessNumber,
@@ -350,7 +375,7 @@ export const getAdminAcademies = async (
         courseCount: academy.courseCount || 0,
     } as AdminAcademy));
 
-    return { academies, totalCount: response.data.totalElements };
+    return { academies, totalCount: response.data?.totalElements || 0 };
 };
 
 /**
