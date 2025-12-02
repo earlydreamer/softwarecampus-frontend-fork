@@ -9,6 +9,7 @@ import CourseCard from '../components/common/CourseCard';
 import AcademyQnAs from '../components/academy/AcademyQnAs';
 import MapEmbed from '../components/common/MapEmbed';
 import { QNA_PER_PAGE } from '../constants';
+import AlertModal from '../components/ui/AlertModal';
 
 const AcademyDetailPage = () => {
     const { academyId } = useParams<{ academyId: string }>();
@@ -16,6 +17,12 @@ const AcademyDetailPage = () => {
     const [activeTab, setActiveTab] = useState<'info' | 'courses' | 'qna'>('info');
     const [qnaPage, setQnaPage] = useState(1);
     const [qnaSearchKeyword, setQnaSearchKeyword] = useState('');
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'warning' | 'error' | 'info';
+    }>({ isOpen: false, title: '', message: '', type: 'info' });
 
     const {
         data: academy,
@@ -316,7 +323,12 @@ const AcademyDetailPage = () => {
                                                 isLoading={isQnasLoading}
                                                 onQuestionSubmit={(title, content) => {
                                                     console.log('Question submitted:', { title, content });
-                                                    alert('질문이 등록되었습니다.');
+                                                    setAlertModal({
+                                                        isOpen: true,
+                                                        title: '등록 완료',
+                                                        message: '질문이 등록되었습니다.',
+                                                        type: 'success'
+                                                    });
                                                 }}
                                                 onSearch={(keyword) => {
                                                     setQnaSearchKeyword(keyword);
@@ -382,6 +394,15 @@ const AcademyDetailPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Alert Modal */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };

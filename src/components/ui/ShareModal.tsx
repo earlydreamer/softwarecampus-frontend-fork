@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useId } from 'react';
 import { X, Link as LinkIcon, Check, Copy } from 'lucide-react';
+import AlertModal from './AlertModal';
 
 interface ShareModalProps {
     url: string;
@@ -9,6 +10,12 @@ interface ShareModalProps {
 
 const ShareModal = ({ url, title, onClose }: ShareModalProps) => {
     const [copied, setCopied] = useState(false);
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'warning' | 'error' | 'info';
+    }>({ isOpen: false, title: '', message: '', type: 'info' });
     const titleId = useId();
     const modalRef = useRef<HTMLDivElement>(null);
     const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -82,7 +89,12 @@ const ShareModal = ({ url, title, onClose }: ShareModalProps) => {
     const handleCopyLink = async () => {
         // Clipboard API 지원 여부 확인
         if (!navigator.clipboard) {
-            alert('이 브라우저는 클립보드 복사를 지원하지 않습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '지원되지 않는 기능',
+                message: '이 브라우저는 클립보드 복사를 지원하지 않습니다.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -91,7 +103,12 @@ const ShareModal = ({ url, title, onClose }: ShareModalProps) => {
             setCopied(true);
         } catch (error) {
             console.error('Failed to copy link:', error);
-            alert('링크 복사에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '복사 실패',
+                message: '링크 복사에 실패했습니다.',
+                type: 'error'
+            });
         }
     };
 
@@ -220,6 +237,15 @@ const ShareModal = ({ url, title, onClose }: ShareModalProps) => {
                     </div>
                 </div>
             </div>
+
+            {/* Alert Modal */}
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                type={alertModal.type}
+            />
         </div>
     );
 };

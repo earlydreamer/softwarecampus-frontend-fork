@@ -720,7 +720,7 @@ const AdminPage = () => {
                                                             </button>
                                                             {req.status === '대기' && (
                                                                 <button
-                                                                    onClick={() => alert('삭제 요청이 접수되었습니다. (구현 예정)')}
+                                                                    onClick={() => showAlert('알림', '삭제 요청이 접수되었습니다.', 'info')}
                                                                     className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                                     title="삭제 요청"
                                                                     aria-label="삭제 요청"
