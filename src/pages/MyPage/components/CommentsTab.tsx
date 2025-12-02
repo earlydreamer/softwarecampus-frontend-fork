@@ -32,8 +32,10 @@ const CommentsTab = ({ comments, stats, isLoading, currentPage, totalPages, onPa
                     <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalComments}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">현재 페이지</p>
-                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{comments.length}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">참여한 게시글</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                        {new Set(comments.map(c => c.boardId)).size}
+                    </p>
                 </div>
             </div>
 
@@ -56,7 +58,11 @@ const CommentsTab = ({ comments, stats, isLoading, currentPage, totalPages, onPa
                             <div 
                                 key={comment.id} 
                                 onClick={() => navigate(`/community/${comment.boardId}`)}
-                                className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:shadow-md transition-all cursor-pointer"
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), navigate(`/community/${comment.boardId}`))}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`${comment.boardTitle}에 작성한 댓글 보기`}
+                                className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
                             >
                                 <div className="flex items-start justify-between mb-3">
                                     <p className="text-sm text-slate-600 dark:text-slate-400">

@@ -1,7 +1,16 @@
 import { Calendar, Eye, MessageSquare, ThumbsUp, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDateKorean } from '../../../utils/dateUtils';
-import type { MyPost, MyStats } from '../../../types';
+import type { MyPost, MyStats, BoardCategory } from '../../../types';
+import { BOARD_CATEGORY_LABELS } from '../../../types';
+
+// 카테고리별 스타일 매핑
+const CATEGORY_STYLES: Record<BoardCategory, string> = {
+    'NOTICE': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    'QUESTION': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    'COURSE_STORY': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'CODING_STORY': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+};
 
 interface PostsTabProps {
     posts: MyPost[];
@@ -65,13 +74,14 @@ const PostsTab = ({ posts, stats, isLoading, currentPage, totalPages, onPageChan
                             <div 
                                 key={post.id} 
                                 onClick={() => handlePostClick(post.id)}
-                                className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:shadow-md transition-all cursor-pointer"
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handlePostClick(post.id))}
+                                role="button"
+                                tabIndex={0}
+                                className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:shadow-md transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500"
                             >
                                 <div className="flex items-start justify-between mb-3">
-                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${post.category === 'CODING_STORY' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                        }`}>
-                                        {post.category === 'CODING_STORY' ? '코딩이야기' : '진로이야기'}
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${CATEGORY_STYLES[post.category as BoardCategory] || 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'}`}>
+                                        {BOARD_CATEGORY_LABELS[post.category as BoardCategory] || post.category}
                                     </span>
                                     <span className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                         <Calendar className="w-4 h-4" />

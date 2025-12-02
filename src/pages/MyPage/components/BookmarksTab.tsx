@@ -13,8 +13,9 @@ const BookmarksTab = ({ courses, stats, isLoading }: BookmarksTabProps) => {
 
     if (isLoading) {
         return (
-            <div className="lg:col-span-2 flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+            <div className="lg:col-span-2 flex items-center justify-center py-20" role="status" aria-label="데이터 로딩 중">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-600" aria-hidden="true" />
+                <span className="sr-only">데이터를 불러오는 중입니다...</span>
             </div>
         );
     }
@@ -48,6 +49,9 @@ const BookmarksTab = ({ courses, stats, isLoading }: BookmarksTabProps) => {
                             <div 
                                 key={course.courseId} 
                                 onClick={() => navigate(`/lectures/${course.courseId}`)}
+                                onKeyDown={(e) => e.key === 'Enter' && navigate(`/lectures/${course.courseId}`)}
+                                role="button"
+                                tabIndex={0}
                                 className="p-5 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:shadow-lg transition-all cursor-pointer group"
                             >
                                 <div className="flex items-start justify-between mb-3">
@@ -58,9 +62,9 @@ const BookmarksTab = ({ courses, stats, isLoading }: BookmarksTabProps) => {
                                 <h3 className="font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                     {course.courseName}
                                 </h3>
-                                <button className="w-full py-2 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition">
+                                <span className="block w-full py-2 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-lg text-center group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 transition">
                                     자세히 보기
-                                </button>
+                                </span>
                             </div>
                         ))
                     )}

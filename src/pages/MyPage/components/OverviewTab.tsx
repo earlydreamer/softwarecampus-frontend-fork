@@ -2,7 +2,16 @@ import { FileText, MessageSquare, Bookmark, TrendingUp, Eye, Calendar, Loader2 }
 import { useNavigate } from 'react-router-dom';
 import { formatDateKorean } from '../../../utils/dateUtils';
 import type { TabType } from '../useMyPage';
-import type { MyPost, MyComment, MyStats, CourseFavorite } from '../../../types';
+import type { MyPost, MyComment, MyStats, CourseFavorite, BoardCategory } from '../../../types';
+import { BOARD_CATEGORY_LABELS } from '../../../types';
+
+// 카테고리별 스타일 매핑
+const CATEGORY_STYLES: Record<BoardCategory, string> = {
+    'NOTICE': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    'QUESTION': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    'COURSE_STORY': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'CODING_STORY': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+};
 
 interface OverviewTabProps {
     setActiveTab: (tab: TabType) => void;
@@ -89,13 +98,14 @@ const OverviewTab = ({ setActiveTab, posts, comments, bookmarkedCourses, stats, 
                             <div 
                                 key={post.id} 
                                 onClick={() => navigate(`/community/${post.id}`)}
-                                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), navigate(`/community/${post.id}`))}
+                                role="button"
+                                tabIndex={0}
+                                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                             >
                                 <div className="flex items-start justify-between mb-2">
-                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${post.category === 'CODING_STORY' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                        }`}>
-                                        {post.category === 'CODING_STORY' ? '코딩이야기' : '진로이야기'}
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${CATEGORY_STYLES[post.category as BoardCategory] || 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'}`}>
+                                        {BOARD_CATEGORY_LABELS[post.category as BoardCategory] || post.category}
                                     </span>
                                     <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
@@ -138,7 +148,11 @@ const OverviewTab = ({ setActiveTab, posts, comments, bookmarkedCourses, stats, 
                             <div 
                                 key={comment.id} 
                                 onClick={() => navigate(`/community/${comment.boardId}`)}
-                                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), navigate(`/community/${comment.boardId}`))}
+                                role="link"
+                                tabIndex={0}
+                                aria-label={`${comment.boardTitle}에 작성한 댓글 보기`}
+                                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors cursor-pointer border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                             >
                                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">
                                     <span className="font-medium text-primary-600 dark:text-primary-400">{comment.boardTitle}</span>에 댓글
@@ -173,7 +187,10 @@ const OverviewTab = ({ setActiveTab, posts, comments, bookmarkedCourses, stats, 
                             <div 
                                 key={course.courseId} 
                                 onClick={() => navigate(`/lectures/${course.courseId}`)}
-                                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:shadow-md transition-all cursor-pointer border border-slate-200 dark:border-slate-700 group"
+                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), navigate(`/lectures/${course.courseId}`))}
+                                role="link"
+                                tabIndex={0}
+                                className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:shadow-md transition-all cursor-pointer border border-slate-200 dark:border-slate-700 group focus:outline-none focus:ring-2 focus:ring-primary-500"
                             >
                                 <div className="flex items-start justify-between mb-3">
                                     <span className="px-2.5 py-1 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs font-medium">
