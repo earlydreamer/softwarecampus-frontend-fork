@@ -51,7 +51,7 @@ const CommunityWritePage = () => {
 
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [title, text]);
+    }, [title, text, attachedFiles]);
 
     // 게시글 작성 mutation
     const createPostMutation = useMutation({
@@ -115,7 +115,6 @@ const CommunityWritePage = () => {
                 userName: user.userName,
             },
             isSecret: false,
-            hasAttachment: files.length > 0,
             files: files.length > 0 ? files : undefined,
         });
     };

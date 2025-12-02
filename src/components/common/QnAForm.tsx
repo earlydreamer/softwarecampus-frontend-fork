@@ -32,11 +32,13 @@ const QnAForm = ({ onSubmit, onCancel, onFileUpload }: QnAFormProps) => {
         // 삭제된 파일 처리
         const removedFiles = attachedFiles.filter(prev => !files.find(curr => curr.id === prev.id));
         if (removedFiles.length > 0) {
-            const newMap = { ...uploadedFileMap };
-            removedFiles.forEach(f => {
-                delete newMap[f.id];
+            setUploadedFileMap(prevMap => {
+                const newMap = { ...prevMap };
+                removedFiles.forEach(f => {
+                    delete newMap[f.id];
+                });
+                return newMap;
             });
-            setUploadedFileMap(newMap);
         }
 
         // 상태 업데이트 (UI 반영)

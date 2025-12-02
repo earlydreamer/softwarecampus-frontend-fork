@@ -531,6 +531,8 @@ const CourseDetailPage = () => {
                                                 onPageChange={setQnaPage}
                                                 isLoading={isQnAsLoading}
                                                 onQuestionSubmit={(title, content, fileDetails) => {
+                                                    // 중복 제출 방지
+                                                    if (createQnAMutation.isPending) return;
                                                     createQnAMutation.mutate({ title, content, fileDetails });
                                                 }}
                                                 onSearch={(keyword) => {
