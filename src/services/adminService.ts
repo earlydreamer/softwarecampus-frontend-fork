@@ -7,6 +7,7 @@ import type {
     AdminAcademy,
     CategoryType
 } from '../types';
+import { targetToCategoryType, categoryTypeToTarget } from '../utils/categoryType';
 
 // 대시보드 통계 응답 타입
 export interface DashboardStats {
@@ -62,6 +63,9 @@ interface ApiCourseResponse {
     approvedAt: string;
     createdAt: string;
     imageUrl?: string; // 과정 썸네일 이미지 URL
+    thumbnailImageId?: number; // 썸네일 이미지 ID (삭제 API용)
+    headerImageUrl?: string; // 헤더 이미지 URL
+    headerImageId?: number; // 헤더 이미지 ID (삭제 API용)
 }
 
 // 백엔드 리뷰 응답 타입 (CourseReviewResponse)
@@ -573,8 +577,8 @@ export const convertFormToRequest = (
     },
     academyId: number
 ): CourseRegistrationRequest => {
-    // 대상(target)에 따라 categoryType 결정
-    const categoryType: 'EMPLOYEE' | 'JOB_SEEKER' = formData.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
+    // 대상(target)에 따라 categoryType 결정 (중앙화된 유틸리티 함수 사용)
+    const categoryType = targetToCategoryType(formData.target);
 
     // 카테고리명은 이제 백엔드에서 직접 가져온 값을 사용
     const categoryName = formData.category || '';
@@ -674,6 +678,19 @@ export const uploadCourseImage = async (
 };
 
 /**
+ * 과정 이미지 삭제 (Soft Delete)
+ * 백엔드에서 isDeleted=true로 마킹되고, 스케줄러가 나중에 S3 파일을 정리합니다.
+ * @param categoryType 카테고리 타입 (EMPLOYEE/JOB_SEEKER)
+ * @param imageId 삭제할 이미지 ID
+ */
+export const deleteCourseImage = async (
+    categoryType: CategoryType,
+    imageId: number
+): Promise<void> => {
+    await apiClient.delete(`/api/${categoryType}/courses/images/${imageId}`);
+};
+
+/**
  * 배너 생성
  */
 export const createBanner = async (bannerData: FormData): Promise<BannerData> => {
@@ -724,7 +741,7 @@ const mapApiCourseToApprovalRequest = (course: ApiCourseResponse): CourseApprova
     requesterId: course.requesterId,
     requesterName: course.requesterName,
     category: course.categoryName,
-    target: course.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
+    target: categoryTypeToTarget(course.categoryType),
     format: course.offline ? '오프라인' : '온라인',
     requestType: '등록',
     requestDate: course.createdAt,
@@ -740,6 +757,9 @@ const mapApiCourseToApprovalRequest = (course: ApiCourseResponse): CourseApprova
     location: course.location,
     description: course.requirement,
     imageUrl: course.imageUrl,
+    thumbnailImageId: course.thumbnailImageId,
+    headerImageUrl: course.headerImageUrl,
+    headerImageId: course.headerImageId,
 });
 
 // Helper: 리뷰 응답 매핑

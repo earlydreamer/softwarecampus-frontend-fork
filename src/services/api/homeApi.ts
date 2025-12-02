@@ -2,6 +2,7 @@ import apiClient from './client';
 import type { ApiCourseResponse, ApiHomeCommunityResponse, CommunityPost } from './types';
 import type { Course } from '../../types';
 import { formatCourseDuration } from '../../utils/dateUtils';
+import { categoryTypeToTarget } from '../../utils/categoryType';
 
 /**
  * 과정 목록 조회
@@ -34,7 +35,7 @@ export const fetchCoursesByType = async (
                 id: apiCourse.categoryId,
                 categoryName: apiCourse.categoryName,
                 categoryType: apiCourse.categoryType,
-                name: apiCourse.categoryType === 'EMPLOYEE' ? '재직자' : '취업예정자',
+                name: categoryTypeToTarget(apiCourse.categoryType),
             },
             name: apiCourse.name,
             recruitStart: apiCourse.recruitStart,
