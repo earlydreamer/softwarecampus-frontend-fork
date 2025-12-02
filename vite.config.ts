@@ -1,63 +1,41 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// 프록시 대상 경로 목록
+const proxyRoutes = [
+  '/api',
+  '/admin',
+  '/courses',
+  '/reviews',
+  '/banners',
+  '/academies',
+  '/accounts',
+  '/community',
+  '/EMPLOYEE',
+  '/JOB_SEEKER',
+];
+
+// 공통 프록시 설정
+const baseProxyOptions = {
+  target: 'http://localhost:8081',
+  changeOrigin: true,
+  secure: false,
+};
+
+// 프록시 맵 생성 (각 경로에 동일한 설정 적용)
+const proxyConfig = proxyRoutes.reduce<Record<string, typeof baseProxyOptions>>(
+  (acc, route) => {
+    acc[route] = baseProxyOptions;
+    return acc;
+  },
+  {}
+);
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
-    proxy: {
-      // API 요청을 백엔드로 프록시
-      '/api': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/admin': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/courses': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/reviews': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/banners': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/academies': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/accounts': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/community': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/EMPLOYEE': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/JOB_SEEKER': {
-        target: 'http://localhost:8081',
-        changeOrigin: true,
-        secure: false,
-      },
-    }
+    proxy: proxyConfig
   },
   build: {
     rollupOptions: {
