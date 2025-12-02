@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import type { CourseQna } from '../../types';
-import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, Paperclip, Download } from 'lucide-react';
 import QnAForm from '../common/QnAForm';
+import { uploadCourseQnaFile } from '../../services/courseService';
 
 import { QNA_PER_PAGE } from '../../constants';
 
 interface CourseQnAsProps {
+    courseId: number;
     qnas: CourseQna[];
     totalCount: number;
     page: number;
     onPageChange: (page: number) => void;
     isLoading?: boolean;
-    onQuestionSubmit: (title: string, content: string) => void;
+    onQuestionSubmit: (title: string, content: string, fileDetails: { id: number; originName: string; fileUrl: string }[]) => void;
     onSearch?: (keyword: string) => void;
 }
 
-const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestionSubmit, onSearch }: CourseQnAsProps) => {
+const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading, onQuestionSubmit, onSearch }: CourseQnAsProps) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [expandedQnaId, setExpandedQnaId] = useState<number | null>(null);
     const [searchKeyword, setSearchKeyword] = useState('');
@@ -88,11 +90,12 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
 
             {isFormOpen && (
                 <QnAForm
-                    onSubmit={(title, content) => {
-                        onQuestionSubmit(title, content);
+                    onSubmit={(title, content, fileDetails) => {
+                        onQuestionSubmit(title, content, fileDetails);
                         setIsFormOpen(false);
                     }}
                     onCancel={() => setIsFormOpen(false)}
+                    onFileUpload={(file) => uploadCourseQnaFile(courseId, file)}
                 />
             )}
 
@@ -163,6 +166,9 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
                                         <h4 className="font-semibold text-slate-900 mb-1 flex items-center gap-2 text-lg">
                                             <MessageCircle className="w-5 h-5 text-primary-600 shrink-0" />
                                             {qna.title}
+                                            {qna.files && qna.files.length > 0 && (
+                                                <Paperclip className="w-4 h-4 text-slate-400" />
+                                            )}
                                         </h4>
                                         <div className="flex items-center justify-between mt-3">
                                             <span className="flex items-center gap-1 text-sm text-slate-500">
@@ -184,6 +190,30 @@ const CourseQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuestio
                                 <div className="border-t border-slate-100 animate-fadeIn">
                                     <div className="p-6 bg-slate-50/50">
                                         <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: qna.questionText }} />
+
+                                        {/* 첨부파일 목록 */}
+                                        {qna.files && qna.files.length > 0 && (
+                                            <div className="mt-6 pt-4 border-t border-slate-200">
+                                                <h5 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                                                    <Paperclip className="w-4 h-4" />
+                                                    첨부파일 ({qna.files.length})
+                                                </h5>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {qna.files.map(file => (
+                                                        <a
+                                                            key={file.id}
+                                                            href={file.fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:text-primary-600 hover:border-primary-200 transition-colors"
+                                                        >
+                                                            <Download className="w-4 h-4" />
+                                                            {file.originName}
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {qna.isAnswered && qna.answerText && (

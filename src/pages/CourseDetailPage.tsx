@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchCourseById, fetchCourseReviews, fetchCourseQnAs } from '../services/courseService';
+import { fetchCourseById, fetchCourseReviews, fetchCourseQnAs, createCourseQnA } from '../services/courseService';
 import { addCourseFavorite, removeCourseFavorite, checkCourseFavorite } from '../services/favoriteService';
 import { useAuthStore } from '../store/authStore';
 import { Calendar, MapPin, Clock, Building, CheckCircle2, Share2, Heart } from 'lucide-react';
@@ -155,6 +155,34 @@ const CourseDetailPage = () => {
         onSettled: () => {
             // 성공/실패 여부와 관계없이 쿼리 무효화하여 최신 상태 동기화
             queryClient.invalidateQueries({ queryKey: ['course-favorite', id] });
+        }
+    });
+
+    // Q&A 등록 Mutation
+    const createQnAMutation = useMutation({
+        mutationFn: (data: { title: string; content: string; fileDetails?: { id: number; originName: string; fileUrl: string }[] }) =>
+            createCourseQnA(id!, {
+                title: data.title,
+                questionText: data.content,
+                fileDetails: data.fileDetails
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['course-qnas', id] });
+            setAlertModal({
+                isOpen: true,
+                title: '질문 등록 완료',
+                message: '질문이 성공적으로 등록되었습니다.',
+                type: 'success'
+            });
+        },
+        onError: (error) => {
+            console.error('Failed to create QnA:', error);
+            setAlertModal({
+                isOpen: true,
+                title: '질문 등록 실패',
+                message: '질문 등록 중 오류가 발생했습니다.',
+                type: 'error'
+            });
         }
     });
 
@@ -496,19 +524,14 @@ const CourseDetailPage = () => {
                                             </div>
                                         ) : (
                                             <CourseQnAs
+                                                courseId={Number(id!)}
                                                 qnas={qnaData?.qnas || []}
                                                 totalCount={qnaData?.totalCount || 0}
                                                 page={qnaPage}
                                                 onPageChange={setQnaPage}
                                                 isLoading={isQnAsLoading}
-                                                onQuestionSubmit={(title, content) => {
-                                                    console.log('Question submitted:', { title, content });
-                                                    setAlertModal({
-                                                        isOpen: true,
-                                                        title: '질문 등록',
-                                                        message: '질문이 등록되었습니다.',
-                                                        type: 'success'
-                                                    });
+                                                onQuestionSubmit={(title, content, fileDetails) => {
+                                                    createQnAMutation.mutate({ title, content, fileDetails });
                                                 }}
                                                 onSearch={(keyword) => {
                                                     setQnaSearchKeyword(keyword);
