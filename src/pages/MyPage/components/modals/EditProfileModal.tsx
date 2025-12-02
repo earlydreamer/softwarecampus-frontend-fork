@@ -49,10 +49,10 @@ const EditProfileModal = ({ isOpen, onClose, user, onSubmit, isPending, onPasswo
             return;
         }
 
-        // 파일 크기 검증 (5MB)
-        const maxSize = 5 * 1024 * 1024;
+        // 파일 크기 검증 (10MB)
+        const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            alert('이미지 크기는 5MB 이하여야 합니다.');
+            alert('이미지 크기는 10MB 이하여야 합니다.');
             return;
         }
 
