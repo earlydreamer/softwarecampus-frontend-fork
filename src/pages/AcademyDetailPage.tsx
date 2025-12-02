@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { fetchAcademyById, fetchCoursesByAcademyId, fetchAcademyQnAs } from '../services/academyService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchAcademyById, fetchCoursesByAcademyId, fetchAcademyQnAs, createAcademyQnA } from '../services/academyService';
 import { MapPin, Phone, Star, Award, BookOpen, Users, CheckCircle2 } from 'lucide-react';
 import { sanitizeUrl } from '../utils/security';
 import Skeleton from '../components/ui/Skeleton';
@@ -10,6 +10,7 @@ import AcademyQnAs from '../components/academy/AcademyQnAs';
 import MapEmbed from '../components/common/MapEmbed';
 import { QNA_PER_PAGE } from '../constants';
 import AlertModal from '../components/ui/AlertModal';
+import { useAuthStore } from '../store/authStore';
 
 const AcademyDetailPage = () => {
     const { academyId } = useParams<{ academyId: string }>();
@@ -23,6 +24,34 @@ const AcademyDetailPage = () => {
         message: string;
         type: 'success' | 'warning' | 'error' | 'info';
     }>({ isOpen: false, title: '', message: '', type: 'info' });
+    
+    const queryClient = useQueryClient();
+    const { isAuthenticated } = useAuthStore();
+
+    // Q&A 등록 mutation
+    const createQnAMutation = useMutation({
+        mutationFn: ({ title, content }: { title: string; content: string }) =>
+            createAcademyQnA(id, title, content),
+        onSuccess: () => {
+            // Q&A 목록 캐시 무효화
+            queryClient.invalidateQueries({ queryKey: ['academy-qnas', id] });
+            setAlertModal({
+                isOpen: true,
+                title: '등록 완료',
+                message: '질문이 등록되었습니다.',
+                type: 'success'
+            });
+        },
+        onError: (error: Error) => {
+            console.error('Q&A 등록 실패:', error);
+            setAlertModal({
+                isOpen: true,
+                title: '등록 실패',
+                message: error.message || '질문 등록에 실패했습니다.',
+                type: 'error'
+            });
+        }
+    });
 
     const {
         data: academy,
@@ -54,7 +83,7 @@ const AcademyDetailPage = () => {
         refetch: refetchQnAs
     } = useQuery({
         queryKey: ['academy-qnas', id, qnaPage, qnaSearchKeyword],
-        queryFn: () => fetchAcademyQnAs(id, qnaPage, QNA_PER_PAGE),
+        queryFn: () => fetchAcademyQnAs(id, qnaPage, QNA_PER_PAGE, qnaSearchKeyword || undefined),
         enabled: !isNaN(id) && id > 0,
     });
 
@@ -322,13 +351,16 @@ const AcademyDetailPage = () => {
                                                 onPageChange={setQnaPage}
                                                 isLoading={isQnasLoading}
                                                 onQuestionSubmit={(title, content) => {
-                                                    console.log('Question submitted:', { title, content });
-                                                    setAlertModal({
-                                                        isOpen: true,
-                                                        title: '등록 완료',
-                                                        message: '질문이 등록되었습니다.',
-                                                        type: 'success'
-                                                    });
+                                                    if (!isAuthenticated) {
+                                                        setAlertModal({
+                                                            isOpen: true,
+                                                            title: '로그인 필요',
+                                                            message: '질문을 등록하려면 로그인이 필요합니다.',
+                                                            type: 'warning'
+                                                        });
+                                                        return;
+                                                    }
+                                                    createQnAMutation.mutate({ title, content });
                                                 }}
                                                 onSearch={(keyword) => {
                                                     setQnaSearchKeyword(keyword);

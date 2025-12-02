@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, Search, Building2, MapPin, Phone, Mail } from 'lucide-react';
 import type { Academy } from '../../types';
-import { getApprovedAcademies } from '../../services/academyService';
+import { getApprovedAcademies, createAcademy } from '../../services/academyService';
 import AlertModal from '../ui/AlertModal';
 
 interface AcademySelectModalProps {
@@ -148,48 +148,32 @@ const AcademySelectModal = ({ isOpen, onClose, onSelect }: AcademySelectModalPro
             return;
         }
 
-        /* 
-        // Real API implementation
-        const formData = new FormData();
-        formData.append('name', regName);
-        formData.append('businessNumber', regBusinessNumber);
-        formData.append('address', regAddress);
-        formData.append('email', regEmail);
-        formData.append('businessRegistration', uploadedFiles[0].file);
-
-        try {
-            await createAcademy(formData);
+        // 사업자등록번호 형식 검증 (xxx-xx-xxxxx)
+        const businessNumberRegex = /^\d{3}-\d{2}-\d{5}$/;
+        if (!businessNumberRegex.test(regBusinessNumber)) {
             setAlertModal({
                 isOpen: true,
-                title: '등록 요청 완료',
-                message: '기관 등록 요청이 성공적으로 제출되었습니다.\n관리자 승인 후 이메일로 결과를 알려드립니다.',
-                type: 'success',
-                onCloseCallback: onClose
+                title: '형식 오류',
+                message: '사업자등록번호 형식이 올바르지 않습니다.\n(예: 123-45-67890)',
+                type: 'warning'
             });
-        } catch (error) {
-            console.error('Registration failed:', error);
-            setAlertModal({
-                isOpen: true,
-                title: '등록 실패',
-                message: '기관 등록 요청 중 오류가 발생했습니다.',
-                type: 'error'
-            });
+            return;
         }
-        */
 
-        // Mock implementation for UI testing
         try {
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            console.log('Mock Registration Data:', {
-                name: regName,
-                businessNumber: regBusinessNumber,
-                address: regAddress,
-                email: regEmail,
-                files: uploadedFiles
+            const formData = new FormData();
+            formData.append('name', regName);
+            formData.append('businessNumber', regBusinessNumber);
+            formData.append('address', regAddress);
+            formData.append('email', regEmail);
+            
+            // 모든 첨부 파일 추가
+            uploadedFiles.forEach(({ file }) => {
+                formData.append('files', file);
             });
 
+            await createAcademy(formData);
+            
             setAlertModal({
                 isOpen: true,
                 title: '등록 요청 완료',
