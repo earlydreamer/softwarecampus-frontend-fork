@@ -240,11 +240,21 @@ export const getAdminBanners = async (): Promise<BannerData[]> => {
 };
 
 /**
- * 배너 순서 변경
+ * 배너 순서 변경 (단일)
  */
 export const updateBannerOrder = async (bannerId: number, newOrder: number): Promise<void> => {
     await apiClient.patch(`/admin/banners/${bannerId}/order`, null, {
         params: { newOrder }
+    });
+};
+
+/**
+ * 두 배너의 순서를 원자적으로 교환
+ * 백엔드에서 트랜잭션으로 처리하여 데이터 정합성 보장
+ */
+export const swapBannerOrder = async (bannerId1: number, bannerId2: number): Promise<void> => {
+    await apiClient.patch('/admin/banners/swap-order', null, {
+        params: { bannerId1, bannerId2 }
     });
 };
 
