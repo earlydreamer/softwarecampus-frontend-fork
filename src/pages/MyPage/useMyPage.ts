@@ -66,7 +66,9 @@ export const useMyPage = () => {
     // 활동 통계 조회
     const { 
         data: statsData, 
-        isLoading: isStatsLoading 
+        isLoading: isStatsLoading,
+        isError: isStatsError,
+        refetch: refetchStats
     } = useQuery({
         queryKey: ['mypage', 'stats'],
         queryFn: getMyStats,
@@ -187,6 +189,10 @@ export const useMyPage = () => {
         isFavoritesLoading,
         isPostsError,
         isCommentsError,
-        isFavoritesError
+        isStatsError,
+        isFavoritesError,
+        
+        // Refetch 함수들
+        refetchStats
     };
 };
