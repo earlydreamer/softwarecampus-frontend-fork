@@ -572,9 +572,15 @@ const TiptapEditor = ({
     onFilesChange(attachedFiles.filter(f => f.id !== fileId));
   }, [attachedFiles, onFilesChange]);
 
+  // handleAddFiles를 ref로 저장하여 useEditor 의존성에서 제외
+  const handleAddFilesRef = useRef(handleAddFiles);
+  handleAddFilesRef.current = handleAddFiles;
+
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        // StarterKit에서 중복되는 확장 비활성화
+      }),
       Placeholder.configure({
         placeholder: '내용을 입력하세요...',
       }),
@@ -613,7 +619,7 @@ const TiptapEditor = ({
       },
       // 파일 붙여넣기/드래그앤드롭 처리 (모든 파일 타입 지원)
       handlePaste: (_view, event) => {
-        if (!enableFileAttachment || !onFilesChange) return false;
+        if (!enableFileAttachment) return false;
 
         const items = event.clipboardData?.items;
         if (!items) return false;
@@ -626,21 +632,21 @@ const TiptapEditor = ({
         if (files.length === 0) return false;
 
         event.preventDefault();
-        handleAddFiles(files);
+        handleAddFilesRef.current(files);
         return true;
       },
       handleDrop: (_view, event) => {
-        if (!enableFileAttachment || !onFilesChange) return false;
+        if (!enableFileAttachment) return false;
 
         const files = event.dataTransfer?.files;
         if (!files || files.length === 0) return false;
 
         event.preventDefault();
-        handleAddFiles(Array.from(files));
+        handleAddFilesRef.current(Array.from(files));
         return true;
       },
     },
-  }, [enableFileAttachment, handleAddFiles]);
+  }, [enableFileAttachment]); // handleAddFiles 의존성 제거
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
