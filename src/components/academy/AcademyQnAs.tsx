@@ -88,7 +88,7 @@ const AcademyQnAs = ({ qnas, totalCount, page, onPageChange, isLoading, onQuesti
 
             {isFormOpen && (
                 <QnAForm
-                    onSubmit={(title, content) => {
+                    onSubmit={(title, content, _fileIds) => {
                         onQuestionSubmit(title, content);
                         setIsFormOpen(false);
                     }}
