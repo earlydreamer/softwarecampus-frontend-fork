@@ -15,18 +15,10 @@ import {
     downloadBoardAttachment,
 } from '../services/communityService';
 import { sanitizeInput } from '../utils/security';
+import { formatFileSize } from '../utils/formatUtils';
 import { useAuthStore } from '../store/authStore';
 import AlertModal from '../components/ui/AlertModal';
 import ConfirmModal from '../components/common/ConfirmModal';
-
-// 파일 크기를 읽기 쉬운 형식으로 변환
-const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
 
 const CommunityDetailPage = () => {
     const { postId } = useParams<{ postId?: string }>();
@@ -56,6 +48,10 @@ const CommunityDetailPage = () => {
         isOpen: boolean;
         commentId: number | null;
     }>({ isOpen: false, commentId: null });
+    const [deleteReplyConfirmModal, setDeleteReplyConfirmModal] = useState<{
+        isOpen: boolean;
+        replyId: number | null;
+    }>({ isOpen: false, replyId: null });
 
     // 게시글 조회
     const { data: post, isLoading: postLoading, error: postError, refetch: refetchPost } = useQuery({
@@ -101,7 +97,12 @@ const CommunityDetailPage = () => {
             queryClient.invalidateQueries({ queryKey: ['boardPost', postIdNumber] });
         },
         onError: (error: Error) => {
-            alert(error.message || '추천 취소에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '추천 취소 실패',
+                message: error.message || '추천 취소에 실패했습니다.',
+                type: 'error'
+            });
         },
     });
 
@@ -133,7 +134,12 @@ const CommunityDetailPage = () => {
             setReplyContent('');
         },
         onError: (error: Error) => {
-            alert(error.message || '답글 작성에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '답글 작성 실패',
+                message: error.message || '답글 작성에 실패했습니다.',
+                type: 'error'
+            });
         },
     });
 
@@ -168,19 +174,35 @@ const CommunityDetailPage = () => {
     const deleteBoardMutation = useMutation({
         mutationFn: () => deleteBoardPost(postIdNumber),
         onSuccess: () => {
-            alert('게시글이 삭제되었습니다.');
-            navigate('/community');
+            setAlertModal({
+                isOpen: true,
+                title: '삭제 완료',
+                message: '게시글이 삭제되었습니다.',
+                type: 'success'
+            });
+            // 모달 닫히면 리다이렉트 (버튼 클릭 시)
+            setTimeout(() => navigate('/community'), 1500);
         },
         onError: (error: Error) => {
-            alert(error.message || '게시글 삭제에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '삭제 실패',
+                message: error.message || '게시글 삭제에 실패했습니다. 다시 시도해주세요.',
+                type: 'error'
+            });
         },
     });
 
     // 게시글 삭제 핸들러
+    const [deletePostConfirmModal, setDeletePostConfirmModal] = useState(false);
+    
     const handleDeletePost = () => {
-        if (window.confirm('정말 이 게시글을 삭제하시겠습니까?\n삭제된 게시글은 복구할 수 없습니다.')) {
-            deleteBoardMutation.mutate();
-        }
+        setDeletePostConfirmModal(true);
+    };
+    
+    const confirmDeletePost = () => {
+        setDeletePostConfirmModal(false);
+        deleteBoardMutation.mutate();
     };
 
     // 첨부파일 다운로드 핸들러
@@ -197,7 +219,12 @@ const CommunityDetailPage = () => {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('다운로드 실패:', error);
-            alert('파일 다운로드에 실패했습니다.');
+            setAlertModal({
+                isOpen: true,
+                title: '다운로드 실패',
+                message: '파일 다운로드에 실패했습니다. 다시 시도해주세요.',
+                type: 'error'
+            });
         }
     };
 
@@ -265,10 +292,16 @@ const CommunityDetailPage = () => {
     };
 
     // 답글 작성 제출
+    // NOTE: 길이 제한(500자)은 프론트엔드와 백엔드 모두에서 검증해야 함 (데이터 무결성 보장)
     const handleReplySubmit = (topCommentId: number) => {
         if (replyContent.trim()) {
             if (replyContent.length > 500) {
-                alert('답글은 500자를 초과할 수 없습니다.');
+                setAlertModal({
+                    isOpen: true,
+                    title: '입력 오류',
+                    message: '답글은 500자를 초과할 수 없습니다.',
+                    type: 'warning'
+                });
                 return;
             }
             createReplyMutation.mutate({ content: replyContent, topCommentId });
@@ -821,9 +854,7 @@ const CommunityDetailPage = () => {
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={() => {
-                                                                                        if (window.confirm('답글을 삭제하시겠습니까?')) {
-                                                                                            deleteCommentMutation.mutate(subComment.id);
-                                                                                        }
+                                                                                        setDeleteReplyConfirmModal({ isOpen: true, replyId: subComment.id });
                                                                                     }}
                                                                                     className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
                                                                                 >
@@ -869,6 +900,31 @@ const CommunityDetailPage = () => {
                 }}
                 title="댓글 삭제"
                 message="댓글을 삭제하시겠습니까? 삭제된 댓글은 복구할 수 없습니다."
+            />
+
+            {/* 답글 삭제 확인 모달 */}
+            <ConfirmModal
+                isOpen={deleteReplyConfirmModal.isOpen}
+                onClose={() => setDeleteReplyConfirmModal({ isOpen: false, replyId: null })}
+                onConfirm={() => {
+                    if (deleteReplyConfirmModal.replyId) {
+                        deleteCommentMutation.mutate(deleteReplyConfirmModal.replyId);
+                    }
+                    setDeleteReplyConfirmModal({ isOpen: false, replyId: null });
+                }}
+                title="답글 삭제"
+                message="답글을 삭제하시겠습니까? 삭제된 답글은 복구할 수 없습니다."
+            />
+
+            {/* 게시글 삭제 확인 모달 */}
+            <ConfirmModal
+                isOpen={deletePostConfirmModal}
+                onClose={() => setDeletePostConfirmModal(false)}
+                onConfirm={confirmDeletePost}
+                title="게시글 삭제"
+                message="정말 이 게시글을 삭제하시겠습니까? 삭제된 게시글은 복구할 수 없습니다."
+                confirmText="삭제"
+                cancelText="취소"
             />
         </div>
     );

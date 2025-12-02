@@ -6,7 +6,9 @@ import { createBoardPost } from '../services/communityService';
 import type { BoardCategory } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
+import AlertModal from '../components/ui/AlertModal';
 import { useAuthStore } from '../store/authStore';
+import { getTextContent } from '../utils/formatUtils';
 import type { AttachedFile } from '../components/editor/TiptapEditor';
 
 // Tiptap 에디터를 lazy load
@@ -28,8 +30,8 @@ const CommunityWritePage = () => {
     // 비로그인 시 로그인 페이지로 리다이렉트
     useEffect(() => {
         if (!isAuthenticated) {
-            alert('로그인이 필요한 서비스입니다.');
-            navigate('/login', { state: { from: '/community/write' } });
+            // 로그인 페이지로 리다이렉트 (로그인 페이지에서 안내 표시)
+            navigate('/login', { state: { from: '/community/write', message: '로그인이 필요한 서비스입니다.' } });
         }
     }, [isAuthenticated, navigate]);
 
@@ -40,13 +42,6 @@ const CommunityWritePage = () => {
     const [contentError, setContentError] = useState<string | null>(null);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
-
-    // HTML 태그를 제거하고 실제 텍스트 내용만 추출 (DOMParser 사용으로 안전성 향상)
-    const getTextContent = (html: string): string => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        return doc.body.textContent || '';
-    };
 
     // 작성 중인 내용이 있는지 확인
     const hasUnsavedChanges = () => {
@@ -186,6 +181,7 @@ const CommunityWritePage = () => {
                                         key={cat}
                                         type="button"
                                         onClick={() => setCategory(cat)}
+                                        aria-pressed={category === cat}
                                         className={`px-4 py-3 rounded-xl font-medium transition-all duration-200 ${category === cat
                                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
                                             : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300'

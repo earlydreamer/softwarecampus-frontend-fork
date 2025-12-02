@@ -6,20 +6,13 @@ import { fetchBoardPost, updateBoardPost, downloadBoardAttachment } from '../ser
 import type { BoardCategory, BoardAttachment } from '../types';
 import { BOARD_CATEGORY_LABELS } from '../types';
 import ConfirmModal from '../components/common/ConfirmModal';
+import AlertModal from '../components/ui/AlertModal';
 import FileUpload from '../components/common/FileUpload';
 import { useAuthStore } from '../store/authStore';
+import { formatFileSize, getTextContent } from '../utils/formatUtils';
 
 // Tiptap 에디터를 lazy load
 const TiptapEditor = lazy(() => import('../components/editor/TiptapEditor'));
-
-// 파일 크기를 읽기 쉬운 형식으로 변환
-const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
 
 const CommunityEditPage = () => {
     const { postId } = useParams<{ postId: string }>();
@@ -29,7 +22,7 @@ const CommunityEditPage = () => {
 
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
-    const [category, setCategory] = useState<BoardCategory>('FREE');
+    const [category, setCategory] = useState<BoardCategory | null>(null);
     const [isSecret, setIsSecret] = useState(false);
     const [newFiles, setNewFiles] = useState<File[]>([]);
     const [existingAttachments, setExistingAttachments] = useState<BoardAttachment[]>([]);
@@ -61,25 +54,18 @@ const CommunityEditPage = () => {
     // 비로그인 시 로그인 페이지로 리다이렉트
     useEffect(() => {
         if (!isAuthenticated) {
-            alert('로그인이 필요한 서비스입니다.');
-            navigate('/login', { state: { from: `/community/${postId}/edit` } });
+            // 로그인 페이지로 리다이렉트 (로그인 페이지에서 안내 표시)
+            navigate('/login', { state: { from: `/community/${postId}/edit`, message: '로그인이 필요한 서비스입니다.' } });
         }
     }, [isAuthenticated, navigate, postId]);
 
     // 작성자 본인 확인
     useEffect(() => {
         if (post && user && post.account.id !== user.id) {
-            alert('본인이 작성한 글만 수정할 수 있습니다.');
-            navigate(`/community/${postId}`);
+            // 권한 없음 - 상세 페이지로 리다이렉트
+            navigate(`/community/${postId}`, { state: { error: '본인이 작성한 글만 수정할 수 있습니다.' } });
         }
     }, [post, user, navigate, postId]);
-
-    // HTML 태그를 제거하고 실제 텍스트 내용만 추출
-    const getTextContent = (html: string): string => {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        return div.textContent || div.innerText || '';
-    };
 
     // 수정된 내용이 있는지 확인
     const hasUnsavedChanges = () => {
@@ -124,7 +110,9 @@ const CommunityEditPage = () => {
         },
         onError: (error: Error) => {
             console.error('게시글 수정 실패:', error);
-            setContentError(error.message || '게시글 수정에 실패했습니다.');
+            // 사용자에게 상세한 에러 메시지 표시
+            const errorMessage = error.message || '게시글 수정에 실패했습니다.';
+            setContentError(`오류: ${errorMessage} 다시 시도해주세요.`);
         },
     });
 
@@ -152,7 +140,7 @@ const CommunityEditPage = () => {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('다운로드 실패:', error);
-            alert('파일 다운로드에 실패했습니다.');
+            setContentError('파일 다운로드에 실패했습니다. 다시 시도해주세요.');
         }
     };
 
