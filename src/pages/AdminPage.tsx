@@ -493,14 +493,40 @@ const AdminPage = () => {
                 setCourseRequests(prev => [newRequest, ...prev]);
             }
 
-            // 이미지 파일이 있으면 업로드
-            if (data.imageFile) {
-                try {
-                    const categoryType = data.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
-                    await uploadCourseImage(categoryType, newRequest.id, data.imageFile, true);
-                } catch (imageError) {
-                    console.error('이미지 업로드 실패:', imageError);
-                    showAlert('이미지 업로드 실패', '과정은 등록되었지만 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+            // 이미지 업로드 처리 (새 구조: ImageState 사용)
+            const categoryType = data.target === '재직자' ? 'EMPLOYEE' : 'JOB_SEEKER';
+
+            // 썸네일 이미지 처리
+            if (data.thumbnailImage?.isChanged) {
+                if (data.thumbnailImage.file) {
+                    // 새 이미지 업로드
+                    try {
+                        await uploadCourseImage(categoryType, newRequest.id, data.thumbnailImage.file, 'THUMBNAIL');
+                    } catch (imageError) {
+                        console.error('썸네일 이미지 업로드 실패:', imageError);
+                        showAlert('이미지 업로드 실패', '과정은 등록되었지만 썸네일 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+                    }
+                } else if (data.thumbnailImage.isDeleted && editingCourse) {
+                    // 기존 이미지 삭제 (수정 모드에서만)
+                    // TODO: 이미지 삭제 API 호출 (나중에 구현)
+                    console.log('썸네일 이미지 삭제 예정:', data.thumbnailImage.serverUrl);
+                }
+            }
+
+            // 헤더 이미지 처리
+            if (data.headerImage?.isChanged) {
+                if (data.headerImage.file) {
+                    // 새 이미지 업로드
+                    try {
+                        await uploadCourseImage(categoryType, newRequest.id, data.headerImage.file, 'HEADER');
+                    } catch (imageError) {
+                        console.error('헤더 이미지 업로드 실패:', imageError);
+                        showAlert('이미지 업로드 실패', '과정은 등록되었지만 헤더 이미지 업로드에 실패했습니다. 나중에 다시 시도해주세요.', 'warning');
+                    }
+                } else if (data.headerImage.isDeleted && editingCourse) {
+                    // 기존 이미지 삭제 (수정 모드에서만)
+                    // TODO: 이미지 삭제 API 호출 (나중에 구현)
+                    console.log('헤더 이미지 삭제 예정:', data.headerImage.serverUrl);
                 }
             }
 
