@@ -181,6 +181,18 @@ export interface Academy {
 }
 
 // ===== 게시판(Board) 관련 타입 정의 =====
+
+// 게시판 첨부파일
+export interface BoardAttachment {
+    id: number;
+    originalFile: string;  // 원본 파일명
+    savedFile: string;     // 저장된 파일명
+    fileSize: number;
+    isNew?: boolean;       // 프론트엔드에서 새로 추가된 파일인지 여부
+    file?: File;           // 업로드 전 파일 객체
+    previewUrl?: string;   // 이미지 미리보기 URL
+}
+
 export interface Board {
     // 백엔드 필드
     id: number;
@@ -207,6 +219,7 @@ export interface Board {
     hasAttachment?: boolean;
     isSecret?: boolean; // 호환성
     comments?: Comment[]; // 상세 조회 시 포함됨
+    attachments?: BoardAttachment[]; // 첨부파일 목록
 }
 
 export interface Comment {
@@ -291,6 +304,14 @@ export interface CourseReview {
 }
 
 // ===== 과정 Q&A 관련 타입 정의 =====
+
+/** Course Q&A 첨부파일 정보 */
+export interface CourseQnaFile {
+    id: number;
+    originName: string;
+    fileUrl: string;
+}
+
 export interface CourseQna { // 변경: CourseQnA -> CourseQna
     id: number;
     courseId?: number; // 백엔드 응답에 없지만 프론트엔드에서 필요할 수 있음
@@ -313,6 +334,9 @@ export interface CourseQna { // 변경: CourseQnA -> CourseQna
     createdAt: string;
     updatedAt: string;
     viewCount?: number;
+
+    /** 첨부파일 목록 */
+    files?: CourseQnaFile[];
 }
 
 // ===== 기관 Q&A 관련 타입 정의 =====
