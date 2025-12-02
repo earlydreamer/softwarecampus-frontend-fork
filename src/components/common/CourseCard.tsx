@@ -12,9 +12,15 @@ interface CourseCardProps {
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
-    // 이미지 로딩 에러 핸들러
+    // 이미지 로딩 에러 핸들러 (무한 루프 방지)
     const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-        e.currentTarget.src = DEFAULT_COURSE_IMAGE;
+        const img = e.currentTarget;
+        // 이미 폴백 이미지인 경우 핸들러 제거하여 무한 루프 방지
+        if (img.src === DEFAULT_COURSE_IMAGE) {
+            img.onerror = null;
+            return;
+        }
+        img.src = DEFAULT_COURSE_IMAGE;
     };
 
     // 강의 기간 정보 계산
