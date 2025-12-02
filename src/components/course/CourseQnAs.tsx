@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import type { CourseQna } from '../../types';
-import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, Paperclip, Download } from 'lucide-react';
+import { MessageCircle, CheckCircle2, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Search, Paperclip, Download, Trash2, Edit3, Send } from 'lucide-react';
 import QnAForm from '../common/QnAForm';
-import { uploadCourseQnaFile } from '../../services/courseService';
+import { uploadCourseQnaFile, answerCourseQnA, updateCourseQnAAnswer, deleteCourseQnAAnswer, deleteCourseQnA } from '../../services/courseService';
 import { sanitizeUrl } from '../../utils/security';
+import { useAuthStore } from '../../store/authStore';
+import ConfirmModal from '../common/ConfirmModal';
 
 import { QNA_PER_PAGE } from '../../constants';
 
 interface CourseQnAsProps {
     courseId: number;
+    academyId?: number; // 과정 소속 기관 ID
     qnas: CourseQna[];
     totalCount: number;
     page: number;
@@ -17,12 +20,105 @@ interface CourseQnAsProps {
     isLoading?: boolean;
     onQuestionSubmit: (title: string, content: string, fileDetails: { id: number; originName: string; fileUrl: string }[]) => void;
     onSearch?: (keyword: string) => void;
+    onQnAsUpdate?: () => void; // Q&A 갱신 콜백
 }
 
-const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading, onQuestionSubmit, onSearch }: CourseQnAsProps) => {
+const CourseQnAs = ({ courseId, academyId, qnas, totalCount, page, onPageChange, isLoading, onQuestionSubmit, onSearch, onQnAsUpdate }: CourseQnAsProps) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [expandedQnaId, setExpandedQnaId] = useState<number | null>(null);
     const [searchKeyword, setSearchKeyword] = useState('');
+
+    // 답변 관련 상태
+    const [answerFormQnaId, setAnswerFormQnaId] = useState<number | null>(null);
+    const [answerText, setAnswerText] = useState('');
+    const [isAnswerSubmitting, setIsAnswerSubmitting] = useState(false);
+
+    // 삭제 확인 모달 상태
+    const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; qnaId: number | null; type: 'question' | 'answer' }>({
+        isOpen: false,
+        qnaId: null,
+        type: 'question'
+    });
+
+    // 현재 사용자 정보
+    const { user, isAuthenticated } = useAuthStore();
+
+    // 답변 권한 확인 (관리자 또는 해당 기관 회원)
+    const canAnswer = isAuthenticated && user && (
+        user.accountType === 'ADMIN' ||
+        (user.accountType === 'ACADEMY' && user.academyId === academyId)
+    );
+
+    // 질문 삭제 권한 확인 (질문자 본인 또는 관리자)
+    const canDeleteQuestion = (qna: CourseQna) => {
+        if (!isAuthenticated || !user) return false;
+        return user.accountType === 'ADMIN' || user.id === qna.accountId;
+    };
+
+    // 답변 수정/삭제 권한 확인 (관리자 또는 답변 작성자)
+    const canEditAnswer = (qna: CourseQna) => {
+        if (!isAuthenticated || !user || !qna.isAnswered) return false;
+        return user.accountType === 'ADMIN' || user.id === qna.answeredById;
+    };
+
+    // 답변 등록/수정 핸들러
+    const handleAnswerSubmit = async (qnaId: number, isEdit: boolean) => {
+        if (!answerText.trim() || isAnswerSubmitting) return;
+
+        setIsAnswerSubmitting(true);
+        try {
+            if (isEdit) {
+                await updateCourseQnAAnswer(qnaId, answerText);
+            } else {
+                await answerCourseQnA(qnaId, answerText);
+            }
+            setAnswerFormQnaId(null);
+            setAnswerText('');
+            if (onQnAsUpdate) onQnAsUpdate();
+        } catch (error) {
+            console.error('답변 처리 실패:', error);
+        } finally {
+            setIsAnswerSubmitting(false);
+        }
+    };
+
+    // 답변 삭제 핸들러
+    const handleDeleteAnswer = async (qnaId: number) => {
+        try {
+            await deleteCourseQnAAnswer(qnaId);
+            if (onQnAsUpdate) onQnAsUpdate();
+        } catch (error) {
+            console.error('답변 삭제 실패:', error);
+        }
+    };
+
+    // 질문 삭제 핸들러
+    const handleDeleteQuestion = async (qnaId: number) => {
+        try {
+            await deleteCourseQnA(qnaId);
+            if (onQnAsUpdate) onQnAsUpdate();
+        } catch (error) {
+            console.error('질문 삭제 실패:', error);
+        }
+    };
+
+    // 삭제 확인 처리
+    const handleDeleteConfirm = async () => {
+        if (deleteConfirm.qnaId === null) return;
+
+        if (deleteConfirm.type === 'question') {
+            await handleDeleteQuestion(deleteConfirm.qnaId);
+        } else {
+            await handleDeleteAnswer(deleteConfirm.qnaId);
+        }
+        setDeleteConfirm({ isOpen: false, qnaId: null, type: 'question' });
+    };
+
+    // 답변 작성 폼 열기
+    const openAnswerForm = (qna: CourseQna) => {
+        setAnswerFormQnaId(qna.id);
+        setAnswerText(qna.answerText || '');
+    };
 
     const toggleQna = (id: number) => {
         setExpandedQnaId(expandedQnaId === id ? null : id);
@@ -221,25 +317,123 @@ const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading,
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* 질문 삭제 버튼 (질문자 본인 또는 관리자) */}
+                                        {canDeleteQuestion(qna) && (
+                                            <div className="mt-4 pt-4 border-t border-slate-200 flex justify-end">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteConfirm({ isOpen: true, qnaId: qna.id, type: 'question' });
+                                                    }}
+                                                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                    질문 삭제
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
-                                    {qna.isAnswered && qna.answerText && (
+                                    {/* 답변 영역 */}
+                                    {qna.isAnswered && qna.answerText && answerFormQnaId !== qna.id && (
                                         <div className="bg-primary-50/30 p-6 border-t border-slate-100">
                                             <div className="flex items-start gap-4">
                                                 <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden shrink-0 border-2 border-white shadow-sm">
                                                     <span className="text-primary-600 font-bold text-sm">{qna.answeredByName?.[0] || 'A'}</span>
                                                 </div>
                                                 <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="font-bold text-primary-700">{qna.answeredByName || '담당자'}</span>
-                                                        <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-bold border border-primary-200">
-                                                            담당자
-                                                        </span>
-                                                        {/* TODO: 백엔드 미지원 필드 (answeredAt) */}
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-bold text-primary-700">{qna.answeredByName || '담당자'}</span>
+                                                            <span className="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-bold border border-primary-200">
+                                                                담당자
+                                                            </span>
+                                                            {qna.answeredAt && (
+                                                                <span className="text-sm text-slate-500">
+                                                                    {new Date(qna.answeredAt).toLocaleDateString()}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {/* 답변 수정/삭제 버튼 (관리자 또는 답변 작성자) */}
+                                                        {canEditAnswer(qna) && (
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        openAnswerForm(qna);
+                                                                    }}
+                                                                    className="flex items-center gap-1 px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                                                >
+                                                                    <Edit3 className="w-3.5 h-3.5" />
+                                                                    수정
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDeleteConfirm({ isOpen: true, qnaId: qna.id, type: 'answer' });
+                                                                    }}
+                                                                    className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                    삭제
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="prose prose-sm max-w-none text-slate-800 bg-white p-4 rounded-xl border border-primary-100 shadow-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(qna.answerText || '') }} />
                                                 </div>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* 답변 입력/수정 폼 (관리자 또는 해당 기관 회원) */}
+                                    {answerFormQnaId === qna.id && (
+                                        <div className="bg-slate-50 p-6 border-t border-slate-100">
+                                            <h5 className="text-sm font-semibold text-slate-700 mb-3">
+                                                {qna.isAnswered ? '답변 수정' : '답변 작성'}
+                                            </h5>
+                                            <textarea
+                                                value={answerText}
+                                                onChange={(e) => setAnswerText(e.target.value)}
+                                                placeholder="답변 내용을 입력하세요..."
+                                                className="w-full h-32 p-4 border border-slate-200 rounded-lg resize-none focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
+                                            />
+                                            <div className="flex justify-end gap-2 mt-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setAnswerFormQnaId(null);
+                                                        setAnswerText('');
+                                                    }}
+                                                    className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                                >
+                                                    취소
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAnswerSubmit(qna.id, qna.isAnswered)}
+                                                    disabled={!answerText.trim() || isAnswerSubmitting}
+                                                    className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                >
+                                                    <Send className="w-4 h-4" />
+                                                    {isAnswerSubmitting ? '처리중...' : (qna.isAnswered ? '수정' : '등록')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* 답변하기 버튼 (답변이 없고, 권한이 있으면 표시) */}
+                                    {!qna.isAnswered && canAnswer && answerFormQnaId !== qna.id && (
+                                        <div className="p-4 border-t border-slate-100 flex justify-end">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openAnswerForm(qna);
+                                                }}
+                                                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                                답변하기
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -286,6 +480,19 @@ const CourseQnAs = ({ courseId, qnas, totalCount, page, onPageChange, isLoading,
                     </button>
                 </div>
             )}
+
+            {/* 삭제 확인 모달 */}
+            <ConfirmModal
+                isOpen={deleteConfirm.isOpen}
+                onClose={() => setDeleteConfirm({ isOpen: false, qnaId: null, type: 'question' })}
+                onConfirm={handleDeleteConfirm}
+                title={deleteConfirm.type === 'question' ? '질문 삭제' : '답변 삭제'}
+                message={
+                    deleteConfirm.type === 'question'
+                        ? '이 질문을 삭제하시겠습니까? 답변이 있는 경우 함께 삭제됩니다.'
+                        : '이 답변을 삭제하시겠습니까?'
+                }
+            />
         </div>
     );
 };
