@@ -135,7 +135,7 @@ const CommunityPage = () => {
                         </p>
                     </div>
                     <Link
-                        to="/community/write"
+                        to={`/community/write${currentCategory ? `?category=${currentCategory}` : ''}`}
                         className="btn-primary flex items-center gap-2"
                     >
                         <PenSquare className="w-4 h-4" />

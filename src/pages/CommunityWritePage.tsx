@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { createBoardPost } from '../services/communityService';
 import type { BoardCategory } from '../types';
@@ -16,6 +16,14 @@ const CommunityWritePage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { user, isAuthenticated } = useAuthStore();
+    const [searchParams] = useSearchParams();
+
+    // URL에서 카테고리 읽기, 유효하지 않으면 기본값 'CODING_STORY'
+    const getInitialCategory = (): BoardCategory => {
+        const urlCategory = searchParams.get('category') as BoardCategory;
+        const validCategories: BoardCategory[] = ['NOTICE', 'QUESTION', 'COURSE_STORY', 'CODING_STORY'];
+        return validCategories.includes(urlCategory) ? urlCategory : 'CODING_STORY';
+    };
 
     // 비로그인 시 로그인 페이지로 리다이렉트
     useEffect(() => {
@@ -27,7 +35,7 @@ const CommunityWritePage = () => {
 
     const [title, setTitle] = useState('');
     const [text, setText] = useState('');
-    const [category, setCategory] = useState<BoardCategory>('QUESTION');
+    const [category, setCategory] = useState<BoardCategory>(getInitialCategory());
     const [files, setFiles] = useState<File[]>([]);
     const [titleError, setTitleError] = useState<string | null>(null);
     const [contentError, setContentError] = useState<string | null>(null);
