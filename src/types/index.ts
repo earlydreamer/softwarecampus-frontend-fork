@@ -334,3 +334,51 @@ export interface AcademyQA { // 변경: AcademyQnA -> AcademyQA
     updatedAt: string;
     viewCount?: number;
 }
+
+// ===== 마이페이지 관련 타입 정의 =====
+// Spring Data Page 응답 타입
+export interface PageResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number; // 현재 페이지 (0-indexed)
+    size: number;
+    first: boolean;
+    last: boolean;
+    empty: boolean;
+}
+
+// 내가 쓴 글 (백엔드 MyPostResponseDTO)
+export interface MyPost {
+    id: number;
+    title: string;
+    category: string;
+    hits: number;
+    commentsCount: number;
+    likeCount: number;
+    createdAt: string;
+}
+
+// 내가 쓴 댓글 (백엔드 MyCommentResponseDTO)
+export interface MyComment {
+    id: number;
+    text: string;
+    boardId: number;
+    boardTitle: string;
+    createdAt: string;
+}
+
+// 활동 통계 (백엔드 MyStatsResponseDTO)
+export interface MyStats {
+    totalPosts: number;
+    totalComments: number;
+    totalBookmarks: number;
+    totalViews: number;
+}
+
+// 찜한 강좌 (백엔드 CourseFavoriteResponseDTO)
+export interface CourseFavorite {
+    courseId: number;
+    courseName: string;
+    isFavorite: boolean;
+}

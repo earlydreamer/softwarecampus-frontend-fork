@@ -3,6 +3,42 @@
  */
 
 /**
+ * 다양한 형식의 날짜를 Date 객체로 변환
+ * - ISO 문자열: "2025-12-02T15:30:00"
+ * - YYYY-MM-DD: "2025-12-02"
+ * - LocalDateTime 배열: [2025, 12, 2, 15, 30, 0]
+ */
+export const parseDate = (dateValue: string | number[] | null | undefined): Date | null => {
+    if (!dateValue) return null;
+
+    // 배열 형태 (Java LocalDateTime이 기본 직렬화된 경우)
+    if (Array.isArray(dateValue)) {
+        const [year, month, day, hour = 0, minute = 0, second = 0] = dateValue;
+        return new Date(year, month - 1, day, hour, minute, second);
+    }
+
+    // 문자열 형태
+    if (typeof dateValue === 'string') {
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
+    }
+
+    return null;
+};
+
+/**
+ * 다양한 형식의 날짜를 한국어 날짜 문자열로 변환
+ * @returns "2025. 12. 2." 또는 빈 문자열
+ */
+export const formatDateKorean = (dateValue: string | number[] | null | undefined): string => {
+    const date = parseDate(dateValue);
+    if (!date) return '';
+    return date.toLocaleDateString('ko-KR');
+};
+
+/**
  * 날짜를 YYYY-MM-DD 형식으로 변환
  * @param dateString - ISO 날짜 문자열 또는 YYYY-MM-DD 형식
  */
