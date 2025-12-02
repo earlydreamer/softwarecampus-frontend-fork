@@ -34,12 +34,62 @@ interface UrlInputModalProps {
 const UrlInputModal = ({ isOpen, onClose, onSubmit, title, placeholder, validate }: UrlInputModalProps) => {
   const [url, setUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const titleId = useRef(`url-modal-title-${Date.now()}`);
 
   useEffect(() => {
     if (isOpen) {
       setUrl('');
       setError(null);
+      // 모달 열림 시 입력창에 포커스
+      setTimeout(() => inputRef.current?.focus(), 0);
     }
+  }, [isOpen]);
+
+  // ESC 키로 모달 닫기
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // 포커스 트랩 (Tab 키가 모달 내부에서만 순환)
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+
+    const modal = modalRef.current;
+    const focusableElements = modal.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -62,17 +112,26 @@ const UrlInputModal = ({ isOpen, onClose, onSubmit, title, placeholder, validate
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId.current}
+    >
+      <div 
+        ref={modalRef}
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+      >
         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-700">
-          <h3 className="font-bold text-slate-900 dark:text-white">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+          <h3 id={titleId.current} className="font-bold text-slate-900 dark:text-white">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="닫기">
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="p-4 space-y-4">
           <div>
             <input
+              ref={inputRef}
               type="text"
               value={url}
               onChange={(e) => {
@@ -88,7 +147,6 @@ const UrlInputModal = ({ isOpen, onClose, onSubmit, title, placeholder, validate
               placeholder={placeholder || 'https://...'}
               className={`w-full px-4 py-2 rounded-lg border ${error ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-primary-500'
                 } bg-slate-50 dark:bg-slate-900 focus:ring-2 outline-none transition-all`}
-              autoFocus
             />
             {error && (
               <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
@@ -336,16 +394,31 @@ interface AttachedFile {
   previewUrl?: string;  // 이미지인 경우 미리보기 URL
 }
 
+/**
+ * TiptapEditor Props
+ * 
+ * @remarks
+ * 파일 첨부 기능 사용 시 (`enableFileAttachment: true`):
+ * - `attachedFiles`와 `onFilesChange`가 함께 제공되어야 합니다.
+ * - `onFilesChange`가 없으면 파일 첨부 UI는 표시되지만 파일 추가가 동작하지 않습니다.
+ */
 interface TiptapEditorProps {
+  /** 에디터 내용 (HTML) */
   content: string;
+  /** 내용 변경 핸들러 */
   onChange: (content: string) => void;
-  // 파일 첨부 관련 props
+  /** 파일 첨부 기능 활성화 (true인 경우 attachedFiles, onFilesChange 필수) */
   enableFileAttachment?: boolean;
+  /** 첨부된 파일 목록 (enableFileAttachment가 true일 때 필수) */
   attachedFiles?: AttachedFile[];
+  /** 파일 목록 변경 핸들러 (enableFileAttachment가 true일 때 필수) */
   onFilesChange?: (files: AttachedFile[]) => void;
-  maxFileSize?: number;      // bytes (기본: 10MB)
-  maxFileCount?: number;     // 최대 파일 수 (기본: 5)
-  allowedExtensions?: string[]; // 허용 확장자
+  /** 최대 파일 크기 (bytes, 기본: 10MB) */
+  maxFileSize?: number;
+  /** 최대 파일 수 (기본: 5) */
+  maxFileCount?: number;
+  /** 허용 확장자 목록 */
+  allowedExtensions?: string[];
 }
 
 // 파일 크기 포맷팅
@@ -373,15 +446,34 @@ const TiptapEditor = ({
   const [modalType, setModalType] = useState<'link' | 'image' | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const errorTimeoutRef = useRef<number | null>(null);
+  const prevAttachedFilesRef = useRef<AttachedFile[]>([]);
 
-  // 에러 타임아웃 클린업 및 Object URL 해제
+  // 에러 타임아웃 클린업
   useEffect(() => {
     return () => {
-      // 에러 타임아웃 정리
       if (errorTimeoutRef.current) {
         clearTimeout(errorTimeoutRef.current);
       }
-      // 남아있는 previewUrl 해제
+    };
+  }, []);
+
+  // previewUrl 해제: 삭제된 파일만 해제 + 언마운트 시 전체 해제
+  useEffect(() => {
+    const prevFiles = prevAttachedFilesRef.current;
+    
+    // 삭제된 파일들의 previewUrl 해제
+    const currentIds = new Set(attachedFiles.map(f => f.id));
+    prevFiles.forEach((file) => {
+      if (!currentIds.has(file.id) && file.previewUrl) {
+        URL.revokeObjectURL(file.previewUrl);
+      }
+    });
+    
+    // 현재 목록을 이전 목록으로 저장
+    prevAttachedFilesRef.current = attachedFiles;
+    
+    // 언마운트 시 남아있는 모든 previewUrl 해제
+    return () => {
       attachedFiles.forEach((file) => {
         if (file.previewUrl) {
           URL.revokeObjectURL(file.previewUrl);

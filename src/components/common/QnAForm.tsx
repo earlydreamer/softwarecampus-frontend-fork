@@ -44,24 +44,42 @@ const QnAForm = ({ onSubmit, onCancel, onFileUpload }: QnAFormProps) => {
         // 상태 업데이트 (UI 반영)
         setAttachedFiles(files);
 
-        // 새 파일 업로드
-        for (const file of newFiles) {
-            try {
-                const result = await onFileUpload(file.file);
-                setUploadedFileMap(prev => ({
-                    ...prev,
-                    [file.id]: result
-                }));
-            } catch (error) {
-                console.error('File upload failed:', error);
-                setAlertModal({
-                    isOpen: true,
-                    title: '업로드 실패',
-                    message: `파일 '${file.name}' 업로드에 실패했습니다.`,
-                    type: 'error'
-                });
-                // 실패한 파일 제거
-                setAttachedFiles(prev => prev.filter(f => f.id !== file.id));
+        // 새 파일 병렬 업로드 (Promise.allSettled로 성능 개선)
+        if (newFiles.length > 0) {
+            const uploadResults = await Promise.allSettled(
+                newFiles.map(async (file) => {
+                    const result = await onFileUpload(file.file);
+                    return { file, result };
+                })
+            );
+
+            uploadResults.forEach((outcome) => {
+                if (outcome.status === 'fulfilled') {
+                    const { file, result } = outcome.value;
+                    setUploadedFileMap(prev => ({
+                        ...prev,
+                        [file.id]: result
+                    }));
+                } else {
+                    // 실패한 파일 처리
+                    console.error('File upload failed:', outcome.reason);
+                    // 실패한 파일 정보를 추출하기 어려우므로 일반 에러 메시지 표시
+                    setAlertModal({
+                        isOpen: true,
+                        title: '업로드 실패',
+                        message: '일부 파일 업로드에 실패했습니다.',
+                        type: 'error'
+                    });
+                }
+            });
+
+            // 실패한 파일들 제거 (업로드되지 않은 파일)
+            const failedFileIds = uploadResults
+                .map((outcome, index) => outcome.status === 'rejected' ? newFiles[index].id : null)
+                .filter((id): id is string => id !== null);
+
+            if (failedFileIds.length > 0) {
+                setAttachedFiles(prev => prev.filter(f => !failedFileIds.includes(f.id)));
             }
         }
     };

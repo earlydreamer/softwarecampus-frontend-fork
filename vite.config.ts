@@ -1,13 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// 프록시 대상 경로 목록 (API 요청을 백엔드로 전달)
+const PROXY_PATHS = [
+  '/api',
+  '/admin',
+  '/courses',
+  '/reviews',
+  '/banners',
+  '/academies',
+  '/accounts',
+  '/community',
+  '/EMPLOYEE',
+  '/JOB_SEEKER',
+];
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: Object.fromEntries(
-      ['/api', '/admin', '/courses', '/reviews', '/banners', '/academies', '/accounts', '/community', '/EMPLOYEE', '/JOB_SEEKER']
-        .map(path => [path, { target: 'http://localhost:8081', changeOrigin: true, secure: false }])
+      PROXY_PATHS.map(path => [path, { target: 'http://localhost:8081', changeOrigin: true, secure: false }])
     )
   },
   build: {

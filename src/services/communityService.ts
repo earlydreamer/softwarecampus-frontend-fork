@@ -71,7 +71,7 @@ export const fetchBoardPosts = async (
             limit: number;
             category?: BoardCategory;
             keyword?: string;
-            searchType?: string;
+            searchType?: 'all' | 'title' | 'content' | 'title_content' | 'author' | 'comment';
         } = { page, limit };
         if (category) params.category = category;
         if (searchKeyword) params.keyword = searchKeyword;
