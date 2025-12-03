@@ -93,10 +93,17 @@ const AcademyListPage = () => {
                                     <div className="flex items-start gap-4">
                                         <div className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden shrink-0">
                                             {academy.logoUrl ? (
-                                                <img src={sanitizeUrl(academy.logoUrl)} alt={academy.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-2xl font-bold text-slate-400 dark:text-slate-500">{academy.name[0]}</span>
-                                            )}
+                                                <img 
+                                                    src={sanitizeUrl(academy.logoUrl)} 
+                                                    alt={academy.name} 
+                                                    className="w-full h-full object-cover" 
+                                                    onError={(e) => {
+                                                        e.currentTarget.style.display = 'none';
+                                                        e.currentTarget.parentElement?.querySelector('.fallback-initial')?.classList.remove('hidden');
+                                                    }}
+                                                />
+                                            ) : null}
+                                            <span className={`fallback-initial text-2xl font-bold text-slate-400 dark:text-slate-500 ${academy.logoUrl ? 'hidden' : ''}`}>{academy.name[0]}</span>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">

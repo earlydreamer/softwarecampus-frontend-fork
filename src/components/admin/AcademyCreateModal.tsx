@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useId } from 'react';
-import { X, Upload, Trash2, FileText, Building } from 'lucide-react';
+import { X, Upload, Trash2, FileText, Building, Camera, User, Eye, Image } from 'lucide-react';
 
 /**
  * 기관 등록 폼 데이터 타입
@@ -9,6 +9,8 @@ export interface AcademyFormData {
     address: string;
     businessNumber: string;
     email: string;
+    phoneNumber: string;
+    website: string;
     files: File[];
 }
 
@@ -21,6 +23,9 @@ export interface AcademyEditData {
     address: string;
     businessNumber: string;
     email: string;
+    phoneNumber?: string;
+    website?: string;
+    logoUrl?: string;  // 기존 프로필 이미지 URL (작성일: 2025-12-03)
 }
 
 interface AcademyCreateModalProps {
@@ -31,17 +36,30 @@ interface AcademyCreateModalProps {
     editData?: AcademyEditData | null;
     /** 수정 모드용 - 수정 제출 핸들러 */
     onEdit?: (id: number, data: Omit<AcademyFormData, 'files'>) => Promise<void>;
+    /** 프로필 이미지 업로드 핸들러 (작성일: 2025-12-03) */
+    onUploadProfileImage?: (academyId: number, image: File) => Promise<void>;
+    /** 프로필 이미지 삭제 핸들러 (작성일: 2025-12-03) */
+    onDeleteProfileImage?: (academyId: number) => Promise<void>;
 }
 
 /**
  * 기관 등록/수정 모달 컴포넌트
  * 관리자가 새로운 훈련기관을 등록하거나 기존 기관을 수정할 때 사용합니다.
- * 수정일: 2025-12-03 - 수정 모드 지원 추가
+ * 수정일: 2025-12-03 - 수정 모드 지원 추가, 프로필 이미지 업로드 기능 추가
  */
-const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: AcademyCreateModalProps) => {
+const AcademyCreateModal = ({ 
+    isOpen, 
+    onClose, 
+    onSubmit, 
+    editData, 
+    onEdit,
+    onUploadProfileImage,
+    onDeleteProfileImage 
+}: AcademyCreateModalProps) => {
     const titleId = useId();
     const modalRef = useRef<HTMLDivElement>(null);
     const firstInputRef = useRef<HTMLInputElement>(null);
+    const profileInputRef = useRef<HTMLInputElement>(null);
     
     // 수정 모드 여부
     const isEditMode = !!editData;
@@ -52,8 +70,19 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
         address: '',
         businessNumber: '',
         email: '',
+        phoneNumber: '',
+        website: '',
         files: [],
     });
+
+    // 첨부파일 미리보기 상태
+    const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: string } | null>(null);
+
+    // 프로필 이미지 상태 (작성일: 2025-12-03)
+    const [profileImage, setProfileImage] = useState<File | null>(null);
+    const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+    const [existingLogoUrl, setExistingLogoUrl] = useState<string | null>(null);
+    const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
     const [errors, setErrors] = useState<Partial<Record<keyof AcademyFormData, string>>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,8 +97,13 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
                     address: editData.address || '',
                     businessNumber: editData.businessNumber || '',
                     email: editData.email || '',
+                    phoneNumber: editData.phoneNumber || '',
+                    website: editData.website || '',
                     files: [], // 수정 모드에서는 파일 새로 첨부 가능 (선택)
                 });
+                // 기존 프로필 이미지 설정 (작성일: 2025-12-03)
+                setExistingLogoUrl(editData.logoUrl || null);
+                setProfileImagePreview(editData.logoUrl || null);
             } else {
                 // 등록 모드: 빈 폼으로 초기화
                 setFormData({
@@ -77,9 +111,15 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
                     address: '',
                     businessNumber: '',
                     email: '',
+                    phoneNumber: '',
+                    website: '',
                     files: [],
                 });
+                setExistingLogoUrl(null);
+                setProfileImagePreview(null);
             }
+            setPreviewFile(null);
+            setProfileImage(null);
             setErrors({});
             setIsSubmitting(false);
 
@@ -143,6 +183,28 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
                 formatted = numbers.slice(0, 3) + '-' + numbers.slice(3, 5) + '-' + numbers.slice(5, 10);
             }
             setFormData(prev => ({ ...prev, [name]: formatted }));
+        } else if (name === 'phoneNumber') {
+            // 전화번호 자동 포맷팅 (00-0000-0000 또는 000-0000-0000)
+            const numbers = value.replace(/[^0-9]/g, '');
+            let formatted = numbers;
+            if (numbers.startsWith('02')) {
+                // 서울 지역번호
+                if (numbers.length > 2) {
+                    formatted = numbers.slice(0, 2) + '-' + numbers.slice(2);
+                }
+                if (numbers.length > 6) {
+                    formatted = numbers.slice(0, 2) + '-' + numbers.slice(2, 6) + '-' + numbers.slice(6, 10);
+                }
+            } else {
+                // 그 외 지역번호 또는 휴대폰
+                if (numbers.length > 3) {
+                    formatted = numbers.slice(0, 3) + '-' + numbers.slice(3);
+                }
+                if (numbers.length > 7) {
+                    formatted = numbers.slice(0, 3) + '-' + numbers.slice(3, 7) + '-' + numbers.slice(7, 11);
+                }
+            }
+            setFormData(prev => ({ ...prev, [name]: formatted }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -175,6 +237,72 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
             ...prev,
             files: prev.files.filter((_, i) => i !== index),
         }));
+    };
+
+    // 프로필 이미지 선택 핸들러 (작성일: 2025-12-03)
+    const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // 이미지 타입 검증
+        if (!file.type.startsWith('image/')) {
+            alert('이미지 파일만 업로드 가능합니다.');
+            return;
+        }
+
+        // 파일 크기 검증 (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('파일 크기는 5MB 이하여야 합니다.');
+            return;
+        }
+
+        setProfileImage(file);
+        
+        // 미리보기 생성
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setProfileImagePreview(event.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        // 수정 모드에서는 즉시 업로드
+        if (isEditMode && editData && onUploadProfileImage) {
+            setIsUploadingProfile(true);
+            try {
+                await onUploadProfileImage(editData.id, file);
+            } catch (error) {
+                console.error('프로필 이미지 업로드 실패:', error);
+                // 실패 시 이전 상태로 복원
+                setProfileImagePreview(existingLogoUrl);
+                setProfileImage(null);
+            } finally {
+                setIsUploadingProfile(false);
+            }
+        }
+
+        // input 초기화
+        e.target.value = '';
+    };
+
+    // 프로필 이미지 삭제 핸들러 (작성일: 2025-12-03)
+    const handleProfileImageDelete = async () => {
+        if (isEditMode && editData && onDeleteProfileImage) {
+            setIsUploadingProfile(true);
+            try {
+                await onDeleteProfileImage(editData.id);
+                setProfileImagePreview(null);
+                setExistingLogoUrl(null);
+                setProfileImage(null);
+            } catch (error) {
+                console.error('프로필 이미지 삭제 실패:', error);
+            } finally {
+                setIsUploadingProfile(false);
+            }
+        } else {
+            // 등록 모드에서는 로컬 상태만 초기화
+            setProfileImagePreview(null);
+            setProfileImage(null);
+        }
     };
 
     // 폼 유효성 검사
@@ -226,10 +354,16 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
                     address: formData.address,
                     businessNumber: formData.businessNumber,
                     email: formData.email,
+                    phoneNumber: formData.phoneNumber,
+                    website: formData.website,
                 });
             } else {
                 // 등록 모드
                 await onSubmit(formData);
+                // 등록 모드에서 선택한 프로필 이미지가 있으면 로그 (추후 등록 후 업로드로 확장 가능)
+                if (profileImage) {
+                    console.log('프로필 이미지 선택됨 (등록 후 업로드 필요):', profileImage.name);
+                }
             }
         } catch {
             // 에러 처리는 부모 컴포넌트에서 처리
@@ -274,6 +408,68 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
 
                 {/* 폼 */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-180px)]">
+                    {/* 프로필 이미지 (작성일: 2025-12-03) */}
+                    <div className="flex justify-center">
+                        <div className="relative">
+                            <div 
+                                className={`w-24 h-24 rounded-full overflow-hidden border-2 border-dashed ${
+                                    profileImagePreview 
+                                        ? 'border-primary-500' 
+                                        : 'border-slate-300 dark:border-slate-600'
+                                } bg-slate-100 dark:bg-slate-700 flex items-center justify-center cursor-pointer hover:border-primary-400 transition-colors`}
+                                onClick={() => profileInputRef.current?.click()}
+                            >
+                                {isUploadingProfile ? (
+                                    <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                                ) : profileImagePreview ? (
+                                    <img 
+                                        src={profileImagePreview} 
+                                        alt="기관 프로필" 
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <User className="w-10 h-10 text-slate-400" />
+                                )}
+                            </div>
+                            
+                            {/* 프로필 이미지 변경/삭제 버튼 */}
+                            <div className="absolute -bottom-1 -right-1 flex gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => profileInputRef.current?.click()}
+                                    disabled={isUploadingProfile}
+                                    className="w-7 h-7 rounded-full bg-primary-500 hover:bg-primary-600 text-white flex items-center justify-center shadow-md transition-colors disabled:opacity-50"
+                                    title="이미지 변경"
+                                >
+                                    <Camera className="w-3.5 h-3.5" />
+                                </button>
+                                {profileImagePreview && (
+                                    <button
+                                        type="button"
+                                        onClick={handleProfileImageDelete}
+                                        disabled={isUploadingProfile}
+                                        className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md transition-colors disabled:opacity-50"
+                                        title="이미지 삭제"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {/* 숨겨진 파일 입력 */}
+                            <input
+                                ref={profileInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/gif,image/webp"
+                                className="hidden"
+                                onChange={handleProfileImageChange}
+                            />
+                        </div>
+                    </div>
+                    <p className="text-center text-xs text-slate-500 dark:text-slate-400 -mt-2">
+                        기관 프로필 이미지 (선택)
+                    </p>
+
                     {/* 기관명 */}
                     <div>
                         <label htmlFor="academy-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
@@ -368,6 +564,39 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
                         )}
                     </div>
 
+                    {/* 전화번호 */}
+                    <div>
+                        <label htmlFor="academy-phoneNumber" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                            전화번호
+                        </label>
+                        <input
+                            type="text"
+                            id="academy-phoneNumber"
+                            name="phoneNumber"
+                            value={formData.phoneNumber}
+                            onChange={handleInputChange}
+                            placeholder="02-1234-5678"
+                            maxLength={13}
+                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 focus:border-primary-500 focus:ring-primary-500 dark:bg-slate-700 dark:text-white outline-none transition-colors focus:ring-2"
+                        />
+                    </div>
+
+                    {/* 홈페이지 주소 */}
+                    <div>
+                        <label htmlFor="academy-website" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                            홈페이지 주소
+                        </label>
+                        <input
+                            type="url"
+                            id="academy-website"
+                            name="website"
+                            value={formData.website}
+                            onChange={handleInputChange}
+                            placeholder="https://www.example.com"
+                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 focus:border-primary-500 focus:ring-primary-500 dark:bg-slate-700 dark:text-white outline-none transition-colors focus:ring-2"
+                        />
+                    </div>
+
                     {/* 첨부파일 */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
@@ -416,34 +645,110 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: Aca
                         {/* 업로드된 파일 목록 */}
                         {formData.files.length > 0 && (
                             <div className="mt-3 space-y-2">
-                                {formData.files.map((file, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600"
-                                    >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <FileText className="w-4 h-4 text-slate-400 shrink-0" />
-                                            <span className="text-sm text-slate-700 dark:text-slate-300 truncate">
-                                                {file.name}
-                                            </span>
-                                            <span className="text-xs text-slate-400 shrink-0">
-                                                ({(file.size / 1024).toFixed(1)} KB)
-                                            </span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleFileRemove(index)}
-                                            className="p-1 text-slate-400 hover:text-red-500 transition-colors shrink-0"
-                                            aria-label={`${file.name} 삭제`}
+                                {formData.files.map((file, index) => {
+                                    const isImage = file.type.startsWith('image/');
+                                    const previewUrl = isImage ? URL.createObjectURL(file) : null;
+                                    
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600"
                                         >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                {/* 이미지 미리보기 또는 파일 아이콘 */}
+                                                {isImage && previewUrl ? (
+                                                    <img 
+                                                        src={previewUrl} 
+                                                        alt={file.name}
+                                                        className="w-10 h-10 rounded object-cover shrink-0 border border-slate-200 dark:border-slate-600"
+                                                        onLoad={() => URL.revokeObjectURL(previewUrl)}
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded bg-slate-200 dark:bg-slate-600 flex items-center justify-center shrink-0">
+                                                        <FileText className="w-5 h-5 text-slate-400" />
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <span className="text-sm text-slate-700 dark:text-slate-300 truncate block">
+                                                        {file.name}
+                                                    </span>
+                                                    <span className="text-xs text-slate-400">
+                                                        {(file.size / 1024).toFixed(1)} KB
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                                {/* 이미지 미리보기 버튼 */}
+                                                {isImage && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const url = URL.createObjectURL(file);
+                                                            setPreviewFile({ url, name: file.name, type: file.type });
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:text-primary-500 transition-colors"
+                                                        title="미리보기"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleFileRemove(index)}
+                                                    className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                                                    aria-label={`${file.name} 삭제`}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
                 </form>
+
+                {/* 첨부파일 미리보기 모달 */}
+                {previewFile && (
+                    <div 
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                        onClick={() => {
+                            URL.revokeObjectURL(previewFile.url);
+                            setPreviewFile(null);
+                        }}
+                    >
+                        <div 
+                            className="relative max-w-4xl max-h-[90vh] bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+                                <div className="flex items-center gap-2">
+                                    <Image className="w-5 h-5 text-slate-400" />
+                                    <span className="font-medium text-slate-900 dark:text-white truncate max-w-[300px]">
+                                        {previewFile.name}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        URL.revokeObjectURL(previewFile.url);
+                                        setPreviewFile(null);
+                                    }}
+                                    className="p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-4 flex items-center justify-center max-h-[calc(90vh-80px)] overflow-auto">
+                                <img 
+                                    src={previewFile.url} 
+                                    alt={previewFile.name}
+                                    className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 푸터 (버튼) */}
                 <div className="flex justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">

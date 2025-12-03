@@ -490,12 +490,17 @@ export interface AdminUser {
     id: number;
     userName: string;
     email: string;
+    phoneNumber?: string;
     accountType: 'ADMIN' | 'USER' | 'ACADEMY';
     registeredDate: string;
     lastLogin: string;
     status: '활성' | '정지' | '탈퇴';
     postCount: number;
     commentCount: number;
+    address?: string;
+    affiliation?: string;
+    position?: string;
+    profileImage?: string;
 }
 
 export interface AdminAcademy {
@@ -504,8 +509,11 @@ export interface AdminAcademy {
     businessNumber: string;
     address: string;
     phone: string;
+    phoneNumber?: string;  // 전화번호 (추가: 2025-12-03)
+    website?: string;      // 홈페이지 주소 (추가: 2025-12-03)
     email: string;
     registeredDate: string;
     courseCount: number;
     status: '활성' | '정지' | '대기';
+    logoUrl?: string;  // 기관 프로필 이미지 URL (작성일: 2025-12-03)
 }

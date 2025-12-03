@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Heart, Share2, Clock } from 'lucide-react';
+import { Heart, Share2, ChevronRight } from 'lucide-react';
 import { sanitizeUrl } from '../../utils/security';
 import type { Course, AlertModalState } from '../../types';
 
@@ -124,17 +124,26 @@ const CourseDetailSidebar = ({
                     <Link to={`/academies/${course.academy.id}`} className="flex items-center gap-3 group">
                         <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 font-bold text-xs overflow-hidden">
                             {course.academy.logoUrl ? (
-                                <img src={sanitizeUrl(course.academy.logoUrl)} alt={course.academy.name} className="w-full h-full object-cover" />
-                            ) : (
-                                course.academy.name?.length > 0 ? course.academy.name[0] : '?'
-                            )}
+                                <img 
+                                    src={sanitizeUrl(course.academy.logoUrl)} 
+                                    alt={course.academy.name} 
+                                    className="w-full h-full object-cover" 
+                                    onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        e.currentTarget.parentElement?.querySelector('.fallback-initial')?.classList.remove('hidden');
+                                    }}
+                                />
+                            ) : null}
+                            <span className={`fallback-initial ${course.academy.logoUrl ? 'hidden' : ''}`}>
+                                {course.academy.name?.length > 0 ? course.academy.name[0] : '?'}
+                            </span>
                         </div>
                         <div>
                             <div className="text-sm font-medium text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{course.academy.name}</div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">기관 정보 보기</div>
                         </div>
                         <div className="ml-auto">
-                            <Clock className="w-4 h-4 text-slate-400 group-hover:text-primary-600 transition-colors" />
+                            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-primary-600 transition-colors" />
                         </div>
                     </Link>
                 </div>

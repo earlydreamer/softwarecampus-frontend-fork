@@ -4,6 +4,34 @@ import type { CommunityPost } from '../../types';
 import { ArrowRight, ThumbsUp } from 'lucide-react';
 import Skeleton from '../ui/Skeleton';
 
+// 날짜 포맷 유틸리티
+const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return '';
+    try {
+        // ISO 8601 형식 (2024-01-15T10:30:00) 또는 배열 형식 [2024, 1, 15, 10, 30, 0] 처리
+        let date: Date;
+        
+        if (Array.isArray(dateString)) {
+            // LocalDateTime 배열 형식: [year, month, day, hour, minute, second]
+            const arr = dateString as unknown as number[];
+            date = new Date(arr[0], arr[1] - 1, arr[2], arr[3] || 0, arr[4] || 0, arr[5] || 0);
+        } else if (typeof dateString === 'string') {
+            date = new Date(dateString);
+        } else {
+            return '';
+        }
+        
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).replace(/\. /g, '.').replace(/\.$/, '');
+    } catch {
+        return '';
+    }
+};
+
 interface CommunitySectionProps {
     posts: CommunityPost[];
     loading: boolean;
@@ -68,7 +96,7 @@ const CommunitySection: React.FC<CommunitySectionProps> = ({ posts, loading }) =
                                         <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${boardClass}`}>
                                             {boardName}
                                         </span>
-                                        <span className="text-xs text-slate-400">{post.createdAt}</span>
+                                        <span className="text-xs text-slate-400">{formatDate(post.createdAt)}</span>
                                     </div>
 
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3 line-clamp-1 group-hover:text-primary-600 transition-colors">

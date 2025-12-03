@@ -97,15 +97,19 @@ interface PaginationParams {
     categoryType?: CategoryType;
 }
 
-// API 사용자 응답 타입
+// API 사용자 응답 타입 (백엔드 AccountResponse와 일치)
 interface ApiUserResponse {
     id: number;
-    userName: string;
     email: string;
+    userName: string;
+    phoneNumber?: string;
     accountType: string;
+    approvalStatus: string;  // PENDING, APPROVED, REJECTED
+    address?: string;
+    affiliation?: string;
+    position?: string;
+    profileImage?: string;
     createdAt: string;
-    lastLoginAt?: string;
-    accountApproved: string;
     deletedAt?: string;
     postCount: number;
     commentCount: number;
@@ -117,11 +121,13 @@ interface ApiAcademyResponse {
     name: string;
     businessNumber: string;
     phoneNumber?: string;
+    website?: string;
     email: string;
     address: string;
     isApproved: string;
     createdAt: string;
     courseCount?: number;
+    logoUrl?: string;  // 기관 프로필 이미지 URL (작성일: 2025-12-03)
 }
 
 /**
@@ -345,8 +351,10 @@ export const getAdminUsers = async (
     };
     if (keyword) params.keyword = keyword;
 
+    // 키워드가 있으면 search 엔드포인트, 없으면 기본 목록
+    const endpoint = keyword ? '/admin/accounts/search' : '/admin/accounts';
     const response = await apiClient.get<{ content: ApiUserResponse[]; totalElements: number }>(
-        '/admin/accounts',
+        endpoint,
         { params }
     );
 
@@ -361,22 +369,64 @@ export const getAdminUsers = async (
         });
     }
 
-    const users = content.map(user => ({
-        id: user.id,
-        userName: user.userName,
-        email: user.email,
-        accountType: user.accountType,
-        registeredDate: user.createdAt,
-        lastLogin: user.lastLoginAt || '-',
-        status: user.accountApproved === 'APPROVED' ? '활성' : (user.deletedAt ? '탈퇴' : '정지'),
-        postCount: user.postCount,
-        commentCount: user.commentCount
-    } as AdminUser));
-
+    const users = content.map(mapApiUserToAdminUser);
     const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
 
     return { users, totalCount: totalElements };
 };
+
+/**
+ * 회원 상세 정보 조회
+ */
+export const getAdminUserDetail = async (userId: number): Promise<AdminUser> => {
+    const response = await apiClient.get<ApiUserResponse>(`/admin/accounts/${userId}`);
+    return mapApiUserToAdminUser(response.data);
+};
+
+/**
+ * 회원 정보 수정 요청 타입
+ */
+export interface UserUpdateData {
+    userName: string;
+    phoneNumber: string;
+    affiliation?: string;
+    position?: string;
+    address?: string;
+    accountApproved?: 'PENDING' | 'APPROVED' | 'REJECTED';  // 관리자만 수정 가능
+}
+
+/**
+ * 회원 정보 수정
+ */
+export const updateAdminUser = async (userId: number, data: UserUpdateData): Promise<AdminUser> => {
+    const response = await apiClient.put<ApiUserResponse>(`/admin/accounts/${userId}`, data);
+    return mapApiUserToAdminUser(response.data);
+};
+
+/**
+ * 회원 삭제 (Soft Delete)
+ */
+export const deleteAdminUser = async (userId: number): Promise<void> => {
+    await apiClient.delete(`/admin/accounts/${userId}`);
+};
+
+// Helper: API 응답을 AdminUser로 변환
+const mapApiUserToAdminUser = (user: ApiUserResponse): AdminUser => ({
+    id: user.id,
+    userName: user.userName,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    accountType: user.accountType as AdminUser['accountType'],
+    registeredDate: user.createdAt,
+    lastLogin: '-',  // 백엔드에서 lastLoginAt을 제공하지 않음
+    status: user.approvalStatus === 'APPROVED' ? '활성' : (user.deletedAt ? '탈퇴' : '정지'),
+    postCount: user.postCount || 0,
+    commentCount: user.commentCount || 0,
+    address: user.address,
+    affiliation: user.affiliation,
+    position: user.position,
+    profileImage: user.profileImage
+});
 
 /**
  * 관리자용 기관 목록 조회 (검색 및 상태 필터링 지원)
@@ -419,11 +469,14 @@ export const getAdminAcademies = async (
             name: academy.name,
             businessNumber: academy.businessNumber,
             phone: academy.phoneNumber || '-',
+            phoneNumber: academy.phoneNumber || '',
+            website: academy.website || '',
             email: academy.email,
             address: academy.address,
             status: academy.isApproved === 'APPROVED' ? '활성' : (academy.isApproved === 'PENDING' ? '대기' : '정지'),
             registeredDate: academy.createdAt,
             courseCount: academy.courseCount || 0,
+            logoUrl: academy.logoUrl,  // 기관 프로필 이미지 URL (작성일: 2025-12-03)
         } as AdminAcademy));
 
         const totalElements = typeof response.data?.totalElements === 'number' ? response.data.totalElements : 0;
@@ -457,6 +510,8 @@ export interface AcademyCreateData {
     address: string;
     businessNumber: string;
     email: string;
+    phoneNumber?: string;
+    website?: string;
     files: File[];
 }
 
@@ -469,6 +524,12 @@ export const createAcademy = async (data: AcademyCreateData): Promise<AdminAcade
     formData.append('address', data.address);
     formData.append('businessNumber', data.businessNumber);
     formData.append('email', data.email);
+    if (data.phoneNumber) {
+        formData.append('phoneNumber', data.phoneNumber);
+    }
+    if (data.website) {
+        formData.append('website', data.website);
+    }
     
     data.files.forEach((file) => {
         formData.append('files', file);
@@ -488,6 +549,8 @@ export const createAcademy = async (data: AcademyCreateData): Promise<AdminAcade
         businessNumber: academy.businessNumber,
         address: academy.address,
         phone: academy.phoneNumber || '',
+        phoneNumber: academy.phoneNumber || '',
+        website: academy.website || '',
         email: academy.email,
         status: academy.approvalStatus === 'APPROVED' ? '활성' : 
                 academy.approvalStatus === 'PENDING' ? '대기' : '정지',
@@ -504,6 +567,8 @@ export interface AcademyUpdateData {
     address?: string;
     businessNumber?: string;
     email?: string;
+    phoneNumber?: string;
+    website?: string;
 }
 
 /**
@@ -520,11 +585,76 @@ export const updateAcademy = async (id: number, data: AcademyUpdateData): Promis
         businessNumber: academy.businessNumber,
         address: academy.address,
         phone: academy.phoneNumber || '',
+        phoneNumber: academy.phoneNumber || '',
+        website: academy.website || '',
         email: academy.email,
         status: academy.approvalStatus === 'APPROVED' ? '활성' : 
                 academy.approvalStatus === 'PENDING' ? '대기' : '정지',
         registeredDate: academy.createdAt || new Date().toISOString(),
         courseCount: 0,
+        logoUrl: academy.logoUrl,
+    };
+};
+
+/**
+ * 기관 프로필 이미지 업로드/수정
+ * 작성자: GitHub Copilot
+ * 작성일: 2025-12-03
+ * 
+ * @param academyId 기관 ID
+ * @param image 프로필 이미지 파일
+ * @returns 업데이트된 기관 정보
+ */
+export const uploadAcademyProfileImage = async (academyId: number, image: File): Promise<AdminAcademy> => {
+    const formData = new FormData();
+    formData.append('image', image);
+
+    const response = await apiClient.post(`/api/academies/${academyId}/profile-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+
+    const academy = response.data;
+    return {
+        id: academy.id,
+        name: academy.name,
+        businessNumber: academy.businessNumber,
+        address: academy.address,
+        phone: academy.phoneNumber || '',
+        email: academy.email,
+        status: academy.isApproved === 'APPROVED' ? '활성' : 
+                academy.isApproved === 'PENDING' ? '대기' : '정지',
+        registeredDate: academy.createdAt || new Date().toISOString(),
+        courseCount: academy.courseCount || 0,
+        logoUrl: academy.logoUrl,
+    };
+};
+
+/**
+ * 기관 프로필 이미지 삭제
+ * 작성자: GitHub Copilot
+ * 작성일: 2025-12-03
+ * 
+ * @param academyId 기관 ID
+ * @returns 업데이트된 기관 정보
+ */
+export const deleteAcademyProfileImage = async (academyId: number): Promise<AdminAcademy> => {
+    const response = await apiClient.delete(`/api/academies/${academyId}/profile-image`);
+
+    const academy = response.data;
+    return {
+        id: academy.id,
+        name: academy.name,
+        businessNumber: academy.businessNumber,
+        address: academy.address,
+        phone: academy.phoneNumber || '',
+        email: academy.email,
+        status: academy.isApproved === 'APPROVED' ? '활성' : 
+                academy.isApproved === 'PENDING' ? '대기' : '정지',
+        registeredDate: academy.createdAt || new Date().toISOString(),
+        courseCount: academy.courseCount || 0,
+        logoUrl: academy.logoUrl,
     };
 };
 

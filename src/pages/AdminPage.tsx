@@ -13,7 +13,6 @@ import {
     XCircle,
     Clock,
     Search,
-    MoreVertical,
     ImageIcon,
     Plus,
     Trash2,
@@ -50,6 +49,8 @@ import {
     rejectAcademy,
     createAcademy,
     updateAcademy,
+    uploadAcademyProfileImage,
+    deleteAcademyProfileImage,
     requestCourseRegistration,
     createCourseByAdmin,
     updateCourseRequest,
@@ -58,6 +59,8 @@ import {
     deleteCourseImage,
     createBanner,
     updateBanner,
+    updateAdminUser,
+    deleteAdminUser,
     type DashboardStats
 } from '../services/adminService';
 import { deleteCourse, fetchCourseById } from '../services/courseService';
@@ -180,6 +183,7 @@ const AdminPage = () => {
         : courseRequests;
 
     const [userSearchTerm, setUserSearchTerm] = useState('');
+    const [userStatusFilter, setUserStatusFilter] = useState<'전체' | '활성' | '정지' | '탈퇴'>('전체');
 
     const filteredReviewRequests = user?.accountType === 'ACADEMY' && user.academyId
         ? reviewRequests.filter(r => r.academyId === user.academyId)
@@ -318,6 +322,8 @@ const AdminPage = () => {
                 address: data.address,
                 businessNumber: data.businessNumber,
                 email: data.email,
+                phoneNumber: data.phoneNumber,
+                website: data.website,
                 files: data.files,
             });
             setIsAcademyModalOpen(false);
@@ -341,6 +347,8 @@ const AdminPage = () => {
                 address: data.address,
                 businessNumber: data.businessNumber,
                 email: data.email,
+                phoneNumber: data.phoneNumber,
+                website: data.website,
             });
             setIsAcademyModalOpen(false);
             setEditingAcademy(null);
@@ -355,6 +363,44 @@ const AdminPage = () => {
         }
     };
 
+    // 기관 프로필 이미지 업로드 핸들러 (작성일: 2025-12-03)
+    const handleUploadAcademyProfileImage = async (academyId: number, image: File) => {
+        try {
+            const updatedAcademy = await uploadAcademyProfileImage(academyId, image);
+            // 수정 중인 기관의 logoUrl 업데이트
+            if (editingAcademy && editingAcademy.id === academyId) {
+                setEditingAcademy(prev => prev ? { ...prev, logoUrl: updatedAcademy.logoUrl } : null);
+            }
+            // 목록 갱신
+            const { academies } = await getAdminAcademies();
+            setAcademies(academies);
+            showAlert('업로드 완료', '프로필 이미지가 업로드되었습니다.', 'success');
+        } catch (error) {
+            console.error('Failed to upload academy profile image:', error);
+            showAlert('업로드 실패', '프로필 이미지 업로드에 실패했습니다.', 'error');
+            throw error;
+        }
+    };
+
+    // 기관 프로필 이미지 삭제 핸들러 (작성일: 2025-12-03)
+    const handleDeleteAcademyProfileImage = async (academyId: number) => {
+        try {
+            await deleteAcademyProfileImage(academyId);
+            // 수정 중인 기관의 logoUrl 제거
+            if (editingAcademy && editingAcademy.id === academyId) {
+                setEditingAcademy(prev => prev ? { ...prev, logoUrl: undefined } : null);
+            }
+            // 목록 갱신
+            const { academies } = await getAdminAcademies();
+            setAcademies(academies);
+            showAlert('삭제 완료', '프로필 이미지가 삭제되었습니다.', 'success');
+        } catch (error) {
+            console.error('Failed to delete academy profile image:', error);
+            showAlert('삭제 실패', '프로필 이미지 삭제에 실패했습니다.', 'error');
+            throw error;
+        }
+    };
+
     // 기관 수정 모달 열기
     const openEditAcademyModal = (academy: AdminAcademy) => {
         setEditingAcademy({
@@ -363,6 +409,9 @@ const AdminPage = () => {
             address: academy.address,
             businessNumber: academy.businessNumber,
             email: academy.email,
+            phoneNumber: academy.phoneNumber,
+            website: academy.website,
+            logoUrl: academy.logoUrl,  // 프로필 이미지 URL 추가 (작성일: 2025-12-03)
         });
         setIsAcademyModalOpen(true);
     };
@@ -761,14 +810,61 @@ const AdminPage = () => {
     );
 
     const filteredUsers = users.filter(user =>
-        !userSearchTerm ||
+        (!userSearchTerm ||
         user.userName.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+        user.email.toLowerCase().includes(userSearchTerm.toLowerCase())) &&
+        (userStatusFilter === '전체' || user.status === userStatusFilter)
     );
 
     const filteredAcademies = academies.filter(academy =>
         academyFilter === '전체' ? true : academy.status === academyFilter
     );
+
+    // 회원 상태 변경 핸들러
+    const handleUserStatusChange = (targetUser: AdminUser, newStatus: 'APPROVED' | 'REJECTED') => {
+        const statusLabel = newStatus === 'APPROVED' ? '활성화' : '정지';
+        showConfirm(
+            `회원 ${statusLabel}`,
+            `"${targetUser.userName}" 회원을 ${statusLabel}하시겠습니까?`,
+            async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                try {
+                    await updateAdminUser(targetUser.id, {
+                        userName: targetUser.userName,
+                        phoneNumber: targetUser.phoneNumber || '',
+                        accountApproved: newStatus
+                    });
+                    showAlert(`${statusLabel} 완료`, `회원이 ${statusLabel}되었습니다.`, 'success');
+                    // 목록 갱신
+                    const { users: updatedUsers } = await getAdminUsers();
+                    setUsers(updatedUsers);
+                } catch (error) {
+                    console.error(`회원 ${statusLabel} 실패:`, error);
+                    showAlert(`${statusLabel} 실패`, `회원 ${statusLabel}에 실패했습니다.`, 'error');
+                }
+            }
+        );
+    };
+
+    // 회원 삭제 핸들러
+    const handleUserDelete = (targetUser: AdminUser) => {
+        showConfirm(
+            '회원 삭제',
+            `"${targetUser.userName}" 회원을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+            async () => {
+                setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                try {
+                    await deleteAdminUser(targetUser.id);
+                    showAlert('삭제 완료', '회원이 삭제되었습니다.', 'success');
+                    // 목록에서 제거
+                    setUsers(prev => prev.filter(u => u.id !== targetUser.id));
+                } catch (error) {
+                    console.error('회원 삭제 실패:', error);
+                    showAlert('삭제 실패', '회원 삭제에 실패했습니다.', 'error');
+                }
+            }
+        );
+    };
 
     // 재로드 함수
     const handleRetry = () => {
@@ -1213,17 +1309,33 @@ const AdminPage = () => {
             case 'users':
                 return (
                     <div className="space-y-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">회원 관리</h2>
-                            <div className="relative w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder="이름 또는 이메일 검색"
-                                    value={userSearchTerm}
-                                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                                />
+                            <div className="flex items-center gap-4">
+                                <div className="glass-panel p-1 rounded-xl w-fit flex items-center gap-2">
+                                    {(['전체', '활성', '정지', '탈퇴'] as const).map((filter) => (
+                                        <button
+                                            key={filter}
+                                            onClick={() => setUserStatusFilter(filter)}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${userStatusFilter === filter
+                                                ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/30'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                                                }`}
+                                        >
+                                            {filter}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="relative w-64">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="이름 또는 이메일 검색"
+                                        value={userSearchTerm}
+                                        onChange={(e) => setUserSearchTerm(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -1234,39 +1346,121 @@ const AdminPage = () => {
                                         <tr>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">회원정보</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">구분</th>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">활동</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">가입일</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">상태</th>
-                                            <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900 dark:text-white">관리</th>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">작업</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                        {filteredUsers.map((user) => (
-                                            <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30">
-                                                <td className="px-6 py-4">
-                                                    <div>
-                                                        <div className="font-medium text-slate-900 dark:text-white">{user.userName}</div>
-                                                        <div className="text-sm text-slate-500">{user.email}</div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-                                                    {user.accountType === 'USER' ? '수강생' : user.accountType === 'ACADEMY' ? '기관' : '관리자'}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">{user.registeredDate}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.status === '활성'
-                                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                                        : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
-                                                        }`}>
-                                                        {user.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                                                        <MoreVertical className="w-5 h-5" />
-                                                    </button>
+                                        {filteredUsers.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                                    {userSearchTerm || userStatusFilter !== '전체'
+                                                        ? '검색 결과가 없습니다.'
+                                                        : '등록된 회원이 없습니다.'}
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ) : (
+                                            filteredUsers.map((targetUser) => (
+                                                <tr key={targetUser.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/30">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            {/* 프로필 이미지 */}
+                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+                                                                {targetUser.profileImage ? (
+                                                                    <img
+                                                                        src={targetUser.profileImage}
+                                                                        alt={targetUser.userName}
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                                                        }}
+                                                                    />
+                                                                ) : null}
+                                                                <span className={targetUser.profileImage ? 'hidden' : ''}>
+                                                                    {targetUser.userName.charAt(0).toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-medium text-slate-900 dark:text-white">{targetUser.userName}</div>
+                                                                <div className="text-sm text-slate-500">{targetUser.email}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                            targetUser.accountType === 'ADMIN'
+                                                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                                                                : targetUser.accountType === 'ACADEMY'
+                                                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                                                : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
+                                                        }`}>
+                                                            {targetUser.accountType === 'USER' ? '수강생' : targetUser.accountType === 'ACADEMY' ? '기관' : '관리자'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                                                        <div className="flex items-center gap-3">
+                                                            <span title="게시글">📝 {targetUser.postCount || 0}</span>
+                                                            <span title="댓글">💬 {targetUser.commentCount || 0}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                                                        {targetUser.registeredDate ? new Date(targetUser.registeredDate).toLocaleDateString('ko-KR') : '-'}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+                                                            targetUser.status === '활성'
+                                                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                                : targetUser.status === '정지'
+                                                                ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                        }`}>
+                                                            {targetUser.status === '활성' ? <CheckCircle className="w-3 h-3" /> :
+                                                             targetUser.status === '정지' ? <Clock className="w-3 h-3" /> :
+                                                             <XCircle className="w-3 h-3" />}
+                                                            {targetUser.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            {/* 관리자 계정은 상태 변경/삭제 불가 */}
+                                                            {targetUser.accountType !== 'ADMIN' && targetUser.status !== '탈퇴' && (
+                                                                <>
+                                                                    {targetUser.status === '활성' ? (
+                                                                        <button
+                                                                            onClick={() => handleUserStatusChange(targetUser, 'REJECTED')}
+                                                                            className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium transition"
+                                                                        >
+                                                                            정지
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={() => handleUserStatusChange(targetUser, 'APPROVED')}
+                                                                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                                                                        >
+                                                                            활성화
+                                                                        </button>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => handleUserDelete(targetUser)}
+                                                                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                                        title="삭제"
+                                                                        aria-label="삭제"
+                                                                    >
+                                                                        <Trash2 className="w-4 h-4" />
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {targetUser.accountType === 'ADMIN' && (
+                                                                <span className="text-xs text-slate-400">-</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -1313,7 +1507,7 @@ const AdminPage = () => {
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">사업자번호</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">연락처</th>
                                             <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">상태</th>
-                                            <th className="px-6 py-4 text-right text-sm font-semibold text-slate-900 dark:text-white">관리</th>
+                                            <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">작업</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -1338,29 +1532,33 @@ const AdminPage = () => {
                                                         {academy.status}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button 
-                                                        onClick={() => openEditAcademyModal(academy)}
-                                                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                                    >
-                                                        수정
-                                                    </button>
-                                                    {academy.status === '대기' && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleApproveAcademy(academy.id)}
-                                                                className="text-green-600 hover:text-green-900 mr-3"
-                                                            >
-                                                                승인
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleRejectAcademy(academy.id)}
-                                                                className="text-red-600 hover:text-red-900"
-                                                            >
-                                                                거부
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {academy.status === '대기' && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleApproveAcademy(academy.id)}
+                                                                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition"
+                                                                >
+                                                                    승인
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleRejectAcademy(academy.id)}
+                                                                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition"
+                                                                >
+                                                                    거부
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        <button
+                                                            onClick={() => openEditAcademyModal(academy)}
+                                                            className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                                            title="수정"
+                                                            aria-label="수정"
+                                                        >
+                                                            <Edit2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -1458,6 +1656,8 @@ const AdminPage = () => {
                 onSubmit={handleCreateAcademy}
                 editData={editingAcademy}
                 onEdit={handleEditAcademy}
+                onUploadProfileImage={handleUploadAcademyProfileImage}
+                onDeleteProfileImage={handleDeleteAcademyProfileImage}
             />
 
             {/* Alert Modal */}
