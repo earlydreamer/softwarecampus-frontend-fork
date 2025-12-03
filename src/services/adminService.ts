@@ -497,6 +497,38 @@ export const createAcademy = async (data: AcademyCreateData): Promise<AdminAcade
 };
 
 /**
+ * 기관 수정 요청 데이터 타입
+ */
+export interface AcademyUpdateData {
+    name?: string;
+    address?: string;
+    businessNumber?: string;
+    email?: string;
+}
+
+/**
+ * 기관 수정 (관리자)
+ */
+export const updateAcademy = async (id: number, data: AcademyUpdateData): Promise<AdminAcademy> => {
+    const response = await apiClient.patch(`/api/academies/${id}`, data);
+
+    // 응답을 AdminAcademy 형태로 변환
+    const academy = response.data;
+    return {
+        id: academy.id,
+        name: academy.name,
+        businessNumber: academy.businessNumber,
+        address: academy.address,
+        phone: academy.phoneNumber || '',
+        email: academy.email,
+        status: academy.approvalStatus === 'APPROVED' ? '활성' : 
+                academy.approvalStatus === 'PENDING' ? '대기' : '정지',
+        registeredDate: academy.createdAt || new Date().toISOString(),
+        courseCount: 0,
+    };
+};
+
+/**
  * 기관용 대시보드 통계 조회
  */
 export const getInstitutionDashboardStats = async (): Promise<DashboardStats> => {
@@ -583,7 +615,20 @@ export const getInstitutionReviews = async (
 };
 
 /**
+ * 커리큘럼 요청 DTO (백엔드 CurriculumRequestDTO와 일치)
+ * 작성일: 2025-12-03
+ */
+export interface CurriculumRequestDTO {
+    id?: number;              // 기존 커리큘럼 ID (수정 시 사용)
+    chapterNumber: number;    // 챕터 번호
+    chapterName: string;      // 챕터 이름
+    chapterDetail?: string;   // 챕터 상세 설명
+    chapterTime: number;      // 챕터 시간 (시간 단위)
+}
+
+/**
  * 과정 등록 요청 DTO (백엔드 CourseRequestDTO와 일치)
+ * 수정일: 2025-12-03 - 커리큘럼 필드 추가
  */
 export interface CourseRegistrationRequest {
     academyId: number;
@@ -602,11 +647,13 @@ export interface CourseRegistrationRequest {
     isNailbaeum?: boolean;
     isOffline?: boolean;
     requirement?: string;
+    curriculums?: CurriculumRequestDTO[];  // 커리큘럼 목록 (2025-12-03 추가)
 }
 
 /**
  * 프론트엔드 폼 데이터를 백엔드 DTO로 변환하는 헬퍼 함수
  * 카테고리는 이제 동적으로 로드되므로 직접 사용
+ * 수정일: 2025-12-03 - 커리큘럼 변환 추가
  */
 export const convertFormToRequest = (
     formData: {
@@ -626,6 +673,7 @@ export const convertFormToRequest = (
         isOffline?: boolean;
         location?: string;
         description?: string;
+        curriculums?: CurriculumRequestDTO[];  // 커리큘럼 (2025-12-03 추가)
     },
     academyId: number
 ): CourseRegistrationRequest => {
@@ -652,6 +700,7 @@ export const convertFormToRequest = (
         isNailbaeum: formData.isNailbaeum,
         isOffline: formData.isOffline ?? (formData.format === '오프라인'),
         requirement: formData.description,
+        curriculums: formData.curriculums,  // 커리큘럼 추가 (2025-12-03)
     };
 };
 
