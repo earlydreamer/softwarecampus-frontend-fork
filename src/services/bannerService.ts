@@ -110,7 +110,7 @@ const isAuthError = (error: AxiosError): boolean => {
  */
 export const fetchActiveBanners = async (): Promise<BannerResult> => {
     try {
-        const response = await apiClient.get<ApiBannerResponse[]>('/banners');
+        const response = await apiClient.get<ApiBannerResponse[]>('/api/banners');
         
         // 응답이 배열인지 확인 (API 오류 시 HTML 등이 반환될 수 있음)
         if (!Array.isArray(response.data)) {
