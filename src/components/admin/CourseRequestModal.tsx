@@ -1,8 +1,8 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef, useId, useCallback } from 'react';
-import { X, Edit2, Upload, RefreshCw, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { X, Edit2, Upload, RefreshCw, Image as ImageIcon, Trash2, Plus, GripVertical, ChevronDown, ChevronUp } from 'lucide-react';
 import type { CourseApprovalRequest, CourseTarget, CategoryType, AdminAcademy } from '../../types';
-import { getCourseCategories, getAdminAcademies, type CourseCategoryResponse } from '../../services/adminService';
+import { getCourseCategories, getAdminAcademies, type CourseCategoryResponse, type CurriculumRequestDTO } from '../../services/adminService';
 import AlertModal from '../ui/AlertModal';
 import TiptapEditor from '../editor/TiptapEditor';
 import { sanitizeUrl } from '../../utils/security';
@@ -30,6 +30,7 @@ export interface CourseFormState extends Partial<CourseApprovalRequest> {
     thumbnailImage: ImageState;    // 썸네일 이미지 상태
     headerImage: ImageState;       // 헤더 이미지 상태
     selectedAcademyId?: number;    // 관리자가 선택한 기관 ID
+    curriculums?: CurriculumRequestDTO[];  // 커리큘럼 목록 (2025-12-03 추가)
     
     // 하위 호환을 위한 필드 (deprecated, 점진적으로 제거 예정)
     /** @deprecated thumbnailImage.file 사용 */
@@ -94,8 +95,13 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
         description: '',
         thumbnailImage: createEmptyImageState(),
         headerImage: createEmptyImageState(),
-        selectedAcademyId: defaultAcademyId
+        selectedAcademyId: defaultAcademyId,
+        curriculums: []  // 커리큘럼 초기화 (2025-12-03 추가)
     });
+
+    // 커리큘럼 섹션 접기/펼치기 상태 (2025-12-03 추가)
+    const [isCurriculumExpanded, setIsCurriculumExpanded] = useState(true);
+
     // 폼 유효성 검사 에러 상태 (필드별 분리)
     const [formErrors, setFormErrors] = useState<{
         courseName?: string;
@@ -267,6 +273,8 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                         isChanged: false,
                         isDeleted: false,
                     },
+                    // 커리큘럼 초기화 (2025-12-03 추가) - initialData에 curriculums가 있으면 사용
+                    curriculums: (initialData as CourseFormState).curriculums || [],
                 });
             } else {
                 // 신규 등록 모드: 초기화
@@ -289,7 +297,8 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                     description: '',
                     thumbnailImage: createEmptyImageState(),
                     headerImage: createEmptyImageState(),
-                    selectedAcademyId: defaultAcademyId
+                    selectedAcademyId: defaultAcademyId,
+                    curriculums: []  // 커리큘럼 초기화 (2025-12-03 추가)
                 });
             }
 
@@ -481,6 +490,109 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
     const handleDescriptionChange = useCallback((content: string) => {
         setForm(prev => ({ ...prev, description: content }));
     }, []);
+
+    // ===== 커리큘럼 관련 핸들러 (2025-12-03 추가) =====
+
+    /**
+     * 새 커리큘럼 항목 추가
+     */
+    const handleAddCurriculum = useCallback(() => {
+        setForm(prev => {
+            const curriculums = prev.curriculums || [];
+            const nextChapterNumber = curriculums.length > 0
+                ? Math.max(...curriculums.map(c => c.chapterNumber)) + 1
+                : 1;
+            
+            return {
+                ...prev,
+                curriculums: [
+                    ...curriculums,
+                    {
+                        chapterNumber: nextChapterNumber,
+                        chapterName: '',
+                        chapterDetail: '',
+                        chapterTime: 0,
+                    }
+                ]
+            };
+        });
+    }, []);
+
+    /**
+     * 커리큘럼 항목 삭제
+     */
+    const handleRemoveCurriculum = useCallback((index: number) => {
+        setForm(prev => {
+            const curriculums = [...(prev.curriculums || [])];
+            curriculums.splice(index, 1);
+            // 챕터 번호 재정렬
+            const reorderedCurriculums = curriculums.map((c, i) => ({
+                ...c,
+                chapterNumber: i + 1
+            }));
+            return { ...prev, curriculums: reorderedCurriculums };
+        });
+    }, []);
+
+    /**
+     * 커리큘럼 필드 업데이트
+     */
+    const handleCurriculumChange = useCallback((
+        index: number,
+        field: keyof CurriculumRequestDTO,
+        value: string | number
+    ) => {
+        setForm(prev => {
+            const curriculums = [...(prev.curriculums || [])];
+            if (curriculums[index]) {
+                curriculums[index] = {
+                    ...curriculums[index],
+                    [field]: value
+                };
+            }
+            return { ...prev, curriculums };
+        });
+    }, []);
+
+    /**
+     * 커리큘럼 순서 이동 (위로)
+     */
+    const handleMoveCurriculumUp = useCallback((index: number) => {
+        if (index === 0) return;
+        setForm(prev => {
+            const curriculums = [...(prev.curriculums || [])];
+            const temp = curriculums[index - 1];
+            curriculums[index - 1] = curriculums[index];
+            curriculums[index] = temp;
+            // 챕터 번호 재정렬
+            const reorderedCurriculums = curriculums.map((c, i) => ({
+                ...c,
+                chapterNumber: i + 1
+            }));
+            return { ...prev, curriculums: reorderedCurriculums };
+        });
+    }, []);
+
+    /**
+     * 커리큘럼 순서 이동 (아래로)
+     */
+    const handleMoveCurriculumDown = useCallback((index: number) => {
+        setForm(prev => {
+            const curriculums = [...(prev.curriculums || [])];
+            if (index >= curriculums.length - 1) return prev;
+            const temp = curriculums[index + 1];
+            curriculums[index + 1] = curriculums[index];
+            curriculums[index] = temp;
+            // 챕터 번호 재정렬
+            const reorderedCurriculums = curriculums.map((c, i) => ({
+                ...c,
+                chapterNumber: i + 1
+            }));
+            return { ...prev, curriculums: reorderedCurriculums };
+        });
+    }, []);
+
+    // ===== 날짜 처리 유틸리티 =====
 
     /**
      * 날짜 값을 yyyy-MM-dd 형식의 문자열로 변환
@@ -1117,6 +1229,130 @@ const CourseRequestModal: React.FC<CourseRequestModalProps> = ({
                             onChange={handleDescriptionChange}
                             enableFileAttachment={false}
                         />
+                    </div>
+
+                    {/* Curriculum Section (2025-12-03 추가) */}
+                    <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between">
+                            <button
+                                type="button"
+                                onClick={() => setIsCurriculumExpanded(prev => !prev)}
+                                className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            >
+                                {isCurriculumExpanded ? (
+                                    <ChevronUp className="w-4 h-4" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4" />
+                                )}
+                                <span>커리큘럼 ({form.curriculums?.length || 0}개 챕터)</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleAddCurriculum}
+                                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                챕터 추가
+                            </button>
+                        </div>
+
+                        {isCurriculumExpanded && (
+                            <div className="space-y-3">
+                                {(!form.curriculums || form.curriculums.length === 0) ? (
+                                    <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
+                                        <p>등록된 커리큘럼이 없습니다.</p>
+                                        <p className="mt-1">위의 "챕터 추가" 버튼을 클릭하여 커리큘럼을 추가하세요.</p>
+                                    </div>
+                                ) : (
+                                    form.curriculums.map((curriculum, index) => (
+                                        <div
+                                            key={`curriculum-${index}`}
+                                            className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3"
+                                        >
+                                            {/* 챕터 헤더 */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <GripVertical className="w-4 h-4 text-slate-400 cursor-grab" />
+                                                    <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                                                        Chapter {curriculum.chapterNumber}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMoveCurriculumUp(index)}
+                                                        disabled={index === 0}
+                                                        className="p-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                        title="위로 이동"
+                                                    >
+                                                        <ChevronUp className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleMoveCurriculumDown(index)}
+                                                        disabled={index === (form.curriculums?.length || 0) - 1}
+                                                        className="p-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                                        title="아래로 이동"
+                                                    >
+                                                        <ChevronDown className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveCurriculum(index)}
+                                                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                                        title="챕터 삭제"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* 챕터 이름 */}
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                                    챕터 이름 <span className="text-red-500">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={curriculum.chapterName || ''}
+                                                    onChange={e => handleCurriculumChange(index, 'chapterName', e.target.value)}
+                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
+                                                    placeholder="예: React 기초"
+                                                />
+                                            </div>
+
+                                            {/* 학습 시간 */}
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                                    학습 시간 (시간)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={curriculum.chapterTime || 0}
+                                                    onChange={e => handleCurriculumChange(index, 'chapterTime', parseInt(e.target.value, 10) || 0)}
+                                                    className="w-32 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none"
+                                                />
+                                            </div>
+
+                                            {/* 챕터 상세 설명 */}
+                                            <div>
+                                                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                                                    챕터 상세 설명
+                                                </label>
+                                                <textarea
+                                                    value={curriculum.chapterDetail || ''}
+                                                    onChange={e => handleCurriculumChange(index, 'chapterDetail', e.target.value)}
+                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+                                                    rows={3}
+                                                    placeholder="이 챕터에서 다루는 내용을 설명해주세요."
+                                                />
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
