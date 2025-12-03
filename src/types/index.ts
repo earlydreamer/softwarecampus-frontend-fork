@@ -455,6 +455,7 @@ export interface CourseApprovalRequest {
     thumbnailImageId?: number;   // 썸네일 이미지 ID (삭제 API용)
     headerImageUrl?: string;     // 헤더 배경 이미지
     headerImageId?: number;      // 헤더 이미지 ID (삭제 API용)
+    curriculums?: CourseCurriculum[];  // 커리큘럼 목록 (2025-12-03 추가)
 }
 
 export interface ReviewApprovalRequest {
