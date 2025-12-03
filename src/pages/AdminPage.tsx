@@ -49,6 +49,7 @@ import {
     approveAcademy,
     rejectAcademy,
     createAcademy,
+    updateAcademy,
     requestCourseRegistration,
     createCourseByAdmin,
     updateCourseRequest,
@@ -59,10 +60,10 @@ import {
     updateBanner,
     type DashboardStats
 } from '../services/adminService';
-import { deleteCourse } from '../services/courseService';
+import { deleteCourse, fetchCourseById } from '../services/courseService';
 import CourseRequestModal, { type CourseFormState } from '../components/admin/CourseRequestModal';
 import BannerModal, { type BannerFormState } from '../components/admin/BannerModal';
-import AcademyCreateModal, { type AcademyFormData } from '../components/admin/AcademyCreateModal';
+import AcademyCreateModal, { type AcademyFormData, type AcademyEditData } from '../components/admin/AcademyCreateModal';
 import AlertModal from '../components/ui/AlertModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ReasonInputModal from '../components/common/ReasonInputModal';
@@ -120,6 +121,8 @@ const AdminPage = () => {
 
     // 기관 등록 모달 상태
     const [isAcademyModalOpen, setIsAcademyModalOpen] = useState(false);
+    // 기관 수정용 데이터 (null이면 등록 모드, 값이 있으면 수정 모드)
+    const [editingAcademy, setEditingAcademy] = useState<AcademyEditData | null>(null);
 
     // AlertModal 상태 (알림 메시지 표시)
     const [alertModal, setAlertModal] = useState<{
@@ -318,6 +321,7 @@ const AdminPage = () => {
                 files: data.files,
             });
             setIsAcademyModalOpen(false);
+            setEditingAcademy(null);
             showAlert('등록 완료', `기관 "${newAcademy.name}"이(가) 등록되었습니다.`, 'success');
             // 목록 갱신
             const { academies } = await getAdminAcademies();
@@ -327,6 +331,40 @@ const AdminPage = () => {
             showAlert('등록 실패', '기관 등록에 실패했습니다. 입력 정보를 확인해주세요.', 'error');
             throw error; // 모달에서 에러 상태 처리를 위해 throw
         }
+    };
+
+    // 기관 수정 핸들러
+    const handleEditAcademy = async (id: number, data: Omit<AcademyFormData, 'files'>) => {
+        try {
+            const updatedAcademy = await updateAcademy(id, {
+                name: data.name,
+                address: data.address,
+                businessNumber: data.businessNumber,
+                email: data.email,
+            });
+            setIsAcademyModalOpen(false);
+            setEditingAcademy(null);
+            showAlert('수정 완료', `기관 "${updatedAcademy.name}"이(가) 수정되었습니다.`, 'success');
+            // 목록 갱신
+            const { academies } = await getAdminAcademies();
+            setAcademies(academies);
+        } catch (error) {
+            console.error('Failed to update academy:', error);
+            showAlert('수정 실패', '기관 수정에 실패했습니다. 입력 정보를 확인해주세요.', 'error');
+            throw error;
+        }
+    };
+
+    // 기관 수정 모달 열기
+    const openEditAcademyModal = (academy: AdminAcademy) => {
+        setEditingAcademy({
+            id: academy.id,
+            name: academy.name,
+            address: academy.address,
+            businessNumber: academy.businessNumber,
+            email: academy.email,
+        });
+        setIsAcademyModalOpen(true);
     };
 
     if (!isAuthenticated || (user?.accountType !== 'ADMIN' && user?.accountType !== 'ACADEMY')) {
@@ -535,8 +573,36 @@ const AdminPage = () => {
     };
 
     // 과정 모달 핸들러
-    const openCourseModal = (course?: CourseApprovalRequest) => {
-        setEditingCourse(course || null);
+    const openCourseModal = async (course?: CourseApprovalRequest) => {
+        if (course) {
+            // 수정 모드: 과정 상세 정보를 먼저 조회하여 커리큘럼 포함
+            try {
+                const detailedCourse = await fetchCourseById(course.id);
+                if (detailedCourse) {
+                    // 커리큘럼 데이터를 포함하여 editingCourse 설정
+                    setEditingCourse({
+                        ...course,
+                        curriculums: detailedCourse.curriculums?.map(c => ({
+                            id: c.id,
+                            chapterNumber: c.chapterNumber,
+                            chapterName: c.chapterName,
+                            chapterDetail: c.chapterDetail,
+                            chapterTime: c.chapterTime,
+                        })) || []
+                    });
+                } else {
+                    // 상세 조회 실패 시 기존 데이터 사용 (커리큘럼 없음)
+                    setEditingCourse(course);
+                }
+            } catch (error) {
+                console.error('Failed to fetch course details for edit:', error);
+                // 에러 발생 시 기존 데이터 사용
+                setEditingCourse(course);
+            }
+        } else {
+            // 신규 등록 모드
+            setEditingCourse(null);
+        }
         setIsCourseModalOpen(true);
     };
 
@@ -1273,7 +1339,12 @@ const AdminPage = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button className="text-indigo-600 hover:text-indigo-900 mr-3">수정</button>
+                                                    <button 
+                                                        onClick={() => openEditAcademyModal(academy)}
+                                                        className="text-indigo-600 hover:text-indigo-900 mr-3"
+                                                    >
+                                                        수정
+                                                    </button>
                                                     {academy.status === '대기' && (
                                                         <>
                                                             <button
@@ -1377,11 +1448,16 @@ const AdminPage = () => {
                 isAdmin={user?.accountType === 'ADMIN'}
             />
 
-            {/* Academy Create Modal */}
+            {/* Academy Create/Edit Modal */}
             <AcademyCreateModal
                 isOpen={isAcademyModalOpen}
-                onClose={() => setIsAcademyModalOpen(false)}
+                onClose={() => {
+                    setIsAcademyModalOpen(false);
+                    setEditingAcademy(null);
+                }}
                 onSubmit={handleCreateAcademy}
+                editData={editingAcademy}
+                onEdit={handleEditAcademy}
             />
 
             {/* Alert Modal */}
