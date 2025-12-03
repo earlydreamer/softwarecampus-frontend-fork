@@ -12,20 +12,39 @@ export interface AcademyFormData {
     files: File[];
 }
 
+/**
+ * 기관 수정용 데이터 타입 (수정 모드에서 초기값으로 사용)
+ */
+export interface AcademyEditData {
+    id: number;
+    name: string;
+    address: string;
+    businessNumber: string;
+    email: string;
+}
+
 interface AcademyCreateModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (data: AcademyFormData) => Promise<void>;
+    /** 수정 모드용 - 기존 기관 데이터 */
+    editData?: AcademyEditData | null;
+    /** 수정 모드용 - 수정 제출 핸들러 */
+    onEdit?: (id: number, data: Omit<AcademyFormData, 'files'>) => Promise<void>;
 }
 
 /**
- * 기관 등록 모달 컴포넌트
- * 관리자가 새로운 훈련기관을 등록할 때 사용합니다.
+ * 기관 등록/수정 모달 컴포넌트
+ * 관리자가 새로운 훈련기관을 등록하거나 기존 기관을 수정할 때 사용합니다.
+ * 수정일: 2025-12-03 - 수정 모드 지원 추가
  */
-const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalProps) => {
+const AcademyCreateModal = ({ isOpen, onClose, onSubmit, editData, onEdit }: AcademyCreateModalProps) => {
     const titleId = useId();
     const modalRef = useRef<HTMLDivElement>(null);
     const firstInputRef = useRef<HTMLInputElement>(null);
+    
+    // 수정 모드 여부
+    const isEditMode = !!editData;
 
     // 폼 상태
     const [formData, setFormData] = useState<AcademyFormData>({
@@ -42,13 +61,25 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalPro
     // 모달 열릴 때 초기화 및 포커스
     useEffect(() => {
         if (isOpen) {
-            setFormData({
-                name: '',
-                address: '',
-                businessNumber: '',
-                email: '',
-                files: [],
-            });
+            // 수정 모드: 기존 데이터로 초기화
+            if (editData) {
+                setFormData({
+                    name: editData.name || '',
+                    address: editData.address || '',
+                    businessNumber: editData.businessNumber || '',
+                    email: editData.email || '',
+                    files: [], // 수정 모드에서는 파일 새로 첨부 가능 (선택)
+                });
+            } else {
+                // 등록 모드: 빈 폼으로 초기화
+                setFormData({
+                    name: '',
+                    address: '',
+                    businessNumber: '',
+                    email: '',
+                    files: [],
+                });
+            }
             setErrors({});
             setIsSubmitting(false);
 
@@ -57,7 +88,7 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalPro
                 firstInputRef.current?.focus();
             }, 100);
         }
-    }, [isOpen]);
+    }, [isOpen, editData]);
 
     // ESC 키 및 포커스 트랩
     useEffect(() => {
@@ -170,9 +201,11 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalPro
             newErrors.email = '올바른 이메일 형식으로 입력해주세요.';
         }
 
-        if (formData.files.length === 0) {
-            newErrors.files = '사업자등록증 등 증빙 파일을 1개 이상 첨부해주세요.';
-        }
+        // 파일 첨부는 선택 사항 (2025-12-03 수정)
+        // 필요 시 아래 주석을 해제하여 필수로 변경 가능
+        // if (formData.files.length === 0) {
+        //     newErrors.files = '사업자등록증 등 증빙 파일을 1개 이상 첨부해주세요.';
+        // }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -186,7 +219,18 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalPro
 
         setIsSubmitting(true);
         try {
-            await onSubmit(formData);
+            if (isEditMode && onEdit && editData) {
+                // 수정 모드
+                await onEdit(editData.id, {
+                    name: formData.name,
+                    address: formData.address,
+                    businessNumber: formData.businessNumber,
+                    email: formData.email,
+                });
+            } else {
+                // 등록 모드
+                await onSubmit(formData);
+            }
         } catch {
             // 에러 처리는 부모 컴포넌트에서 처리
         } finally {
@@ -216,7 +260,7 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalPro
                             <Building className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                         </div>
                         <h2 id={titleId} className="text-xl font-bold text-slate-900 dark:text-white">
-                            기관 등록
+                            {isEditMode ? '기관 수정' : '기관 등록'}
                         </h2>
                     </div>
                     <button
@@ -327,11 +371,18 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalPro
                     {/* 첨부파일 */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                            첨부파일 <span className="text-red-500">*</span>
+                            첨부파일
                             <span className="font-normal text-slate-500 dark:text-slate-400 ml-2">
-                                (사업자등록증, 교육기관 인증서 등)
+                                (사업자등록증, 교육기관 인증서 등 - 선택사항)
                             </span>
                         </label>
+
+                        {/* 수정 모드: 기존 파일 안내 메시지 */}
+                        {isEditMode && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                                ※ 수정 시 새 파일을 추가하면 기존 파일과 함께 저장됩니다.
+                            </p>
+                        )}
 
                         {/* 파일 업로드 영역 */}
                         <label
@@ -413,10 +464,10 @@ const AcademyCreateModal = ({ isOpen, onClose, onSubmit }: AcademyCreateModalPro
                         {isSubmitting ? (
                             <>
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                등록 중...
+                                {isEditMode ? '수정 중...' : '등록 중...'}
                             </>
                         ) : (
-                            '등록'
+                            isEditMode ? '수정' : '등록'
                         )}
                     </button>
                 </div>
