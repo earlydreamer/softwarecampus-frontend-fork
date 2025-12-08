@@ -4,12 +4,12 @@
 
 ## 🛠️ 기술 스택
 
-- **React 19** + **TypeScript**
-- **Vite** - 빌드 도구
-- **React Router** - 라우팅
-- **TanStack Query** - 서버 상태 관리
-- **Zustand** - 클라이언트 상태 관리
-- **Tailwind CSS** - 스타일링
+- **React 19.2.1** + **TypeScript** (보안 업데이트 반영)
+- **Vite 7** - 빌드 도구
+- **React Router 7** - 라우팅
+- **TanStack Query 5** - 서버 상태 관리
+- **Zustand 5** - 클라이언트 상태 관리
+- **Tailwind CSS 3.4** - 스타일링
 - **Vitest** + **React Testing Library** - 테스팅
 
 ## 📦 설치 및 실행
@@ -96,76 +96,20 @@ src/
 └── setupTests.ts     # 테스트 환경 설정
 ```
 
-## React + TypeScript + Vite
+## React + TypeScript + Vite 환경 설정
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+이 템플릿은 Vite를 사용하여 React 및 TypeScript 개발을 위한 최소한의 설정을 제공합니다. HMR(Hot Module Replacement)과 기본적인 ESLint 규칙이 포함되어 있습니다.
 
-Currently, two official plugins are available:
+### 현재 적용된 플러그인
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react): Babel을 사용하여 Fast Refresh를 지원합니다.
 
-## React Compiler
+### React Compiler
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+이 템플릿에는 React Compiler가 기본적으로 활성화되어 있지 않습니다. 개발 및 빌드 성능에 영향을 줄 수 있으므로, 필요 시 [공식 문서](https://react.dev/learn/react-compiler/installation)를 참고하여 설정하세요.
 
-## Expanding the ESLint configuration
+### ESLint 설정 확장
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+프로덕션 레벨의 애플리케이션을 개발하는 경우, 타입 인식이 가능한 린트 규칙을 활성화하는 것을 권장합니다.
+`eslint.config.js` 파일에서 `tseslint.configs.recommendedTypeChecked` 또는 `strictTypeChecked`를 확장하여 사용할 수 있습니다.
+또한 `eslint-plugin-react-x`나 `eslint-plugin-react-dom` 같은 추가 플러그인을 설치하여 React 전용 규칙을 강화할 수도 있습니다.
