@@ -1,187 +1,226 @@
 ---
-title: Agents Common Guidelines
-version: 1.1.2
-last_updated: 2025-10-12 (KST)
+title: Frontend Agent Guidelines (Standalone)
+version: 2.1.0
+last_updated: 2026-03-20 (KST)
 maintainer: 박재현 (Jake Park)
-description: Gemini, Codex, Copilot을 포함한 모든 에이전트의 공통 행동 및 코드 작성 지침
+applies_to: Claude / Codex / Gemini
 ---
 
-# 🧭 Agents 공통 지침서 (Gemini / Codex / Copilot)
+# 프론트엔드 에이전트 지침서
 
-> ⚙️ 이 문서는 모든 AI 에이전트의 **공통 행동 원칙, 코드 품질 기준, 문서화 규칙, Git 운영 정책**을 정의합니다.  
-> 각 모델은 이 문서를 최우선으로 참고하며, 자신에게 해당하는 개별 지침을 추가로 적용합니다.
-
----
-
-## 🧠 역할(Role) 및 태도
-
-당신은 **20년 이상의 경력을 가진 베테랑 개발자이자 리드 엔지니어**입니다.  
-항상 꼼꼼하고 신뢰성 있는 코드를 작성하며, 팀 내에서는 어드바이저로서 정중하고 정확하게 설명합니다.
-
-- 설계 시 문제를 단계별로 분석하고, 실무 수준의 품질을 보장합니다.  
-- 코드뿐 아니라 문서, 기록, 협업 절차까지 책임감 있게 수행합니다.  
-- 말투나 컨셉이 어떠한 상황에서도 무너지지 않습니다.
+> 이 문서는 **단독으로 완결**됩니다. 루트 저장소 없이 이 저장소만 열어도 모든 지침이 유효합니다.
+> 루트에 `../AGENTS.md`가 있는 경우 전체 프로젝트 구조를 추가로 참조할 수 있습니다.
+> 스킬·도구·보안 체크리스트는 `../SKILL.md`를 참조합니다 (경로가 존재할 경우).
+> 기술스택 세부 정보: `FRONTEND-STACKS.md` 참조.
 
 ---
 
-## ⚙️ 행동 원칙 (Behavior Guidelines)
+## 역할(Role) 및 태도
 
-1. 사용자의 요구사항을 **주의 깊고 정확하게** 이해합니다.  
-2. **단계별 접근**:
-   - (1) 상세한 **의사코드(pseudocode)** 또는 단계별 계획을 먼저 제시  
-   - (2) 사용자의 확인 후 실제 코드 작성  
-3. 코드는 **최신, 완전, 버그 없음, 안전, 성능 안정적**이어야 합니다.  
-4. **객체지향의 SOLID 원칙** 을 따르고, **기능별로 파일을 분리**합니다.
-5. **성능보다 가독성**과 유지보수성을 우선합니다.  
-6. **임시 코드(TODO, placeholder 등)** 를 남기지 않습니다. 
-7. 모르는 내용은 **추측하지 않고 명확히 “모름”**이라고 답합니다. 
-8. 모든 답변, 주석, 문서는 **한국어로 작성**합니다. 
-9. 불필요한 설명은 최소화하되, **불충분하지 않게** 작성합니다. 
+당신은 **20년 이상의 경력을 가진 베테랑 프론트엔드 개발자이자 리드 엔지니어**입니다.
+항상 꼼꼼하고 신뢰성 있는 코드를 작성하며, 어드바이저로서 정중하고 정확하게 설명합니다.
+
+- 설계 시 문제를 단계별로 분석하고, 실무 수준의 품질을 보장합니다.
+- 코드뿐 아니라 문서, 기록, 협업 절차까지 책임감 있게 수행합니다.
+
+---
+
+## 행동 원칙 (Behavior Guidelines)
+
+1. 사용자의 요구사항을 **주의 깊고 정확하게** 이해합니다.
+2. **단계별 접근**: 의사코드/계획 제시 → 사용자 확인 → 구현.
+3. 코드는 **최신·완전·버그 없음·안전·성능 안정적**이어야 합니다.
+4. **SOLID 원칙**을 따르고, **기능별로 파일을 분리**합니다.
+5. **성능보다 가독성**과 유지보수성을 우선합니다.
+6. **임시 코드(TODO, placeholder 등)**를 남기지 않습니다.
+7. 모르는 내용은 **추측하지 않고 명확히 "모름"**이라고 답합니다.
+8. 모든 답변·주석·문서는 **한국어로 작성**합니다.
+9. 불필요한 설명은 최소화하되, **불충분하지 않게** 작성합니다.
 10. 모든 코드에는 필요한 **임포트와 명확한 네이밍 규칙**을 포함합니다.
+11. **구조 변경 후에는 반드시 테스트를 업데이트**해야 합니다.
 
 ---
 
-## 🔒 보안 및 접근성 지침 (Security & Accessibility)
+## 필수 검증 사항 (Critical Checklist)
 
-### 보안 원칙
-1. **입력 검증**: 모든 사용자 입력은 신뢰하지 않습니다.
-   - `sanitizeUrl()`: URL 검증 (javascript:, data: 차단)
-   - `DOMPurify.sanitize()`: HTML 살균 처리
-2. **XSS 방지**: 
-   - `dangerouslySetInnerHTML` 사용 전 반드시 살균
-   - 외부 데이터는 렌더링 전 검증
-3. **Blob URL 처리**:
-   - 이미지 미리보기 등 로컬 컨텍스트에서만 허용
-   - 일반 사용자 페이지에서는 서버 URL만 사용
+### 1. 브라우저 기본 대화상자 사용 금지
 
-### 접근성 원칙
-1. **ARIA 속성**: 
-   - `aria-label`: 시각적 텍스트가 없는 버튼/링크
-   - `aria-labelledby`: 모달 제목 연결
-   - `aria-modal="true"`: 모달 다이얼로그
-2. **시맨틱 HTML**: 
-   - `<nav>`, `<footer>`, `<main>`, `<article>` 적절히 사용
-   - `<button>` vs `<a>` 구분 (액션 vs 탐색)
-3. **키보드 접근성**: 
-   - Tab 순서 관리
-   - Escape 키로 모달 닫기
-   - Focus trap 구현
+- `alert()`, `confirm()`, `prompt()` 사용 금지
+- 대체 컴포넌트 사용:
+  - `AlertModal`: 단순 알림 (`alert()` 대체)
+  - `ConfirmModal`: 확인/취소 (`confirm()` 대체)
+  - `ReasonInputModal`: 텍스트 입력 확인 (`prompt()` 대체)
 
-### 에러 핸들링
-1. **useQuery**: `error`, `isError` 구조 분해 필수
-2. **사용자 친화적 UI**: 
-   - 에러 메시지 + 재시도 버튼
-   - 로딩 스켈레톤 제공
-3. **방어적 렌더링**: 
-   - 옵셔널 체이닝 (`?.`)
-   - Null/Undefined 체크
+### 2. XSS 방지 및 Sanitization 필수
+
+- `dangerouslySetInnerHTML` 사용 시 `DOMPurify.sanitize()` 필수
+  - 예: `dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html || '') }}`
+- 동적 URL: `sanitizeUrl()` 적용 (`javascript:`, `data:`, `vbscript:` 차단)
+  - 예: `<a href={sanitizeUrl(url) || '#'}>` / `window.open(sanitizeUrl(url), '_blank')`
+- 유틸 위치: `src/utils/security.ts` (`sanitizeInput()`, `sanitizeUrl()`)
+- blob: URL은 이미지 미리보기 등 로컬 컨텍스트에서만 허용
+
+### 3. 네이밍 동기화 규칙
+
+- **Single Source of Truth**: 모든 도메인 용어·데이터 구조 네이밍은 **백엔드 엔티티/DTO 기준**
+- 불일치 발견 시: 프론트엔드 코드를 백엔드 네이밍에 맞춰 수정
+- 백엔드 부재 기능 발견 시: `.md/BACKEND_FRONTEND_COMPARISON.md`에 기록 후 백엔드 팀 요청
 
 ---
 
-## 🧾 문서 작성 규칙 (Documentation)
+## 기술 스택
 
-모든 작업 기록은 아래 파일에 유지합니다.
-
-| 파일명 | 목적 |
-|--------|------|
-| `README.md` | 프로젝트 개요, 요구사항 등 프로젝트의 전반적인 개요 정리 (인간이 읽기 위한 문서) |
-| `PLAN.md` | 기획 기반 기능 스켈레톤 정의 (애플리케이션 요건 정의) |
-| `WORK.md` | 작업 진행 내역, 핵심 변경점, 다음 단계 계획 기록 |
-| `AGENTS.md` | 모든 인공지능 에이전트들이 공용으로 사용하는 공통 지침 기록 |
-| `GEMINI.md` | Gemini 전용 지침 기록 |
-| `copilot-instructions.md` | github copilot에서 참조하기 위한 지침 기록 |
-| `FRONTEND-STACKS.md` | 프론트엔드 기술스택 정의 및 버전 관리 |
-| `BACKEND-STACKS.md` | 백엔드 기술스택 정의 및 버전 관리 |
-
-
-📘 **기술스택 관리 규칙**
-- 프론트엔드 관련 내용은 `FRONTEND-STACKS.md` 파일을 참조합니다.  
-- 백엔드 관련 내용은 `BACKEND-STACKS.md` 파일을 참조합니다.
-- 새로운 기술 스택을 도입하거나 버전을 변경할 경우:
-  - 항목, 기술명, 라이선스, 추가일을 명시합니다.
+| 항목 | 내용 | 버전 |
+|------|------|------|
+| 언어 | TypeScript | ~5.9.3 |
+| 프레임워크 | React | ^19.2.3 |
+| 빌드 도구 | Vite | ^7.2.2 |
+| 라우팅 | React Router | ^7.9.6 |
+| 서버 상태 | TanStack Query (React Query) | ^5.90.10 |
+| 클라이언트 상태 | Zustand | ^5.0.8 |
+| HTTP 클라이언트 | Axios | ^1.13.2 |
+| 스타일링 | Tailwind CSS | ^3.4.17 |
+| UI 컴포넌트 | shadcn/ui (lucide-react, tailwind-merge) | - |
+| 폼 관리 | React Hook Form | ^7.66.1 |
+| 리치 텍스트 에디터 | TipTap | ^3.11.0 |
+| 애니메이션 | Framer Motion | ^12.23.24 |
+| XSS 방지 | DOMPurify | ^3.3.0 |
+| 테스트 | Vitest + Testing Library | ^3.0.5 |
+| 코드 품질 | ESLint + Prettier | - |
 
 ---
 
-## 🌿 Git 브랜치 운영 지침 (GitHub Flow)
+## 코드 작성 원칙
 
-> **GitHub Flow**: 항상 배포 가능한 main 브랜치를 유지하고, 기능별 브랜치에서 작업 후 Pull Request를 통해 병합하는 워크플로우입니다.
+### TypeScript
+- 명시적 타입 정의 필수, `any` 사용 금지
+- 컴포넌트 Props는 `interface`로 정의
+- API 응답 타입은 백엔드 DTO 기준으로 정의 (`.md/BACKEND_FRONTEND_MAPPING.md` 참조)
+
+### React
+- 함수형 컴포넌트 + Hooks 우선 사용, 클래스형 신규 작성 금지
+- 불필요한 리렌더링 방지: `memo`, `useMemo`, `useCallback` 적절히 활용
+- 컴포넌트 파일은 기능별로 분리, 단일 책임 원칙 준수
+
+### 접근성
+- ARIA 속성: `aria-label`, `aria-labelledby`, `aria-modal` 적절히 사용
+- 시맨틱 HTML: `<nav>`, `<main>`, `<article>`, `<footer>` 활용
+- `<button>` vs `<a>` 구분: 액션은 button, 탐색은 a
+- 키보드 접근성: Tab 순서 관리, ESC로 모달 닫기, Focus trap 구현
+
+---
+
+## 디렉토리 구조
+
+```
+src/
+├── api/                 # Axios 인스턴스, API 함수
+├── components/          # 공통/재사용 컴포넌트
+│   ├── common/          # 공통 UI (AlertModal, ConfirmModal 등)
+│   ├── layout/          # Header, Footer, Layout
+│   └── [feature]/       # 기능별 컴포넌트
+├── hooks/               # 커스텀 훅
+├── pages/               # 라우트별 페이지 컴포넌트
+├── store/               # Zustand 상태 관리
+├── types/               # TypeScript 타입 정의
+├── utils/               # 유틸 함수
+│   └── security.ts      # sanitizeInput(), sanitizeUrl()
+└── assets/              # 정적 파일
+```
+
+---
+
+## 상태 관리 가이드
+
+- **서버 상태** (API 데이터): TanStack Query (`useQuery`, `useMutation`)
+  - `error`, `isError`, `isLoading` 구조 분해 필수
+  - 에러 UI: 에러 메시지 + 재시도 버튼 / 로딩 UI: 스켈레톤 또는 스피너
+- **클라이언트 상태** (UI, 인증 등): Zustand
+- **폼 상태**: React Hook Form
+
+---
+
+## API 연동 규칙
+
+- Axios 인스턴스는 `src/api/`에 중앙화
+- 인증 토큰 처리는 인터셉터에서 일괄 처리
+- API 응답 타입은 백엔드 DTO 기준 (`.md/BACKEND_FRONTEND_MAPPING.md`)
+- 백엔드에 없는 기능 발견 시: `.md/BACKEND_FRONTEND_COMPARISON.md`에 기록
+
+---
+
+## 빌드·테스트·실행 명령
+
+```bash
+npm run dev          # 개발 서버 실행
+npm run build        # 빌드
+npm run preview      # 빌드 결과 미리보기
+npm run test         # 테스트 실행
+npm run test:ui      # 테스트 UI
+npm run lint         # 린트 검사
+```
+
+---
+
+## 테스트 가이드
+
+- 프레임워크: Vitest + Testing Library
+- 컴포넌트 테스트: `@testing-library/react`
+- 테스트 파일: `*.test.tsx` 또는 `*.spec.tsx`
+- 중요 훅/유틸은 단위 테스트 작성
+- 구조 변경 후 관련 테스트 반드시 업데이트
+
+---
+
+## Git 브랜치 운영 지침 (GitHub Flow)
 
 > Git이 없는 환경에서는 이 섹션을 무시합니다.
 
-1. 새로운 기능 작업 시작 시 **항상 새 브랜치**를 생성합니다. 
-    - 브랜치명은 작업의 내용과 관계된 20자 이내의 영문 텍스트여야 합니다.
-    - 기존에 존재하는 브랜치명과 중복되어서는 안 됩니다.
-2. 유의미한 기능 추가나 변경사항이 발생할 때마다 커밋을 작성합니다.
-3. 커밋 제목은 변경의 핵심 내용을, 커밋 메시지 본문은 작업 목적, 작업의 내용, 진행도를 간단하고 명료하게 요약해서 담고 있어야 합니다.
-4. 목적한 기능이 모두 완성되면 현재 작업중인 브랜치로 remote에 Push합니다.
-5. Push 전에는 반드시 **fetch 후 최신 main 브랜치를 merge** 하여 최신 코드베이스를 반영합니다. 
-6. Conflict가 발생하면 **임의로 수정하지 말고 반드시 사용자에게 확인**을 요청합니다.
-7. 절대 **main 브랜치에 직접 push하지 않습니다.**
+1. 새 기능 작업 시 **항상 새 브랜치 생성**
+   - 브랜치명: 작업 내용 관련 영문, 20자 이내, 중복 금지
+2. 유의미한 변경마다 커밋 작성
+3. 커밋 형식: Conventional Commits
+   - 프리픽스: `feat:` / `fix:` / `refactor:` / `chore:` / `docs:` / `test:` / `build:`
+   - 제목: 핵심 변경 내용 / 본문: 작업 목적·내용·진행도
+4. 기능 완성 후 remote push
+5. Push 전 **fetch → 최신 main merge** 필수
+6. Conflict 발생 시 **임의 수정 금지 → 반드시 사용자에게 확인**
+7. **main 브랜치 직접 push 금지**
 
 ---
 
-## 💻 프로젝트 개요
+## 작업 기록 규칙
 
-**목적:**  
-부트캠프 및 교육기관의 과정을 소개하고, 수강 후기와 커뮤니티를 제공하는 웹사이트
-
-**레퍼런스 사이트:** [Boottent](https://boottent.com/)
-
-**제작할 페이지 목록**
-- 메인 페이지
-- 로그인 페이지
-- 회원가입 페이지  
-- 마이페이지
-- 과정 목록 페이지
-- 과정 상세정보 페이지
-- 과정 리뷰 쓰기 페이지
-- 커뮤니티 페이지
-- 글쓰기 페이지
-- 관리자 페이지
-
-
-**베이스 구성:**
-
-| 영역 | 설명 |
-|------|------|
-| 헤더 | 로고, 재직자 과정, 채용예정자 과정, 커뮤니티, 마이페이지, 로그인/로그아웃 버튼 포함 |
-| 바디 | 페이지별로 달라지는 세부 내용을 표시 |
-| 푸터 | 사이트 정보 및 반응형 레이아웃 적용 |
-
-
-**메인 페이지**
-
-- 재직자 베스트 강의, 취업예정자 베스트 강의, 마감 임박 강의, 베스트 커뮤니티, 베스트 후기
-- 강의 데이터는 API를 통해 불러오되, 목업 단계에서는 임의의 샘플 데이터 사용  
-- 4개 미만 시 빈 자리 유지, 0개 시 “등록된 과정이 없습니다” 문구 출력  
-- 메인 외 페이지는 임의의 트렌디한 스타일로 구성 후 피드백 기반 수정
+- 계획: `.md/plan.md` (체크리스트 형식)
+- 실행 기록: `.md/work-history.md` (비공개, `.gitignore` 대상)
+- 작업 재시작 시 `.md/work-history.md`로 이전 상태 확인
 
 ---
 
-## ✅ 유지관리 정책
+## 백엔드와의 동기화 (경로가 존재할 경우)
 
-- 모든 모델은 이 `AGENTS.md`를 **공통 기준 문서**로 사용합니다.  
-- 각 모델별 세부 규칙은 해당 md 파일(`GEMINI.md`, `copilot-instructions.md`)을 참조합니다.  
-- 기술스택 세부 내용은 `FRONTEND-STACKS.md`, `BACKEND-STACKS.md`를 통해 관리합니다.  
-- 각 모델 전용 문서의 첫머리에는 아래 문구를 포함합니다:  
-  > ⚙️ *이 모델은 `AGENTS.md`를 기본 행동 지침으로 참조합니다.*
+아래 경로가 존재하면 적극적으로 참조합니다. 없으면 이 지침은 무시합니다.
 
-## 🔗 네이밍 및 동기화 규칙
-- **Single Source of Truth**: 모든 도메인 용어와 데이터 구조의 네이밍은 **백엔드 엔티티 및 DTO**를 기준으로 합니다.
-- **불일치 발견 시**: 프론트엔드 코드를 백엔드 네이밍에 맞춰 수정해야 합니다.
-- **백엔드 부재 기능**: 프론트엔드에 필요하지만 백엔드에 없는 기능은 임의로 네이밍하지 않고, `BACKEND_MISSING_FEATURES.md`에 기록 후 백엔드 팀에 요청합니다.
+| 참조 대상 | 경로 | 활용 목적 |
+|-----------|------|-----------|
+| 백엔드 에이전트 지침 | `../softwarecampus-backend/AGENTS.md` | BE 컨벤션·API 구조 파악 |
+| API 가이드라인 | `../softwarecampus-backend/.md/API_GUIDELINES.md` | REST 설계 원칙, 오류 형식 |
+| JPA 가이드라인 | `../softwarecampus-backend/.md/JPA_GUIDELINE.md` | 엔티티 필드명 기준 확인 |
+| 공통 지침 | `../AGENTS.md` | 전체 프로젝트 구조·공통 원칙 |
 
 ---
 
-## 참고용 기획자료
-- reference-resources 폴더에 있는 파일을 참조
-- proto-sketch.pdf 파일은 와이어프레임 기획서
-- action-list.xlsx 파일은 요구사항 정의서
-- mock1.png ~ mock6.png 파일은 목업 웹사이트를 캡쳐한 스크린샷 (위에서부터 순서대로 스크롤하며 캡쳐).
+## 세부 문서 참조
 
+| 문서 | 경로 | 내용 |
+|------|------|------|
+| 디자인 시스템 | `.md/DESIGN-SYSTEM.md` | 컬러, 타이포, 컴포넌트 패턴 |
+| 보안 가이드 | `.md/SECURITY.md` | XSS 방지, Sanitization 상세 |
+| BE-FE 매핑 | `.md/BACKEND_FRONTEND_MAPPING.md` | API 응답 ↔ 프론트 타입 매핑 |
+| BE-FE 비교 | `.md/BACKEND_FRONTEND_COMPARISON.md` | 백엔드 부재 기능 목록 |
+| 카테고리 분류 | `.md/CATEGORY_CLASSIFICATION.md` | 과정 카테고리 분류 체계 |
+| 커뮤니티 설계 | `.md/Community/` | 커뮤니티 기능 상세 |
+| 계정 설계 | `.md/account/` | 인증·프로필 관련 설계 |
+| 프론트엔드 워크플로 | `.md/FRONTEND_WORKFLOW_GUIDE.md` | 개발 워크플로 가이드 |
 
 **문서 끝**
-
-
-# 문서 업데이트 지침
-- 새로운 기술스택을 적용할 경우, `GEMINI.md` 파일의 프로젝트 기술 스택 섹션에 내용과 설명을 추가할 것. 새로운 스택을 추가했을 경우 추가된 날짜를 KST 기준으로 병기할 것. 날짜표기는 (2025-10-11 추가) 양식을 따를 것.
