@@ -41,6 +41,9 @@ const Footer = () => {
                     </div>
                 </div>
                 <div className="border-t border-slate-800 dark:border-slate-900 pt-8 text-center text-sm text-slate-500">
+                    <p className="mb-2 text-xs text-slate-600">
+                        사이트 개발 중 채택되지 않은 B안으로, 포트폴리오 용도로 사용을 허가받았습니다.
+                    </p>
                     &copy; {new Date().getFullYear()} SoftwareCampus. All rights reserved.
                 </div>
             </div>
