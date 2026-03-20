@@ -22,7 +22,13 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      DEPLOY_DIR: "${{ secrets.DEPLOY_BASE_PATH }}/softwarecampus-frontend"
+      # Synology NAS 경로 분리:
+      #   SSH shell → /volume1/docker/... (실제 파일시스템 경로)
+      #   SCP(SFTP) → /docker/...        (공유 폴더 기준 가상 루트, /volume1 없음)
+      # secrets.DEPLOY_BASE_PATH     예: /volume1/docker/softwarecampus  (SSH용)
+      # secrets.DEPLOY_BASE_PATH_SCP 예: /docker/softwarecampus          (SCP용)
+      DEPLOY_DIR:     "${{ secrets.DEPLOY_BASE_PATH }}/softwarecampus-frontend"
+      SCP_DEPLOY_DIR: "${{ secrets.DEPLOY_BASE_PATH_SCP }}/softwarecampus-frontend"
       # Cloudflare Zero Trust SSH 인증 (Service Token)
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
@@ -99,16 +105,16 @@ jobs:
 
     # --------------------------------------------------------------------------
     # 8. NAS로 파일 전송 (SCP)
-    # app.tar.gz (Docker 이미지)와 docker-compose.yml을 전송합니다.
+    # SSH로 디렉토리를 먼저 생성(실제 경로)한 뒤, SCP는 SFTP 가상 경로로 전송
     # --------------------------------------------------------------------------
     - name: Copy files to server
       run: |
         ssh ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} \
           "mkdir -p ${{ env.DEPLOY_DIR }}"
         scp app.tar.gz \
-          ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ env.DEPLOY_DIR }}/app.tar.gz
+          ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ env.SCP_DEPLOY_DIR }}/app.tar.gz
         scp docker-compose.yml \
-          ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ env.DEPLOY_DIR }}/docker-compose.yml
+          ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }}:${{ env.SCP_DEPLOY_DIR }}/docker-compose.yml
 
     # --------------------------------------------------------------------------
     # 9. NAS에서 배포 실행 (SSH)
