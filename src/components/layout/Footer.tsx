@@ -34,9 +34,9 @@ const Footer = () => {
                     <div>
                         <h4 className="text-white font-semibold mb-4">Contact</h4>
                         <ul className="space-y-2 text-sm">
-                            <li>Tel: 02-1234-5678</li>
-                            <li>Email: help@softwarecampus.com</li>
-                            <li>Seoul, Korea</li>
+                            <li>Tel: 02-0000-0000</li>
+                            <li>Email: showcase@softwarecampus.example.test</li>
+                            <li>Demo City, Korea</li>
                         </ul>
                     </div>
                 </div>

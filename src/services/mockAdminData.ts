@@ -189,8 +189,8 @@ export const mockAdminAcademies: AdminAcademy[] = [
         name: '코드잇',
         businessNumber: '123-45-67890',
         address: '서울시 강남구 테헤란로 123',
-        phone: '02-1234-5678',
-        email: 'contact@codeit.kr',
+        phone: '02-0000-0201',
+        email: 'admin-academy01@example.test',
         registeredDate: '2024-01-15',
         courseCount: 24,
         status: '활성'
@@ -200,8 +200,8 @@ export const mockAdminAcademies: AdminAcademy[] = [
         name: '패스트캠퍼스',
         businessNumber: '234-56-78901',
         address: '서울시 강남구 역삼동 456',
-        phone: '02-2345-6789',
-        email: 'info@fastcampus.co.kr',
+        phone: '02-0000-0202',
+        email: 'admin-academy02@example.test',
         registeredDate: '2023-11-20',
         courseCount: 38,
         status: '활성'
@@ -211,8 +211,8 @@ export const mockAdminAcademies: AdminAcademy[] = [
         name: '인프런',
         businessNumber: '345-67-89012',
         address: '서울시 서초구 서초대로 789',
-        phone: '02-3456-7890',
-        email: 'support@inflearn.com',
+        phone: '02-0000-0203',
+        email: 'admin-academy03@example.test',
         registeredDate: '2024-03-10',
         courseCount: 52,
         status: '활성'

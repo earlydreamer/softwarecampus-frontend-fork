@@ -18,6 +18,7 @@ import PlaceholderPage from './pages/PlaceholderPage';
 import NotFound from './pages/NotFound';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
+import DemoNotice from './components/layout/DemoNotice';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
       <div className="flex flex-col min-h-screen">
         <Header />
         <main className="flex-grow pt-20">
+          <DemoNotice />
           <Routes>
             <Route path="/" element={<LandingPage />} />
 
