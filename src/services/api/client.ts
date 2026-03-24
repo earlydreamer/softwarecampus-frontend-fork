@@ -1,6 +1,35 @@
 import axios, { AxiosError } from 'axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
+const normalizeApiBaseUrl = (rawBaseUrl?: string): string => {
+    const trimmedBaseUrl = rawBaseUrl?.trim();
+
+    if (!trimmedBaseUrl) {
+        return '';
+    }
+
+    if (trimmedBaseUrl.startsWith('/')) {
+        return trimmedBaseUrl.replace(/\/+$/, '');
+    }
+
+    if (/^[a-z][a-z\d+\-.]*:\/\//i.test(trimmedBaseUrl)) {
+        return trimmedBaseUrl.replace(/\/+$/, '');
+    }
+
+    const isLocalAddress =
+        /^localhost(?::\d+)?(?:\/.*)?$/i.test(trimmedBaseUrl) ||
+        /^127(?:\.\d{1,3}){3}(?::\d+)?(?:\/.*)?$/.test(trimmedBaseUrl) ||
+        /^0\.0\.0\.0(?::\d+)?(?:\/.*)?$/.test(trimmedBaseUrl) ||
+        /^192\.168(?:\.\d{1,3}){2}(?::\d+)?(?:\/.*)?$/.test(trimmedBaseUrl) ||
+        /^10(?:\.\d{1,3}){3}(?::\d+)?(?:\/.*)?$/.test(trimmedBaseUrl) ||
+        /^172\.(1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}(?::\d+)?(?:\/.*)?$/.test(trimmedBaseUrl);
+
+    const inferredProtocol = isLocalAddress ? 'http://' : 'https://';
+    return `${inferredProtocol}${trimmedBaseUrl}`.replace(/\/+$/, '');
+};
+
+const apiBaseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+
 /**
  * API 클라이언트 설정
  * - 기본 URL: 환경 변수 또는 로컬 개발 서버
@@ -8,7 +37,7 @@ import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
  * - JSON 응답 자동 파싱
  */
 const apiClient: AxiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || '', // Proxy 사용 시 빈 문자열 또는 상대 경로
+    baseURL: apiBaseUrl, // Proxy 사용 시 빈 문자열 또는 상대 경로
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
@@ -38,7 +67,7 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 const refreshAccessToken = async (refreshToken: string, email: string): Promise<string> => {
     try {
         const response = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL || ''}/api/auth/refresh`,
+            `${apiBaseUrl}/api/auth/refresh`,
             { refreshToken, email }
         );
         return response.data.accessToken;
@@ -190,7 +219,7 @@ apiClient.interceptors.response.use(
 
                     // 리프레시 토큰으로 새 액세스 토큰 요청
                     const response = await axios.post(
-                        `${import.meta.env.VITE_API_BASE_URL || ''}/api/auth/refresh`,
+                        `${apiBaseUrl}/api/auth/refresh`,
                         { refreshToken, email }
                     );
 
@@ -232,3 +261,4 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+export { normalizeApiBaseUrl };
