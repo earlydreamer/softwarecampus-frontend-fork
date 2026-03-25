@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import App from '../App';
 
 vi.mock('../pages/LandingPage', () => ({
@@ -84,5 +85,18 @@ describe('App', () => {
         expect(
             screen.getByText('이 사이트는 쇼케이스용 데모 사이트입니다. 사이트에 표시된 기관, 연락처, 이메일을 포함한 모든 내용은 가상의 내용입니다.')
         ).toBeInTheDocument();
+    });
+
+    it('닫기 버튼을 누르면 현재 접속 중에는 안내 문구를 숨겨야 함', async () => {
+        window.history.pushState({}, '', '/');
+        const user = userEvent.setup();
+
+        render(<App />);
+
+        await user.click(screen.getByRole('button', { name: '데모 안내 닫기' }));
+
+        expect(
+            screen.queryByText('이 사이트는 쇼케이스용 데모 사이트입니다. 사이트에 표시된 기관, 연락처, 이메일을 포함한 모든 내용은 가상의 내용입니다.')
+        ).not.toBeInTheDocument();
     });
 });
