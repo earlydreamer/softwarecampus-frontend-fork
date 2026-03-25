@@ -16,9 +16,11 @@ import MyPage from './pages/MyPage';
 import AdminPage from './pages/AdminPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import NotFound from './pages/NotFound';
+import LegalDocumentPage from './pages/LegalDocumentPage';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import DemoNotice from './components/layout/DemoNotice';
+import { PRIVACY_POLICY, TERMS_OF_SERVICE } from './data/terms';
 
 function App() {
   return (
@@ -54,8 +56,26 @@ function App() {
 
             {/* Static/Placeholder */}
             <Route path="/partners" element={<PlaceholderPage title="협력기관" description="협력기관 소개 페이지입니다." />} />
-            <Route path="/privacy" element={<PlaceholderPage title="개인정보 처리방침" description="개인정보 처리방침입니다." />} />
-            <Route path="/terms" element={<PlaceholderPage title="이용약관" description="이용약관입니다." />} />
+            <Route
+              path="/privacy"
+              element={
+                <LegalDocumentPage
+                  title="개인정보 처리방침"
+                  description="회원가입 화면에서 제공하는 개인정보 처리방침 전문을 페이지에서도 확인할 수 있도록 제공합니다."
+                  content={PRIVACY_POLICY}
+                />
+              }
+            />
+            <Route
+              path="/terms"
+              element={
+                <LegalDocumentPage
+                  title="이용약관"
+                  description="회원가입 화면에서 제공하는 이용약관 전문을 페이지에서도 확인할 수 있도록 제공합니다."
+                  content={TERMS_OF_SERVICE}
+                />
+              }
+            />
             <Route path="/unauthorized" element={<PlaceholderPage title="권한 없음" description="접근 권한이 없습니다." />} />
 
             {/* 404 */}

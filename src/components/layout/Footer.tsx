@@ -25,10 +25,8 @@ const Footer = () => {
                     <nav aria-label="Support">
                         <h4 className="text-white font-semibold mb-4">고객지원</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><Link to="/community?category=notice" className="hover:text-white transition-colors" aria-label="공지사항 확인하기">공지사항</Link></li>
-                            <li><Link to="/community?category=question" className="hover:text-white transition-colors" aria-label="자주 묻는 질문 확인하기">자주 묻는 질문</Link></li>
-                            <li><Link to="/community/write" className="hover:text-white transition-colors" aria-label="1대1 문의하기">1:1 문의</Link></li>
-                            <li><Link to="/academies" className="hover:text-white transition-colors" aria-label="오시는 길 확인하기">오시는 길</Link></li>
+                            <li><Link to="/community?category=NOTICE" className="hover:text-white transition-colors" aria-label="공지사항 확인하기">공지사항</Link></li>
+                            <li><Link to="/community/write?category=QUESTION" className="hover:text-white transition-colors" aria-label="1대1 문의하기">1:1 문의</Link></li>
                             <li><Link to="/privacy" className="hover:text-white transition-colors" aria-label="개인정보 처리방침 확인하기">개인정보 처리방침</Link></li>
                         </ul>
                     </nav>
