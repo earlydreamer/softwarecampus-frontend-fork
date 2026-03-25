@@ -4,6 +4,8 @@
 
 부트캠프 및 교육기관의 과정을 소개하고, 수강 후기와 커뮤니티를 제공하는 웹사이트입니다.
 
+**Backend** : https://github.com/earlydreamer/softwarecampus-backend-fork
+
 ---
 
 ## 주요 기능
