@@ -70,6 +70,18 @@ const getErrorMessage = (error: unknown, defaultMsg: string): string => {
     return defaultMsg;
 };
 
+export const shouldRetryBoardDetailQuery = (failureCount: number, error: unknown): boolean => {
+    if (error instanceof AxiosError) {
+        const status = error.response?.status;
+
+        if (status === 401 || status === 403 || status === 404) {
+            return false;
+        }
+    }
+
+    return failureCount < 1;
+};
+
 const CommunityDetailPage = () => {
     const { postId } = useParams<{ postId?: string }>();
     const postIdNumber = postId ? parseInt(postId, 10) : NaN;
@@ -108,6 +120,7 @@ const CommunityDetailPage = () => {
         queryKey: ['boardPost', postIdNumber],
         queryFn: () => fetchBoardPost(postIdNumber),
         enabled: isValidPostId,
+        retry: shouldRetryBoardDetailQuery,
     });
 
     // 댓글 데이터는 게시글 데이터에 포함됨
